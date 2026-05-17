@@ -35,6 +35,7 @@ These decisions close open questions from `SPEC.md` for V1.
 | --- | --- |
 | Wish rich text | V1 Wish content supports plain text with line breaks. No formatting controls, lists, images, attachments, embeds, custom colors, tables, or advanced layout. |
 | Wish links | URLs can appear directly in Wish content as text. The UI should make detected URLs interactive when displayed. Links are not stored in a dedicated field. |
+| Participant identity persistence | V1 stores the selected Participant id in browser `localStorage`, scoped by Event id. This is convenience state, not authentication. The server must still validate `X-Participant-Id` on every relevant request. |
 
 ## 4. V1 Scope
 
