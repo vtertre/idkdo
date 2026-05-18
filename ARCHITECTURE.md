@@ -82,6 +82,7 @@ server/src/
   projections/
 
   infrastructure/
+    composition/
     cqrs/
     event-bus/
     projections/
@@ -89,10 +90,54 @@ server/src/
 
   presentation/
     http/
+      resources/
       routes/
 ```
 
-## 5. Dependency Rules
+## 5. TypeScript Style
+
+Use classes only where controlled construction, identity, and invariants matter.
+
+Default style:
+
+- domain entities use immutable classes;
+- commands and queries use discriminated object types;
+- command, query, and projection handlers use functions or dependency-injected factories;
+- domain policies use pure functions;
+- presentation resources use stateless factories;
+- repository implementations may use factories or classes, whichever is clearer.
+
+Do not introduce classes by default. A class should have a specific architectural reason.
+
+## 6. Dependency Injection
+
+The server uses Awilix as its dependency injection container.
+
+Awilix is an infrastructure concern:
+
+- `domain/` must not import Awilix;
+- domain entities, policies, domain events, and domain errors must not know about the container;
+- command, query, and projection handlers receive dependencies through factories or constructor-equivalent parameters;
+- handlers and repositories must not call `container.resolve(...)` themselves;
+- container configuration lives in infrastructure composition code.
+
+`@fastify/awilix` may be used to expose DI to the HTTP presentation layer.
+Presentation resources may be resolved by Awilix, but request-specific values must stay inside request handlers and be passed into commands or queries explicitly.
+
+`loadModules` is allowed for repetitive convention-based registration, such as handlers and resources. Critical runtime dependencies must be registered explicitly, including database access, logger, clock, id generator, buses, transaction manager, and low-level adapters.
+
+Awilix strict mode and explicit lifetimes should be used. The intended lifetimes are:
+
+- resources: singleton stateless factories;
+- buses: singleton;
+- command handlers: transaction-scoped when they depend on write-side repositories;
+- write-side repositories: transaction-scoped;
+- query handlers: singleton unless they need scoped dependencies;
+- projection handlers: singleton unless they need scoped dependencies.
+
+Command transactions are represented by explicit DI scopes. Avoid AsyncLocalStorage-based transaction context unless this decision is revisited.
+
+## 7. Dependency Rules
 
 Allowed dependency direction:
 
@@ -122,9 +167,17 @@ projection handlers -> write-side repositories
 `packages/db` owns the Drizzle schema, migrations, and database client helpers.
 `server/src/infrastructure` wires runtime implementations for repositories, buses, projection execution, and database access, but does not own the canonical schema.
 
-## 6. Commands
+## 8. Commands
 
 Commands represent state-changing use cases.
+
+Commands are discriminated object types with a required `type` field.
+
+```ts
+type Command<TType extends string = string> = {
+  type: TType;
+};
+```
 
 Command handlers:
 
@@ -141,16 +194,16 @@ The `CommandBus` caller receives only the command-side result. Domain events are
 Command handler shape:
 
 ```ts
-type CommandHandler<TCommand, TResult> = {
-  execute(command: TCommand): Promise<[TResult, DomainEvent[]]>;
-};
+type CommandHandler<TCommand extends Command, TResult> = (
+  command: TCommand,
+) => Promise<[TResult, DomainEvent[]]>;
 ```
 
 Command bus shape:
 
 ```ts
 type CommandBus = {
-  execute<TCommand, TResult>(command: TCommand): Promise<TResult>;
+  execute<TCommand extends Command, TResult>(command: TCommand): Promise<TResult>;
 };
 ```
 
@@ -158,9 +211,17 @@ Each command execution owns one database transaction. Transaction handling is a 
 
 If event publication fails after the transaction commits, the command is still considered successful. The bus logs the publication failure with domain event metadata and returns the command result.
 
-## 7. Queries
+## 9. Queries
 
 Queries represent read use cases.
+
+Queries are discriminated object types with a required `type` field.
+
+```ts
+type Query<TType extends string = string> = {
+  type: TType;
+};
+```
 
 Query handlers:
 
@@ -179,11 +240,11 @@ Query bus shape:
 
 ```ts
 type QueryBus = {
-  execute<TQuery, TResult>(query: TQuery): Promise<TResult>;
+  execute<TQuery extends Query, TResult>(query: TQuery): Promise<TResult>;
 };
 ```
 
-## 8. Domain Model
+## 10. Domain Model
 
 Domain entities are immutable TypeScript classes.
 
@@ -206,7 +267,7 @@ const existingWish = Wish.rehydrate(row);
 
 The domain does not depend on Zod. Domain invariants are enforced with domain code, value objects, policies, and typed domain errors.
 
-## 9. Domain Events
+## 11. Domain Events
 
 Domain events represent business facts that already happened.
 
@@ -232,7 +293,7 @@ type DomainEvent<TName extends string, TPayload> = {
 
 Domain events carry enough immutable facts for projections to update read models without consulting write-side repositories. They do not carry complete aggregate snapshots by default.
 
-## 10. Projections
+## 12. Projections
 
 Projections are persisted from the start.
 
@@ -273,7 +334,7 @@ projection tables may become stale.
 
 That tradeoff is accepted for the current architecture and should be revisited when reliability needs exceed it.
 
-## 11. Eventual Consistency
+## 13. Eventual Consistency
 
 Command endpoints return command-side results only.
 
@@ -281,7 +342,7 @@ After a successful command, clients must re-query the relevant read model if the
 
 Frontend flows should account for this with pending state, revalidation, or bounded polling where needed.
 
-## 12. Repositories
+## 14. Repositories
 
 Write-side repository interfaces live in `server/src/domain/repositories`.
 
@@ -292,7 +353,7 @@ Repositories return `null` when data is missing. Command handlers translate miss
 
 Read-side query handlers do not use repositories.
 
-## 13. Errors
+## 15. Errors
 
 The domain uses typed error classes.
 
@@ -311,11 +372,13 @@ Examples:
 Domain errors do not know about HTTP and do not carry status codes.
 The presentation layer maps domain errors to the REST error contract defined in `docs/SPEC-implementation.md`.
 
-## 14. Presentation
+## 16. Presentation
 
 The presentation layer is HTTP-only.
 
-Fastify routes:
+Presentation uses Resource factories as the HTTP boundary. Fastify route files register URLs and delegate to resource methods.
+
+Resources:
 
 - parse and validate route params, query params, headers, and bodies;
 - construct commands or queries;
@@ -323,4 +386,4 @@ Fastify routes:
 - map successful results to HTTP responses;
 - map typed errors to consistent HTTP errors.
 
-Routes must not access Drizzle directly and must not contain domain rules.
+Resources and routes must not access Drizzle directly and must not contain domain rules.
