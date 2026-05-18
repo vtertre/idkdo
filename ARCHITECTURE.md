@@ -130,21 +130,33 @@ Command handlers:
 
 - execute through the `CommandBus`;
 - orchestrate domain entities, policies, and write-side repositories;
-- return command-side results only;
-- return the domain events caused by the command;
+- return a tuple containing the command-side result and the domain events caused by the command;
 - do not return projection-backed read models;
 - do not import Fastify, HTTP request objects, Zod schemas, or Drizzle directly.
 
-The `CommandBus` is an in-process bus with a minimal implementation. It executes the command handler, then publishes returned domain events through command-bus middleware.
+The `CommandBus` is a port. The current implementation is an in-process command bus with command-specific middleware.
 
-Command result shape:
+The `CommandBus` caller receives only the command-side result. Domain events are internal to command execution and are published by command-bus middleware.
+
+Command handler shape:
 
 ```ts
-type CommandHandlerResult<TResult> = {
-  result: TResult;
-  events: DomainEvent[];
+type CommandHandler<TCommand, TResult> = {
+  execute(command: TCommand): Promise<[TResult, DomainEvent[]]>;
 };
 ```
+
+Command bus shape:
+
+```ts
+type CommandBus = {
+  execute<TCommand, TResult>(command: TCommand): Promise<TResult>;
+};
+```
+
+Each command execution owns one database transaction. Transaction handling is a command middleware responsibility. Domain events are published only after the command transaction commits successfully.
+
+If event publication fails after the transaction commits, the command is still considered successful. The bus logs the publication failure with domain event metadata and returns the command result.
 
 ## 7. Queries
 
@@ -160,6 +172,16 @@ Query handlers:
 - do not import Fastify or HTTP request objects.
 
 The query side should stay close to SQL. Query handlers should depend on a read-side database port rather than on write-side repository interfaces.
+
+The `QueryBus` is a port. The current implementation is an in-process query bus with query-specific middleware.
+
+Query bus shape:
+
+```ts
+type QueryBus = {
+  execute<TQuery, TResult>(query: TQuery): Promise<TResult>;
+};
+```
 
 ## 8. Domain Model
 
@@ -212,7 +234,7 @@ Domain events carry enough immutable facts for projections to update read models
 
 ## 10. Projections
 
-Projections are asynchronous and persisted from the start.
+Projections are persisted from the start.
 
 Projection handlers consume domain events and update dedicated projection tables. Query handlers read from those projection tables.
 
@@ -224,7 +246,23 @@ Rules:
 - Projection lag is accepted as part of the architecture.
 - Tests should verify eventual consistency with bounded waiting, not exact timing.
 
-The current event publication mechanism is in-process and asynchronous. Domain events are not durable until an outbox or equivalent durable publication mechanism is introduced.
+The `EventBus` is a port.
+
+Event bus shape:
+
+```ts
+type EventBus = {
+  publish(events: DomainEvent[]): Promise<void>;
+};
+```
+
+The current implementation is an `AsyncEventBus`. It accepts an ordered batch of domain events for asynchronous in-process dispatch and does not wait for projection handlers to complete.
+
+`EventBus.publish(...)` resolves according to the implementation's delivery guarantee. For `AsyncEventBus`, it resolves after the batch is accepted for asynchronous dispatch, not after projections are up to date.
+
+The `AsyncEventBus` uses event-specific middleware. It dispatches events sequentially in publication order. Projection handler failures are logged with the domain event metadata and handler name. A projection handler failure does not block dispatch of subsequent events.
+
+Domain events are not durable until an outbox or equivalent durable publication mechanism is introduced.
 
 Known tradeoff:
 
@@ -286,4 +324,3 @@ Fastify routes:
 - map typed errors to consistent HTTP errors.
 
 Routes must not access Drizzle directly and must not contain domain rules.
-
