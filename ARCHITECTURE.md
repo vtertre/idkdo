@@ -16,13 +16,47 @@ idkdo is a pnpm workspace with these runtime components:
 
 - `web/` - Angular Progressive Web App.
 - `server/` - Fastify REST API and backend application.
+- `packages/core/` - framework-independent DDD and CQRS base interfaces/classes.
 - `packages/db/` - Drizzle schema, migrations, and database client helpers.
 - `packages/shared/` - internal shared library for API contracts, types, validators, constants, and path helpers when useful.
 
 The Web UI communicates with the server through the REST API under `/api`.
 The server owns persistence, domain behavior, visibility rules, permission enforcement, and projection updates.
 
-## 3. Shared Package
+## 3. Core And Shared Packages
+
+`packages/core` contains reusable architectural building blocks for the workspace. It must not contain idkdo product/domain concepts.
+
+```txt
+packages/core/
+  package.json
+  tsconfig.json
+  src/
+    cqrs/
+      Command.ts
+      CommandBus.ts
+      CommandHandler.ts
+      Query.ts
+      QueryBus.ts
+      QueryHandler.ts
+      EventBus.ts
+      DomainEventHandler.ts
+      HandlerRegistry.ts
+    domain/
+      Entity.ts
+      AggregateRoot.ts
+      ValueObject.ts
+      DomainEvent.ts
+      DomainError.ts
+      Repository.ts
+    ids/
+      IdGenerator.ts
+    time/
+      Clock.ts
+    index.ts
+```
+
+`packages/core` must not depend on Fastify, Angular, Awilix, Drizzle, PostgreSQL, or Zod.
 
 `packages/shared` is an internal library consumed by workspace applications through pnpm workspace dependencies.
 
@@ -96,18 +130,17 @@ server/src/
 
 ## 5. TypeScript Style
 
-Use classes only where controlled construction, identity, and invariants matter.
+Use classes and interfaces by default.
 
 Default style:
 
+- commands, queries, command handlers, query handlers, projection handlers, resources, and repository implementations use classes;
 - domain entities use immutable classes;
-- commands and queries use discriminated object types;
-- command, query, and projection handlers use functions or dependency-injected factories;
-- domain policies use pure functions;
-- presentation resources use stateless factories;
-- repository implementations may use factories or classes, whichever is clearer.
+- domain events use concrete classes implementing the core `DomainEvent` interface;
+- domain repository contracts and bus contracts use interfaces;
+- small pure domain policies and local helpers may use functions.
 
-Do not introduce classes by default. A class should have a specific architectural reason.
+Plain object types are acceptable for API DTOs, read models, schema-inferred types, and small local helper shapes. Do not use them for commands, queries, or domain events.
 
 ## 6. Dependency Injection
 
@@ -117,7 +150,7 @@ Awilix is an infrastructure concern:
 
 - `domain/` must not import Awilix;
 - domain entities, policies, domain events, and domain errors must not know about the container;
-- command, query, and projection handlers receive dependencies through factories or constructor-equivalent parameters;
+- command, query, and projection handlers receive dependencies through constructors;
 - handlers and repositories must not call `container.resolve(...)` themselves;
 - container configuration lives in infrastructure composition code.
 
@@ -128,14 +161,16 @@ Presentation resources may be resolved by Awilix, but request-specific values mu
 
 Awilix strict mode and explicit lifetimes should be used. The intended lifetimes are:
 
-- resources: singleton stateless factories;
+- resources: singleton stateless classes;
 - buses: singleton;
-- command handlers: transaction-scoped when they depend on write-side repositories;
+- command handlers: transaction-scoped by default;
 - write-side repositories: transaction-scoped;
 - query handlers: singleton unless they need scoped dependencies;
 - projection handlers: singleton unless they need scoped dependencies.
 
 Command transactions are represented by explicit DI scopes. Avoid AsyncLocalStorage-based transaction context unless this decision is revisited.
+
+Command handlers are logically stateless, but they are transaction-scoped because their dependency graph includes transaction-scoped write repositories.
 
 ## 7. Dependency Rules
 
@@ -171,12 +206,10 @@ projection handlers -> write-side repositories
 
 Commands represent state-changing use cases.
 
-Commands are discriminated object types with a required `type` field.
+Commands are classes implementing the generic core `Command<TResult>` interface.
 
 ```ts
-type Command<TType extends string = string> = {
-  type: TType;
-};
+interface Command<TResult> {}
 ```
 
 Command handlers:
@@ -194,33 +227,51 @@ The `CommandBus` caller receives only the command-side result. Domain events are
 Command handler shape:
 
 ```ts
-type CommandHandler<TCommand extends Command, TResult> = (
-  command: TCommand,
-) => Promise<[TResult, DomainEvent[]]>;
+interface CommandHandler<TCommand extends Command<TResult>, TResult> {
+  execute(command: TCommand): Promise<[TResult, DomainEvent[]]>;
+}
 ```
 
 Command bus shape:
 
 ```ts
-type CommandBus = {
-  execute<TCommand extends Command, TResult>(command: TCommand): Promise<TResult>;
-};
+interface CommandBus {
+  execute<TResult>(command: Command<TResult>): Promise<TResult>;
+}
 ```
 
 Each command execution owns one database transaction. Transaction handling is a command middleware responsibility. Domain events are published only after the command transaction commits successfully.
 
 If event publication fails after the transaction commits, the command is still considered successful. The bus logs the publication failure with domain event metadata and returns the command result.
 
+Command handlers are resolved through an explicit composition mapping from command class to handler class. The mapping lives in `server/src/infrastructure/composition`. Handlers do not need `handles()` metadata.
+
+Command transaction flow:
+
+```txt
+CommandBus receives command instance
+  -> registry resolves command class to handler class
+  -> transaction middleware opens Drizzle transaction
+  -> command-specific Awilix child scope is created
+  -> transaction-bound database session is registered in that scope
+  -> command handler is resolved from that scope
+  -> write repositories are resolved from that same scope
+  -> handler executes
+  -> transaction commits
+  -> domain events are published
+  -> command-side result is returned
+```
+
+Write repositories must not fall back to the global database client. If a write repository is resolved without a transaction-bound database session, composition must fail.
+
 ## 9. Queries
 
 Queries represent read use cases.
 
-Queries are discriminated object types with a required `type` field.
+Queries are classes implementing the generic core `Query<TResult>` interface.
 
 ```ts
-type Query<TType extends string = string> = {
-  type: TType;
-};
+interface Query<TResult> {}
 ```
 
 Query handlers:
@@ -239,10 +290,12 @@ The `QueryBus` is a port. The current implementation is an in-process query bus 
 Query bus shape:
 
 ```ts
-type QueryBus = {
-  execute<TQuery extends Query, TResult>(query: TQuery): Promise<TResult>;
-};
+interface QueryBus {
+  execute<TResult>(query: Query<TResult>): Promise<TResult>;
+}
 ```
+
+Query handlers are resolved through an explicit composition mapping from query class to handler class.
 
 ## 10. Domain Model
 
@@ -269,7 +322,7 @@ The domain does not depend on Zod. Domain invariants are enforced with domain co
 
 ## 11. Domain Events
 
-Domain events represent business facts that already happened.
+Domain events represent business facts that already happened. Domain events are concrete classes implementing the core `DomainEvent` interface.
 
 Naming:
 
@@ -279,14 +332,12 @@ Naming:
 Event metadata:
 
 ```ts
-type DomainEvent<TName extends string, TPayload> = {
-  domainEventId: string;
-  name: TName;
-  occurredAt: Date;
-  aggregateType: string;
-  aggregateId: string;
-  payload: TPayload;
-};
+interface DomainEvent {
+  readonly domainEventId: string;
+  readonly occurredAt: Date;
+  readonly aggregateType: string;
+  readonly aggregateId: string;
+}
 ```
 
 `domainEventId` is the technical event identifier. `eventId` remains reserved for the product Event id.
@@ -312,9 +363,9 @@ The `EventBus` is a port.
 Event bus shape:
 
 ```ts
-type EventBus = {
+interface EventBus {
   publish(events: DomainEvent[]): Promise<void>;
-};
+}
 ```
 
 The current implementation is an `AsyncEventBus`. It accepts an ordered batch of domain events for asynchronous in-process dispatch and does not wait for projection handlers to complete.
@@ -322,6 +373,8 @@ The current implementation is an `AsyncEventBus`. It accepts an ordered batch of
 `EventBus.publish(...)` resolves according to the implementation's delivery guarantee. For `AsyncEventBus`, it resolves after the batch is accepted for asynchronous dispatch, not after projections are up to date.
 
 The `AsyncEventBus` uses event-specific middleware. It dispatches events sequentially in publication order. Projection handler failures are logged with the domain event metadata and handler name. A projection handler failure does not block dispatch of subsequent events.
+
+Projection handlers are resolved through explicit composition mappings from domain event class to projection handler class.
 
 Domain events are not durable until an outbox or equivalent durable publication mechanism is introduced.
 
@@ -376,7 +429,7 @@ The presentation layer maps domain errors to the REST error contract defined in 
 
 The presentation layer is HTTP-only.
 
-Presentation uses Resource factories as the HTTP boundary. Fastify route files register URLs and delegate to resource methods.
+Presentation uses Resource classes as the HTTP boundary. Fastify route files register URLs and delegate to resource methods.
 
 Resources:
 
