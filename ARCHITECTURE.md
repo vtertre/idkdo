@@ -311,6 +311,10 @@ The domain uses one shared `Uuid` value object for entity ids and domain event i
 
 Technical timestamps in the domain use `Temporal.Instant`. API contracts serialize timestamps as ISO strings, and PostgreSQL stores them as `timestamptz`.
 
+Domain value objects are used for business scalar values with invariants. Initial idkdo value objects include `EventName`, `ParticipantName`, and `WishContent`.
+
+Entities use these value objects instead of raw strings. API DTOs and read models may still expose these values as strings.
+
 Rules:
 
 - Constructors are private.
