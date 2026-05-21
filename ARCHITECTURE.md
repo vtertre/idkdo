@@ -372,6 +372,8 @@ Projection tables are named after the read surface and use snake_case with the `
 
 Domain event handler classes are named as reactions with the `<DoSomething>On<EventName>` shape, for example `UpdateEventWishesOnWishCreated` or `UpdateParticipantWishlistOnWishDeleted`.
 
+Visibility-sensitive read models encode visibility at projection time. Query handlers read already-safe projection rows and must not rely on last-mile filtering to hide Purchase Coordination.
+
 Rules:
 
 - Projection handlers must not use write-side repositories.
