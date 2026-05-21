@@ -16,25 +16,25 @@ idkdo is a pnpm workspace with these runtime components:
 
 - `web/` - Angular Progressive Web App.
 - `server/` - Fastify REST API and backend application.
-- `packages/core/` - framework-independent DDD and CQRS base interfaces/classes.
+- `packages/patterns/` - framework-independent DDD and CQRS base interfaces/classes.
 - `packages/db/` - Drizzle schema, migrations, and database client helpers.
 - `packages/shared/` - internal shared library for API contracts, types, validators, constants, and path helpers when useful.
 
 The Web UI communicates with the server through the REST API under `/api`.
 The server owns persistence, domain behavior, visibility rules, permission enforcement, and projection updates.
 
-## 3. Core And Shared Packages
+## 3. Patterns And Shared Packages
 
-`packages/core` contains reusable architectural building blocks for the workspace. It must not contain idkdo product/domain concepts.
+`packages/patterns` contains reusable architectural building blocks for the workspace. It must not contain idkdo product/domain concepts.
 
 It owns base DDD and CQRS abstractions:
 
 - command, query, event bus, handler, and handler registry interfaces;
 - entity, aggregate root, value object, UUID, domain event, domain error, and repository abstractions.
 
-`packages/core` describes abstractions, not application wiring. It does not define idkdo commands, queries, domain events, entities, repositories, read models, or handlers.
+`packages/patterns` describes abstractions, not application wiring. It does not define idkdo commands, queries, domain events, entities, repositories, read models, or handlers.
 
-`packages/core` must not depend on Fastify, Angular, Awilix, Drizzle, PostgreSQL, or Zod.
+`packages/patterns` must not depend on Fastify, Angular, Awilix, Drizzle, PostgreSQL, or Zod.
 
 `packages/shared` is an internal library consumed by workspace applications through pnpm workspace dependencies.
 
@@ -59,6 +59,8 @@ Guidelines:
 - `validators/` contains Zod schemas and input types inferred from those schemas.
 - Zod schemas live at application boundaries, not in the domain model.
 - API paths and shared constants should be centralized when multiple packages need them.
+
+`packages/db` owns persistence schema, migrations, and database helpers. It may depend on `packages/shared` for stable shared constants or primitive shared types.
 
 ## 4. Backend Architecture
 
@@ -114,7 +116,7 @@ Default style:
 
 - commands, queries, command handlers, query handlers, projection handlers, resources, and repository implementations use classes;
 - domain entities use immutable classes;
-- domain events use concrete classes implementing the core `DomainEvent` interface;
+- domain events use concrete classes implementing the patterns `DomainEvent` interface;
 - domain repository contracts and bus contracts use interfaces;
 - small pure domain policies and local helpers may use functions.
 
@@ -184,13 +186,13 @@ projection handlers -> write-side repositories
 
 Commands represent state-changing use cases.
 
-Commands are classes implementing the generic core `Command<TResult>` interface.
+Commands are classes implementing the generic patterns `Command<TResult>` interface.
 
 ```ts
 interface Command<TResult> {}
 ```
 
-The command handler registry is part of the CQRS abstraction. Its interface belongs in `packages/core`; concrete registry implementation and mappings belong in server infrastructure composition.
+The command handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and mappings belong in server infrastructure composition.
 
 Command handlers:
 
@@ -250,13 +252,13 @@ Write repositories must not fall back to the global database client. If a write 
 
 Queries represent read use cases.
 
-Queries are classes implementing the generic core `Query<TResult>` interface.
+Queries are classes implementing the generic patterns `Query<TResult>` interface.
 
 ```ts
 interface Query<TResult> {}
 ```
 
-The query handler registry is part of the CQRS abstraction. Its interface belongs in `packages/core`; concrete registry implementation and mappings belong in server infrastructure composition.
+The query handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and mappings belong in server infrastructure composition.
 
 Query handlers:
 
@@ -336,7 +338,7 @@ The domain does not depend on Zod. Domain invariants are enforced with domain co
 
 ## 11. Domain Events
 
-Domain events represent business facts that already happened. Domain events are concrete classes implementing the core `DomainEvent` interface.
+Domain events represent business facts that already happened. Domain events are concrete classes implementing the patterns `DomainEvent` interface.
 
 Naming:
 
@@ -358,7 +360,7 @@ interface DomainEvent {
 
 Domain events carry enough immutable facts for projections to update read models without consulting write-side repositories. They do not carry complete aggregate snapshots by default.
 
-The domain event handler registry is part of the CQRS abstraction. Its interface belongs in `packages/core`; concrete registry implementation and event-to-handler mappings belong in server infrastructure composition.
+The domain event handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and event-to-handler mappings belong in server infrastructure composition.
 
 ## 12. Projections
 
