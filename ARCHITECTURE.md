@@ -366,6 +366,12 @@ Projections are persisted from the start.
 
 Projection handlers consume domain events and update dedicated projection tables. Query handlers read from those projection tables.
 
+Persisted projections are designed by read surface rather than as a normalized mirror of the write model. Concrete projection schemas are introduced with the read surface they support.
+
+Projection tables are named after the read surface and use snake_case with the `_projection` suffix, for example `event_wishes_projection` or `participant_wishlist_projection`.
+
+Domain event handler classes are named as reactions with the `<DoSomething>On<EventName>` shape, for example `UpdateEventWishesOnWishCreated` or `UpdateParticipantWishlistOnWishDeleted`.
+
 Rules:
 
 - Projection handlers must not use write-side repositories.
