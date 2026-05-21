@@ -27,34 +27,13 @@ The server owns persistence, domain behavior, visibility rules, permission enfor
 
 `packages/core` contains reusable architectural building blocks for the workspace. It must not contain idkdo product/domain concepts.
 
-```txt
-packages/core/
-  package.json
-  tsconfig.json
-  src/
-    cqrs/
-      Command.ts
-      CommandBus.ts
-      CommandHandler.ts
-      Query.ts
-      QueryBus.ts
-      QueryHandler.ts
-      EventBus.ts
-      DomainEventHandler.ts
-      HandlerRegistry.ts
-    domain/
-      Entity.ts
-      AggregateRoot.ts
-      ValueObject.ts
-      DomainEvent.ts
-      DomainError.ts
-      Repository.ts
-    ids/
-      IdGenerator.ts
-    time/
-      Clock.ts
-    index.ts
-```
+It owns base DDD and CQRS abstractions:
+
+- command, query, event bus, handler, and handler registry interfaces;
+- entity, aggregate root, value object, domain event, domain error, and repository abstractions;
+- technical ports such as clock and id generation.
+
+`packages/core` describes abstractions, not application wiring. It does not define idkdo commands, queries, domain events, entities, repositories, read models, or handlers.
 
 `packages/core` must not depend on Fastify, Angular, Awilix, Drizzle, PostgreSQL, or Zod.
 
@@ -154,7 +133,7 @@ Awilix is an infrastructure concern:
 - handlers and repositories must not call `container.resolve(...)` themselves;
 - container configuration lives in infrastructure composition code.
 
-`@fastify/awilix` may be used to expose DI to the HTTP presentation layer.
+The server uses `@fastify/awilix` to expose DI to the HTTP presentation layer.
 Presentation resources may be resolved by Awilix, but request-specific values must stay inside request handlers and be passed into commands or queries explicitly.
 
 `loadModules` is allowed for repetitive convention-based registration, such as handlers and resources. Critical runtime dependencies must be registered explicitly, including database access, logger, clock, id generator, buses, transaction manager, and low-level adapters.
@@ -212,6 +191,8 @@ Commands are classes implementing the generic core `Command<TResult>` interface.
 interface Command<TResult> {}
 ```
 
+The command handler registry is part of the CQRS abstraction. Its interface belongs in `packages/core`; concrete registry implementation and mappings belong in server infrastructure composition.
+
 Command handlers:
 
 - execute through the `CommandBus`;
@@ -246,6 +227,8 @@ If event publication fails after the transaction commits, the command is still c
 
 Command handlers are resolved through an explicit composition mapping from command class to handler class. The mapping lives in `server/src/infrastructure/composition`. Handlers do not need `handles()` metadata.
 
+Registries store handler classes or DI registration tokens, not handler instances. Command handlers are transaction-scoped and must be resolved inside the command execution scope.
+
 Command transaction flow:
 
 ```txt
@@ -274,6 +257,8 @@ Queries are classes implementing the generic core `Query<TResult>` interface.
 interface Query<TResult> {}
 ```
 
+The query handler registry is part of the CQRS abstraction. Its interface belongs in `packages/core`; concrete registry implementation and mappings belong in server infrastructure composition.
+
 Query handlers:
 
 - execute through the `QueryBus`;
@@ -300,6 +285,26 @@ Query handlers are resolved through an explicit composition mapping from query c
 ## 10. Domain Model
 
 Domain entities are immutable TypeScript classes.
+
+Core domain shapes:
+
+```ts
+interface Entity<TId> {
+  readonly id: TId;
+}
+
+abstract class BaseEntity<TId> implements Entity<TId> {
+  protected constructor(public readonly id: TId) {}
+}
+
+interface AggregateRoot<TId> extends Entity<TId> {}
+
+abstract class BaseAggregateRoot<TId>
+  extends BaseEntity<TId>
+  implements AggregateRoot<TId> {}
+```
+
+`AggregateRoot` marks aggregate boundaries. `BaseAggregateRoot` does not store unpublished domain events and does not expose `record()` or `pullDomainEvents()`.
 
 Rules:
 
@@ -343,6 +348,8 @@ interface DomainEvent {
 `domainEventId` is the technical event identifier. `eventId` remains reserved for the product Event id.
 
 Domain events carry enough immutable facts for projections to update read models without consulting write-side repositories. They do not carry complete aggregate snapshots by default.
+
+The domain event handler registry is part of the CQRS abstraction. Its interface belongs in `packages/core`; concrete registry implementation and event-to-handler mappings belong in server infrastructure composition.
 
 ## 12. Projections
 
