@@ -30,8 +30,7 @@ The server owns persistence, domain behavior, visibility rules, permission enfor
 It owns base DDD and CQRS abstractions:
 
 - command, query, event bus, handler, and handler registry interfaces;
-- entity, aggregate root, value object, domain event, domain error, and repository abstractions;
-- technical ports such as clock and id generation.
+- entity, aggregate root, value object, UUID, domain event, domain error, and repository abstractions.
 
 `packages/core` describes abstractions, not application wiring. It does not define idkdo commands, queries, domain events, entities, repositories, read models, or handlers.
 
@@ -136,7 +135,7 @@ Awilix is an infrastructure concern:
 The server uses `@fastify/awilix` to expose DI to the HTTP presentation layer.
 Presentation resources may be resolved by Awilix, but request-specific values must stay inside request handlers and be passed into commands or queries explicitly.
 
-`loadModules` is allowed for repetitive convention-based registration, such as handlers and resources. Critical runtime dependencies must be registered explicitly, including database access, logger, clock, id generator, buses, transaction manager, and low-level adapters.
+`loadModules` is allowed for repetitive convention-based registration, such as handlers and resources. Critical runtime dependencies must be registered explicitly, including database access, logger, buses, transaction manager, and low-level adapters.
 
 Awilix strict mode and explicit lifetimes should be used. The intended lifetimes are:
 
@@ -289,22 +288,28 @@ Domain entities are immutable TypeScript classes.
 Core domain shapes:
 
 ```ts
-interface Entity<TId> {
+interface Entity<TId = Uuid> {
   readonly id: TId;
 }
 
-abstract class BaseEntity<TId> implements Entity<TId> {
+abstract class BaseEntity<TId = Uuid> implements Entity<TId> {
   protected constructor(public readonly id: TId) {}
 }
 
-interface AggregateRoot<TId> extends Entity<TId> {}
+interface AggregateRoot<TId = Uuid> extends Entity<TId> {}
 
-abstract class BaseAggregateRoot<TId>
+abstract class BaseAggregateRoot<TId = Uuid>
   extends BaseEntity<TId>
   implements AggregateRoot<TId> {}
 ```
 
 `AggregateRoot` marks aggregate boundaries. `BaseAggregateRoot` does not store unpublished domain events and does not expose `record()` or `pullDomainEvents()`.
+
+The domain uses one shared `Uuid` value object for entity ids and domain event ids. Do not create one id class per entity by default.
+
+`Uuid.random()` creates UUIDs through the platform crypto implementation. Domain factory methods may create their own ids and timestamps internally.
+
+Technical timestamps in the domain use `Temporal.Instant`. API contracts serialize timestamps as ISO strings, and PostgreSQL stores them as `timestamptz`.
 
 Rules:
 
@@ -338,10 +343,10 @@ Event metadata:
 
 ```ts
 interface DomainEvent {
-  readonly domainEventId: string;
-  readonly occurredAt: Date;
+  readonly domainEventId: Uuid;
+  readonly occurredAt: Temporal.Instant;
   readonly aggregateType: string;
-  readonly aggregateId: string;
+  readonly aggregateId: Uuid;
 }
 ```
 
