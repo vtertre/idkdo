@@ -438,7 +438,15 @@ Read-side query handlers do not use repositories.
 
 ## 15. Errors
 
-The domain uses typed error classes.
+Business errors are typed classes and are transport-agnostic.
+
+Application and domain code throw typed business errors for expected business-rule, not-found, and conflict cases. Boundary validation errors are handled by presentation validation.
+
+The HTTP presentation layer owns API error mapping. Resources and route-level error handlers map known business errors and validation errors to the API error contract.
+
+API error responses use a consistent JSON shape. The exact list of error codes grows with implementation, but the shape must remain stable once introduced.
+
+Routes must not leak raw infrastructure errors, stack traces, SQL errors, or unvalidated exception messages to clients.
 
 Examples:
 
@@ -451,9 +459,6 @@ Examples:
 - `CannotReserveOwnWishError`
 - `CannotAddWisherAsContributorError`
 - `ReservationAlreadyExistsError`
-
-Domain errors do not know about HTTP and do not carry status codes.
-The presentation layer maps domain errors to the REST error contract defined in `docs/SPEC-implementation.md`.
 
 ## 16. Presentation
 
