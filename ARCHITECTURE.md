@@ -487,3 +487,19 @@ Resources:
 - map typed errors to consistent HTTP errors.
 
 Resources and routes must not access Drizzle directly and must not contain domain rules.
+
+## 18. Testing
+
+Tests should follow the architecture boundaries and focus on the risk of the layer under test.
+
+Domain tests are pure and do not use database, HTTP, Fastify, Awilix, or Zod. They cover entities, value objects, policies, domain events, and business errors.
+
+Command handler tests verify application orchestration with repository test doubles by default. Database-backed tests are used when transaction behavior, repository implementations, or integration with Drizzle/PostgreSQL is the subject.
+
+Projection handler tests verify that domain events update persisted projection tables correctly, including visibility-sensitive read models. Eventual consistency tests may use bounded waiting, but should not assert exact timing.
+
+API integration tests verify route wiring, Zod validation, identity headers, error mapping, and permission enforcement.
+
+Composition tests verify that DI registration, command/query/event handler mappings, and transaction-scoped dependencies resolve correctly.
+
+End-to-end tests cover the core gift coordination flow and anti-spoil behavior.
