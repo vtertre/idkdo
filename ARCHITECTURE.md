@@ -60,6 +60,10 @@ Guidelines:
 - Zod schemas live at application boundaries, not in the domain model.
 - API paths and shared constants should be centralized when multiple packages need them.
 
+API response DTOs and API-facing read model types live in `packages/shared`. Server query handlers return these shared DTO types, and the Web UI consumes the same types.
+
+Projection row types and projection table shapes are internal persistence details. They do not live in `packages/shared`.
+
 `packages/db` owns persistence schema, migrations, and database helpers. It may depend on `packages/shared` for stable shared constants or primitive shared types.
 
 ## 4. Backend Architecture
