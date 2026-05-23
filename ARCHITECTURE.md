@@ -460,7 +460,19 @@ Examples:
 - `CannotAddWisherAsContributorError`
 - `ReservationAlreadyExistsError`
 
-## 16. Presentation
+## 16. Validation Boundary
+
+Zod validation is used at external boundaries.
+
+HTTP resources validate route params, query params, headers, and request bodies before constructing commands or queries. Environment variables are validated during server startup before the application begins accepting traffic.
+
+Shared API request and response schemas live in `packages/shared` when they are consumed by both server and web. Server-only infrastructure schemas stay in `server`.
+
+Domain entities, value objects, policies, commands, queries, and domain events do not depend on Zod. The domain still enforces its own invariants through value objects, constructors, factories, and business errors.
+
+Validation converts untrusted external input into trusted application input. It does not replace business invariants.
+
+## 17. Presentation
 
 The presentation layer is HTTP-only.
 
