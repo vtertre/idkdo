@@ -488,7 +488,31 @@ Resources:
 
 Resources and routes must not access Drizzle directly and must not contain domain rules.
 
-## 18. Testing
+## 18. Frontend Architecture
+
+The Web UI is an Angular Progressive Web App using modern Angular patterns.
+
+Frontend code is organized feature-first. Feature folders own their routes, page components, feature components, state, and repositories when those pieces are specific to the feature.
+
+Angular standalone components are the default. Feature routes are lazy-loaded where they represent distinct user-facing surfaces.
+
+Components do not call `HttpClient` directly. They use frontend repositories. Frontend repositories are client-side data access adapters, not DDD repositories, and do not enforce domain invariants.
+
+Frontend repositories are placed by reuse scope:
+
+- `core/` for app-wide concepts;
+- `features/shared/` for repositories shared across multiple features;
+- inside a feature when dedicated to that feature.
+
+The app starts without a third-party state management library. State uses native Angular primitives: services, signals, computed values, effects, route params, and forms. State stays as close as possible to the feature that owns it and is promoted upward only when multiple features need it.
+
+The frontend does not implement Purchase Coordination visibility rules. It renders server-provided read models whose visibility has already been enforced by projections and API queries.
+
+After successful command requests, frontend flows must account for projection lag. The refresh strategy is chosen per feature flow and may use re-query, pending state, bounded retry, or optimistic local state. Server projections remain authoritative for persisted read models.
+
+The service worker caches static application assets only. It must not cache REST API responses containing Event, Participant, Wish, Reservation, Contributor, or Purchase Coordination data.
+
+## 19. Testing
 
 Tests should follow the architecture boundaries and focus on the risk of the layer under test.
 
