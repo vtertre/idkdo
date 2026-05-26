@@ -78,6 +78,8 @@ Target server layout:
 server/src/
   app.ts
 
+  configuration/
+
   domain/
     entities/
     errors/
@@ -100,7 +102,6 @@ server/src/
   projections/
 
   infrastructure/
-    composition/
     cqrs/
     event-bus/
     projections/
@@ -136,7 +137,7 @@ Awilix is an infrastructure concern:
 - domain entities, policies, domain events, and domain errors must not know about the container;
 - command, query, and projection handlers receive dependencies through constructors;
 - handlers and repositories must not call `container.resolve(...)` themselves;
-- container configuration lives in infrastructure composition code.
+- container configuration lives in `server/src/configuration`.
 
 The server uses `@fastify/awilix` to expose DI to the HTTP presentation layer.
 Presentation resources may be resolved by Awilix, but request-specific values must stay inside request handlers and be passed into commands or queries explicitly.
@@ -156,7 +157,22 @@ Command transactions are represented by explicit DI scopes. Avoid AsyncLocalStor
 
 Command handlers are logically stateless, but they are transaction-scoped because their dependency graph includes transaction-scoped write repositories.
 
-## 7. Dependency Rules
+## 7. Configuration
+
+Server application wiring lives under `server/src/configuration`.
+
+Configuration code is responsible for:
+
+- configuring Awilix and `@fastify/awilix`;
+- registering runtime dependencies;
+- loading handlers and resources when useful;
+- declaring command, query, and domain event handler mappings;
+- creating buses, registries, and middleware chains;
+- defining lifetimes and command transaction scopes.
+
+Command, query, and domain event mappings are explicit configuration because handlers are resolved by class or DI token in the appropriate runtime scope. The mapping must not depend on already-instantiated handler objects.
+
+## 8. Dependency Rules
 
 Allowed dependency direction:
 
@@ -186,7 +202,7 @@ projection handlers -> write-side repositories
 `packages/db` owns the Drizzle schema, migrations, and database client helpers.
 `server/src/infrastructure` wires runtime implementations for repositories, buses, projection execution, and database access, but does not own the canonical schema.
 
-## 8. Commands
+## 9. Commands
 
 Commands represent state-changing use cases.
 
@@ -196,7 +212,7 @@ Commands are classes implementing the generic patterns `Command<TResult>` interf
 interface Command<TResult> {}
 ```
 
-The command handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and mappings belong in server infrastructure composition.
+The command handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and mappings belong in server configuration.
 
 Command handlers:
 
@@ -230,7 +246,7 @@ Each command execution owns one database transaction. Transaction handling is a 
 
 If event publication fails after the transaction commits, the command is still considered successful. The bus logs the publication failure with domain event metadata and returns the command result.
 
-Command handlers are resolved through an explicit composition mapping from command class to handler class. The mapping lives in `server/src/infrastructure/composition`. Handlers do not need `handles()` metadata.
+Command handlers are resolved through an explicit configuration mapping from command class to handler class. The mapping lives in `server/src/configuration`. Handlers do not need `handles()` metadata.
 
 Registries store handler classes or DI registration tokens, not handler instances. Command handlers are transaction-scoped and must be resolved inside the command execution scope.
 
@@ -250,9 +266,9 @@ CommandBus receives command instance
   -> command-side result is returned
 ```
 
-Write repositories must not fall back to the global database client. If a write repository is resolved without a transaction-bound database session, composition must fail.
+Write repositories must not fall back to the global database client. If a write repository is resolved without a transaction-bound database session, dependency resolution must fail.
 
-## 9. Queries
+## 10. Queries
 
 Queries represent read use cases.
 
@@ -262,7 +278,7 @@ Queries are classes implementing the generic patterns `Query<TResult>` interface
 interface Query<TResult> {}
 ```
 
-The query handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and mappings belong in server infrastructure composition.
+The query handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and mappings belong in server configuration.
 
 Query handlers:
 
@@ -285,9 +301,9 @@ interface QueryBus {
 }
 ```
 
-Query handlers are resolved through an explicit composition mapping from query class to handler class.
+Query handlers are resolved through an explicit configuration mapping from query class to handler class.
 
-## 10. Domain Model
+## 11. Domain Model
 
 Domain entities are immutable TypeScript classes.
 
@@ -340,7 +356,7 @@ const existingWish = Wish.rehydrate(row);
 
 The domain does not depend on Zod. Domain invariants are enforced with domain code, value objects, policies, and typed domain errors.
 
-## 11. Domain Events
+## 12. Domain Events
 
 Domain events represent business facts that already happened. Domain events are concrete classes implementing the patterns `DomainEvent` interface.
 
@@ -364,9 +380,9 @@ interface DomainEvent {
 
 Domain events carry enough immutable facts for projections to update read models without consulting write-side repositories. They do not carry complete aggregate snapshots by default.
 
-The domain event handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and event-to-handler mappings belong in server infrastructure composition.
+The domain event handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and event-to-handler mappings belong in server configuration.
 
-## 12. Projections
+## 13. Projections
 
 Projections are persisted from the start.
 
@@ -404,7 +420,7 @@ The current implementation is an `AsyncEventBus`. It accepts an ordered batch of
 
 The `AsyncEventBus` uses event-specific middleware. It dispatches events sequentially in publication order. Projection handler failures are logged with the domain event metadata and handler name. A projection handler failure does not block dispatch of subsequent events.
 
-Projection handlers are resolved through explicit composition mappings from domain event class to projection handler class.
+Projection handlers are resolved through explicit configuration mappings from domain event class to projection handler class.
 
 Domain events are not durable until an outbox or equivalent durable publication mechanism is introduced.
 
@@ -417,7 +433,7 @@ projection tables may become stale.
 
 That tradeoff is accepted for the current architecture and should be revisited when reliability needs exceed it.
 
-## 13. Eventual Consistency
+## 14. Eventual Consistency
 
 Command endpoints return command-side results only.
 
@@ -425,7 +441,7 @@ After a successful command, clients must re-query the relevant read model if the
 
 Frontend flows should account for this with pending state, revalidation, or bounded polling where needed.
 
-## 14. Repositories
+## 15. Repositories
 
 Write-side repository interfaces live in `server/src/domain/repositories`.
 
@@ -436,7 +452,7 @@ Repositories return `null` when data is missing. Command handlers translate miss
 
 Read-side query handlers do not use repositories.
 
-## 15. Database Boundary
+## 16. Database Boundary
 
 `packages/db` owns Drizzle schema definitions, migrations, projection tables, and database client helpers.
 
@@ -446,7 +462,7 @@ Domain value objects and temporal types are converted at infrastructure boundari
 
 `packages/db` does not contain domain entities, command/query handlers, business policies, or API DTOs. Projection tables are persistence artifacts managed by `packages/db`, even when their API read model DTOs live in `packages/shared`.
 
-## 16. Errors
+## 17. Errors
 
 Business errors are typed classes and are transport-agnostic.
 
@@ -470,7 +486,7 @@ Examples:
 - `CannotAddWisherAsContributorError`
 - `ReservationAlreadyExistsError`
 
-## 17. Validation Boundary
+## 18. Validation Boundary
 
 Zod validation is used at external boundaries.
 
@@ -482,7 +498,7 @@ Domain entities, value objects, policies, commands, queries, and domain events d
 
 Validation converts untrusted external input into trusted application input. It does not replace business invariants.
 
-## 18. Presentation
+## 19. Presentation
 
 The presentation layer is HTTP-only.
 
@@ -498,7 +514,7 @@ Resources:
 
 Resources and routes must not access Drizzle directly and must not contain domain rules.
 
-## 19. Identity And Permissions
+## 20. Identity And Permissions
 
 idkdo uses lightweight selected Participant identity, not user authentication.
 
@@ -512,7 +528,7 @@ Permission rules for mutations are enforced in command handlers through domain p
 
 The frontend may persist selected Participant identity for convenience, scoped by Event id, but this state is never trusted as authorization by the server.
 
-## 20. Frontend Architecture
+## 21. Frontend Architecture
 
 The Web UI is an Angular Progressive Web App using modern Angular patterns.
 
@@ -536,7 +552,7 @@ After successful command requests, frontend flows must account for projection la
 
 The service worker caches static application assets only. It must not cache REST API responses containing Event, Participant, Wish, Reservation, Contributor, or Purchase Coordination data.
 
-## 21. Testing
+## 22. Testing
 
 Tests should follow the architecture boundaries and focus on the risk of the layer under test.
 
@@ -548,6 +564,6 @@ Projection handler tests verify that domain events update persisted projection t
 
 API integration tests verify route wiring, Zod validation, identity headers, error mapping, and permission enforcement.
 
-Composition tests verify that DI registration, command/query/event handler mappings, and transaction-scoped dependencies resolve correctly.
+Configuration tests verify that DI registration, command/query/event handler mappings, and transaction-scoped dependencies resolve correctly.
 
 End-to-end tests cover the core gift coordination flow and anti-spoil behavior.
