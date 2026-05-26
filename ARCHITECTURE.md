@@ -212,6 +212,8 @@ Commands are classes implementing the generic patterns `Command<TResult>` interf
 interface Command<TResult> {}
 ```
 
+Command classes use the `*Command` suffix and command handler classes use the `*CommandHandler` suffix. Files use kebab-case names matching the class role, for example `create-wish-command.ts` and `create-wish-command-handler.ts`.
+
 The command handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and mappings belong in server configuration.
 
 Command handlers:
@@ -278,6 +280,8 @@ Queries are classes implementing the generic patterns `Query<TResult>` interface
 interface Query<TResult> {}
 ```
 
+Query classes use the `*Query` suffix and query handler classes use the `*QueryHandler` suffix. Files use kebab-case names matching the class role, for example `list-event-wishes-query.ts` and `list-event-wishes-query-handler.ts`.
+
 The query handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and mappings belong in server configuration.
 
 Query handlers:
@@ -340,8 +344,8 @@ Entities use these value objects instead of raw strings. API DTOs and read model
 Rules:
 
 - Constructors are private.
-- `Entity.create(...)` creates new domain state and returns `[entity, domainEvents]`.
-- `Entity.rehydrate(...)` rebuilds existing domain state from persistence and returns the entity without events.
+- Domain factory methods create new domain state and return `[entity, domainEvents]`.
+- Rehydration methods rebuild persisted domain state and return the entity without events.
 - State-changing methods return `[updatedEntity, domainEvents]`.
 - Entities do not store unpublished events internally.
 - Cross-entity permission and visibility rules live in pure domain policy functions.
@@ -364,6 +368,8 @@ Naming:
 
 - event names use business past tense;
 - examples: `EventCreated`, `ParticipantCreated`, `WishCreated`, `WishUpdated`, `ReservationCreated`, `ReservationContributorAdded`.
+
+Domain event files use kebab-case names matching the event name, for example `wish-created.ts` or `reservation-contributor-added.ts`.
 
 Event metadata:
 
@@ -394,6 +400,8 @@ Projection tables are named after the read surface and use snake_case with the `
 
 Domain event handler classes are named as reactions with the `<DoSomething>On<EventName>` shape, for example `UpdateEventWishesOnWishCreated` or `UpdateParticipantWishlistOnWishDeleted`.
 
+Domain event handler files use kebab-case names matching the reaction name, for example `update-event-wishes-on-wish-created.ts`.
+
 Visibility-sensitive read models encode visibility at projection time. Query handlers read already-safe projection rows and must not rely on last-mile filtering to hide Purchase Coordination.
 
 Rules:
@@ -422,7 +430,7 @@ The `AsyncEventBus` uses event-specific middleware. It dispatches events sequent
 
 Projection handlers are resolved through explicit configuration mappings from domain event class to projection handler class.
 
-Domain events are not durable until an outbox or equivalent durable publication mechanism is introduced.
+The current event publication mechanism is in-process and non-durable.
 
 Known tradeoff:
 
@@ -437,9 +445,7 @@ That tradeoff is accepted for the current architecture and should be revisited w
 
 Command endpoints return command-side results only.
 
-After a successful command, clients must re-query the relevant read model if they need the updated view. Because projections are asynchronous, the updated read model may appear after a short delay.
-
-Frontend flows should account for this with pending state, revalidation, or bounded polling where needed.
+After a successful command, clients must account for projection lag before assuming the updated read model is visible. The concrete refresh strategy is selected by the frontend flow.
 
 ## 15. Repositories
 
@@ -447,7 +453,7 @@ Write-side repository interfaces live in `server/src/domain/repositories`.
 
 Repository implementations live in `server/src/infrastructure/repositories` and use `packages/db`.
 
-Repositories reconstruct domain entities with `Entity.rehydrate(...)`.
+Repositories reconstruct domain entities with rehydration methods.
 Repositories return `null` when data is missing. Command handlers translate missing data into typed domain `NotFound` errors.
 
 Read-side query handlers do not use repositories.
@@ -465,6 +471,8 @@ Domain value objects and temporal types are converted at infrastructure boundari
 ## 17. Errors
 
 Business errors are typed classes and are transport-agnostic.
+
+Business error classes use the `*Error` suffix. Files use kebab-case names matching the class role, for example `wish-not-found-error.ts`.
 
 Application and domain code throw typed business errors for expected business-rule, not-found, and conflict cases. Boundary validation errors are handled by presentation validation.
 
@@ -503,6 +511,8 @@ Validation converts untrusted external input into trusted application input. It 
 The presentation layer is HTTP-only.
 
 Presentation uses Resource classes as the HTTP boundary. Fastify route files register URLs and delegate to resource methods.
+
+Resource classes use the `*Resource` suffix. Files use kebab-case names matching the class role, for example `wish-resource.ts`.
 
 Resources:
 
