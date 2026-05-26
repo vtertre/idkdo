@@ -488,7 +488,21 @@ Resources:
 
 Resources and routes must not access Drizzle directly and must not contain domain rules.
 
-## 18. Frontend Architecture
+## 18. Identity And Permissions
+
+idkdo uses lightweight selected Participant identity, not user authentication.
+
+For API requests that need actor or viewer context, the HTTP resource reads `X-Participant-Id` and includes it when constructing the command or query. Command and query handlers do not read HTTP headers directly.
+
+The selected Participant id is treated as untrusted input. Before executing Event-scoped behavior, handlers must verify that the selected Participant belongs to the relevant Event.
+
+Commands receive an actor Participant id when they mutate Event-scoped state. Queries receive a viewer Participant id when their read model depends on the selected Participant perspective. Actor/viewer identity is explicit in commands and queries; do not use implicit request context for authorization.
+
+Permission rules for mutations are enforced in command handlers through domain policies and business errors. Purchase Coordination visibility is enforced through projections and API read models, not by frontend code.
+
+The frontend may persist selected Participant identity for convenience, scoped by Event id, but this state is never trusted as authorization by the server.
+
+## 19. Frontend Architecture
 
 The Web UI is an Angular Progressive Web App using modern Angular patterns.
 
@@ -512,7 +526,7 @@ After successful command requests, frontend flows must account for projection la
 
 The service worker caches static application assets only. It must not cache REST API responses containing Event, Participant, Wish, Reservation, Contributor, or Purchase Coordination data.
 
-## 19. Testing
+## 20. Testing
 
 Tests should follow the architecture boundaries and focus on the risk of the layer under test.
 
