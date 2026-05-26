@@ -436,7 +436,17 @@ Repositories return `null` when data is missing. Command handlers translate miss
 
 Read-side query handlers do not use repositories.
 
-## 15. Errors
+## 15. Database Boundary
+
+`packages/db` owns Drizzle schema definitions, migrations, projection tables, and database client helpers.
+
+Database schema uses PostgreSQL-native types where appropriate, including `uuid` for ids and `timestamptz` for technical timestamps.
+
+Domain value objects and temporal types are converted at infrastructure boundaries. Repositories convert between domain entities/value objects and database rows. Projection handlers convert between domain events and projection table rows.
+
+`packages/db` does not contain domain entities, command/query handlers, business policies, or API DTOs. Projection tables are persistence artifacts managed by `packages/db`, even when their API read model DTOs live in `packages/shared`.
+
+## 16. Errors
 
 Business errors are typed classes and are transport-agnostic.
 
@@ -460,7 +470,7 @@ Examples:
 - `CannotAddWisherAsContributorError`
 - `ReservationAlreadyExistsError`
 
-## 16. Validation Boundary
+## 17. Validation Boundary
 
 Zod validation is used at external boundaries.
 
@@ -472,7 +482,7 @@ Domain entities, value objects, policies, commands, queries, and domain events d
 
 Validation converts untrusted external input into trusted application input. It does not replace business invariants.
 
-## 17. Presentation
+## 18. Presentation
 
 The presentation layer is HTTP-only.
 
@@ -488,7 +498,7 @@ Resources:
 
 Resources and routes must not access Drizzle directly and must not contain domain rules.
 
-## 18. Identity And Permissions
+## 19. Identity And Permissions
 
 idkdo uses lightweight selected Participant identity, not user authentication.
 
@@ -502,7 +512,7 @@ Permission rules for mutations are enforced in command handlers through domain p
 
 The frontend may persist selected Participant identity for convenience, scoped by Event id, but this state is never trusted as authorization by the server.
 
-## 19. Frontend Architecture
+## 20. Frontend Architecture
 
 The Web UI is an Angular Progressive Web App using modern Angular patterns.
 
@@ -526,7 +536,7 @@ After successful command requests, frontend flows must account for projection la
 
 The service worker caches static application assets only. It must not cache REST API responses containing Event, Participant, Wish, Reservation, Contributor, or Purchase Coordination data.
 
-## 20. Testing
+## 21. Testing
 
 Tests should follow the architecture boundaries and focus on the risk of the layer under test.
 
