@@ -15,6 +15,7 @@ Before making changes, read in this order:
 1. `docs/GOAL.md`
 2. `docs/PRODUCT.md`
 3. `docs/SPEC-implementation.md`
+4. `ARCHITECTURE.md` when scaffolding, coding, or changing technical structure
 
 `docs/SPEC.md` is long-horizon product context.
 
@@ -22,7 +23,8 @@ Before making changes, read in this order:
 
 ## 3. Repo Map
 
-- `docs/`: operational and product docs
+- `docs/`: product, implementation, and design docs
+- `ARCHITECTURE.md`: top-level technical map and entry point to detailed design docs
 
 ## 4. Dev Setup
 
@@ -47,6 +49,10 @@ The application is not scaffolded yet.
 ## 8. Verification Before Hand-off
 
 Verification commands are not defined yet.
+
+Until they exist, say that no command exists and verify documentation coherence by inspecting the diff.
+
+Once verification commands are introduced, run the documented cheap default verification before hand-off, and run broader PR-ready verification before creating a PR.
 
 ## 9. API Expectations
 
@@ -74,6 +80,12 @@ Treat repository files as the durable source of truth.
 If repeated failure reveals missing guidance, improve the harness: docs, tests, scripts, checks, examples, or review guidance.
 
 Keep `AGENTS.md` short; put durable detail in the appropriate source document.
+
+Stop and report a blocker when:
+
+- product rules conflict and `docs/SPEC-implementation.md` does not resolve the conflict;
+- required verification is missing or failing for reasons unrelated to the current change;
+- the requested change would require inventing architecture outside `ARCHITECTURE.md` or the V1 spec.
 
 ## 12. Pull Request Requirements
 

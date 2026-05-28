@@ -67,6 +67,7 @@ These decisions close open questions from `SPEC.md` for V1.
 
 - `server/` — Fastify REST API and backend application.
 - `web/` — Angular Progressive Web App.
+- `packages/patterns/` — framework-independent DDD and CQRS base interfaces/classes.
 - `packages/db/` — Drizzle schema, migrations, and database client helpers.
 - `packages/shared/` — shared API contracts, schemas, and types when useful.
 
@@ -74,7 +75,7 @@ V1 uses a simple pnpm workspace for the monorepo.
 
 The Web UI communicates with the server through the REST API.
 
-The server owns persistence, domain behavior, visibility rules, and permission enforcement.
+The server owns persistence, domain behavior, visibility rules, permission enforcement, and projection updates.
 
 ## 5.2 Data Stores
 
@@ -174,6 +175,8 @@ A Participant can create Wishes only for themselves.
 
 A Participant can edit and delete only their own Wishes.
 
+Deleting a Wish deletes its Reservation and Reservation Contributors in the same operation.
+
 A Participant can view:
 
 - their own Wishes;
@@ -198,6 +201,8 @@ A Participant can add another Participant as a Contributor to an existing Reserv
 A Participant does not need to already be a Contributor to add another Participant as a Contributor.
 
 A Contributor can leave a Reservation.
+
+Any Participant who can view a Reservation can remove a Contributor from it. This includes removing themselves or correcting another Contributor.
 
 When the last Contributor leaves a Reservation, the Reservation is deleted.
 
@@ -352,12 +357,12 @@ Each milestone is a vertical product slice unless explicitly stated otherwise.
 Deliver a runnable monorepo foundation with no product feature beyond a working application shell.
 
 - pnpm workspace.
-- `server/`, `web/`, `packages/db/`, `packages/shared/`.
+- `server/`, `web/`, `packages/patterns/`, `packages/db/`, `packages/shared/`.
 - Docker Compose PostgreSQL.
 - Drizzle setup and initial migration.
 - Fastify server bootstrap with healthcheck.
 - Angular PWA bootstrap with app manifest, service worker setup, and mobile-first application shell.
-- Root commands for local development and verification.
+- Root commands for local development, cheap default verification, and PR-ready verification.
 
 ### Milestone 2: Event Entry
 

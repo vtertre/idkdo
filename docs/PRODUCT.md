@@ -95,6 +95,6 @@ Do not:
 
 ## Further Detail
 
-Detailed functional behavior belongs in `SPEC.md`.
+Long-horizon functional behavior belongs in `SPEC.md`.
 
 The implementation contract for the current version belongs in `SPEC-implementation.md`.

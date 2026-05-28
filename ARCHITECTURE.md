@@ -1,178 +1,44 @@
 # idkdo Architecture
 
-## 1. Role
+## Role
 
-This document describes the current technical architecture of idkdo.
+This document is the top-level technical map for idkdo.
 
 Product intent belongs in `docs/GOAL.md` and `docs/PRODUCT.md`.
 Functional behavior and acceptance criteria belong in `docs/SPEC-implementation.md`.
-This document explains how the system is organized to implement that behavior.
+Detailed technical decisions belong in indexed design docs under `docs/design-docs/`.
 
-When the architecture changes, update this file in the same change.
+Update this file when domains, runtime components, package layering, or architectural invariants change. Do not use it as a full implementation manual.
 
-## 2. System Shape
+## Runtime Components
 
 idkdo is a pnpm workspace with these runtime components:
 
 - `web/` - Angular Progressive Web App.
 - `server/` - Fastify REST API and backend application.
 - `packages/patterns/` - framework-independent DDD and CQRS base interfaces/classes.
-- `packages/db/` - Drizzle schema, migrations, and database client helpers.
-- `packages/shared/` - internal shared library for API contracts, types, validators, constants, and path helpers when useful.
+- `packages/db/` - Drizzle schema, migrations, projection tables, and database helpers.
+- `packages/shared/` - shared API contracts, schemas, types, constants, and path helpers when useful.
 
 The Web UI communicates with the server through the REST API under `/api`.
-The server owns persistence, domain behavior, visibility rules, permission enforcement, and projection updates.
 
-## 3. Patterns And Shared Packages
+The server owns persistence, domain behavior, permission enforcement, visibility enforcement, and projection updates. The frontend renders server-provided read models and must not implement hidden Purchase Coordination rules.
 
-`packages/patterns` contains reusable architectural building blocks for the workspace. It must not contain idkdo product/domain concepts.
+## Package Layering
 
-It owns base DDD and CQRS abstractions:
+Stable package responsibilities:
 
-- command, query, event bus, handler, and handler registry interfaces;
-- entity, aggregate root, value object, UUID, domain event, domain error, and repository abstractions.
+- `packages/patterns/` contains reusable architectural abstractions only. It must not contain idkdo product/domain concepts and must not depend on Fastify, Angular, Awilix, Drizzle, PostgreSQL, or Zod.
+- `packages/shared/` contains API-facing contracts and validators shared between server and web. It must not contain projection table shapes or server-only infrastructure details.
+- `packages/db/` owns the canonical database schema, migrations, projection tables, and database client helpers. It must not contain domain entities, command/query handlers, business policies, or API DTOs.
+- `server/` owns backend application behavior, HTTP presentation, command/query handling, domain model, projections, infrastructure wiring, and error mapping.
+- `web/` owns browser UI, routing, client-side state, and PWA behavior.
 
-`packages/patterns` describes abstractions, not application wiring. It does not define idkdo commands, queries, domain events, entities, repositories, read models, or handlers.
+Implementation should introduce abstractions just in time. Keep names and dependency direction compatible with this map, but do not build unused framework surface.
 
-`packages/patterns` must not depend on Fastify, Angular, Awilix, Drizzle, PostgreSQL, or Zod.
+## Server Layering
 
-`packages/shared` is an internal library consumed by workspace applications through pnpm workspace dependencies.
-
-It should be structured as a small TypeScript package, not as an unstructured dump of cross-cutting files:
-
-```txt
-packages/shared/
-  package.json
-  tsconfig.json
-  CHANGELOG.md
-  src/
-    api.ts
-    constants.ts
-    index.ts
-    types/
-    validators/
-```
-
-Guidelines:
-
-- `types/` contains TypeScript interfaces and API-facing read model types.
-- `validators/` contains Zod schemas and input types inferred from those schemas.
-- Zod schemas live at application boundaries, not in the domain model.
-- API paths and shared constants should be centralized when multiple packages need them.
-
-API response DTOs and API-facing read model types live in `packages/shared`. Server query handlers return these shared DTO types, and the Web UI consumes the same types.
-
-Projection row types and projection table shapes are internal persistence details. They do not live in `packages/shared`.
-
-`packages/db` owns persistence schema, migrations, and database helpers. It may depend on `packages/shared` for stable shared constants or primitive shared types.
-
-## 4. Backend Architecture
-
-The backend uses Domain-Driven Design and CQRS.
-
-The current domain has one bounded context: gift coordination. The code is organized by architectural layer, not by independent feature modules, because Events, Participants, Wishes, Reservations, Contributors, and Purchase Coordination share one domain language and are tightly related.
-
-Target server layout:
-
-```txt
-server/src/
-  app.ts
-
-  configuration/
-
-  domain/
-    entities/
-    errors/
-    events/
-    policies/
-    repositories/
-
-  commands/
-    events/
-    participants/
-    wishes/
-    reservations/
-
-  queries/
-    events/
-    participants/
-    wishes/
-    reservations/
-
-  projections/
-
-  infrastructure/
-    cqrs/
-    event-bus/
-    projections/
-    repositories/
-
-  presentation/
-    http/
-      resources/
-      routes/
-```
-
-## 5. TypeScript Style
-
-Use classes and interfaces by default.
-
-Default style:
-
-- commands, queries, command handlers, query handlers, projection handlers, resources, and repository implementations use classes;
-- domain entities use immutable classes;
-- domain events use concrete classes implementing the patterns `DomainEvent` interface;
-- domain repository contracts and bus contracts use interfaces;
-- small pure domain policies and local helpers may use functions.
-
-Plain object types are acceptable for API DTOs, read models, schema-inferred types, and small local helper shapes. Do not use them for commands, queries, or domain events.
-
-## 6. Dependency Injection
-
-The server uses Awilix as its dependency injection container.
-
-Awilix is an infrastructure concern:
-
-- `domain/` must not import Awilix;
-- domain entities, policies, domain events, and domain errors must not know about the container;
-- command, query, and projection handlers receive dependencies through constructors;
-- handlers and repositories must not call `container.resolve(...)` themselves;
-- container configuration lives in `server/src/configuration`.
-
-The server uses `@fastify/awilix` to expose DI to the HTTP presentation layer.
-Presentation resources may be resolved by Awilix, but request-specific values must stay inside request handlers and be passed into commands or queries explicitly.
-
-`loadModules` is allowed for repetitive convention-based registration, such as handlers and resources. Critical runtime dependencies must be registered explicitly, including database access, logger, buses, transaction manager, and low-level adapters.
-
-Awilix strict mode and explicit lifetimes should be used. The intended lifetimes are:
-
-- resources: singleton stateless classes;
-- buses: singleton;
-- command handlers: transaction-scoped by default;
-- write-side repositories: transaction-scoped;
-- query handlers: singleton unless they need scoped dependencies;
-- projection handlers: singleton unless they need scoped dependencies.
-
-Command transactions are represented by explicit DI scopes. Avoid AsyncLocalStorage-based transaction context unless this decision is revisited.
-
-Command handlers are logically stateless, but they are transaction-scoped because their dependency graph includes transaction-scoped write repositories.
-
-## 7. Configuration
-
-Server application wiring lives under `server/src/configuration`.
-
-Configuration code is responsible for:
-
-- configuring Awilix and `@fastify/awilix`;
-- registering runtime dependencies;
-- loading handlers and resources when useful;
-- declaring command, query, and domain event handler mappings;
-- creating buses, registries, and middleware chains;
-- defining lifetimes and command transaction scopes.
-
-Command, query, and domain event mappings are explicit configuration because handlers are resolved by class or DI token in the appropriate runtime scope. The mapping must not depend on already-instantiated handler objects.
-
-## 8. Dependency Rules
+The server uses a DDD/CQRS shape with one bounded context for gift coordination.
 
 Allowed dependency direction:
 
@@ -199,381 +65,31 @@ routes -> business rules
 projection handlers -> write-side repositories
 ```
 
-`packages/db` owns the Drizzle schema, migrations, and database client helpers.
-`server/src/infrastructure` wires runtime implementations for repositories, buses, projection execution, and database access, but does not own the canonical schema.
+## Frontend Layering
 
-## 9. Commands
+The Web UI is an Angular PWA organized feature-first.
 
-Commands represent state-changing use cases.
-
-Commands are classes implementing the generic patterns `Command<TResult>` interface.
-
-```ts
-interface Command<TResult> {}
-```
-
-Command classes use the `*Command` suffix and command handler classes use the `*CommandHandler` suffix. Files use kebab-case names matching the class role, for example `create-wish-command.ts` and `create-wish-command-handler.ts`.
-
-The command handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and mappings belong in server configuration.
-
-Command handlers:
-
-- execute through the `CommandBus`;
-- orchestrate domain entities, policies, and write-side repositories;
-- return a tuple containing the command-side result and the domain events caused by the command;
-- do not return projection-backed read models;
-- do not import Fastify, HTTP request objects, Zod schemas, or Drizzle directly.
-
-The `CommandBus` is a port. The current implementation is an in-process command bus with command-specific middleware.
-
-The `CommandBus` caller receives only the command-side result. Domain events are internal to command execution and are published by command-bus middleware.
-
-Command handler shape:
-
-```ts
-interface CommandHandler<TCommand extends Command<TResult>, TResult> {
-  execute(command: TCommand): Promise<[TResult, DomainEvent[]]>;
-}
-```
-
-Command bus shape:
-
-```ts
-interface CommandBus {
-  execute<TResult>(command: Command<TResult>): Promise<TResult>;
-}
-```
-
-Each command execution owns one database transaction. Transaction handling is a command middleware responsibility. Domain events are published only after the command transaction commits successfully.
-
-If event publication fails after the transaction commits, the command is still considered successful. The bus logs the publication failure with domain event metadata and returns the command result.
-
-Command handlers are resolved through an explicit configuration mapping from command class to handler class. The mapping lives in `server/src/configuration`. Handlers do not need `handles()` metadata.
-
-Registries store handler classes or DI registration tokens, not handler instances. Command handlers are transaction-scoped and must be resolved inside the command execution scope.
-
-Command transaction flow:
-
-```txt
-CommandBus receives command instance
-  -> registry resolves command class to handler class
-  -> transaction middleware opens Drizzle transaction
-  -> command-specific Awilix child scope is created
-  -> transaction-bound database session is registered in that scope
-  -> command handler is resolved from that scope
-  -> write repositories are resolved from that same scope
-  -> handler executes
-  -> transaction commits
-  -> domain events are published
-  -> command-side result is returned
-```
-
-Write repositories must not fall back to the global database client. If a write repository is resolved without a transaction-bound database session, dependency resolution must fail.
-
-## 10. Queries
-
-Queries represent read use cases.
-
-Queries are classes implementing the generic patterns `Query<TResult>` interface.
-
-```ts
-interface Query<TResult> {}
-```
-
-Query classes use the `*Query` suffix and query handler classes use the `*QueryHandler` suffix. Files use kebab-case names matching the class role, for example `list-event-wishes-query.ts` and `list-event-wishes-query-handler.ts`.
-
-The query handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and mappings belong in server configuration.
-
-Query handlers:
-
-- execute through the `QueryBus`;
-- return API-shaped read models;
-- read from dedicated persisted projection tables;
-- do not use write-side repositories;
-- do not rebuild domain aggregates;
-- do not import Fastify or HTTP request objects.
-
-The query side should stay close to SQL. Query handlers should depend on a read-side database port rather than on write-side repository interfaces.
-
-The `QueryBus` is a port. The current implementation is an in-process query bus with query-specific middleware.
-
-Query bus shape:
-
-```ts
-interface QueryBus {
-  execute<TResult>(query: Query<TResult>): Promise<TResult>;
-}
-```
-
-Query handlers are resolved through an explicit configuration mapping from query class to handler class.
-
-## 11. Domain Model
-
-Domain entities are immutable TypeScript classes.
-
-Core domain shapes:
-
-```ts
-interface Entity<TId = Uuid> {
-  readonly id: TId;
-}
-
-abstract class BaseEntity<TId = Uuid> implements Entity<TId> {
-  protected constructor(public readonly id: TId) {}
-}
-
-interface AggregateRoot<TId = Uuid> extends Entity<TId> {}
-
-abstract class BaseAggregateRoot<TId = Uuid>
-  extends BaseEntity<TId>
-  implements AggregateRoot<TId> {}
-```
-
-`AggregateRoot` marks aggregate boundaries. `BaseAggregateRoot` does not store unpublished domain events and does not expose `record()` or `pullDomainEvents()`.
-
-The domain uses one shared `Uuid` value object for entity ids and domain event ids. Do not create one id class per entity by default.
-
-`Uuid.random()` creates UUIDs through the platform crypto implementation. Domain factory methods may create their own ids and timestamps internally.
-
-Technical timestamps in the domain use `Temporal.Instant`. API contracts serialize timestamps as ISO strings, and PostgreSQL stores them as `timestamptz`.
-
-Domain value objects are used for business scalar values with invariants. Initial idkdo value objects include `EventName`, `ParticipantName`, and `WishContent`.
-
-Entities use these value objects instead of raw strings. API DTOs and read models may still expose these values as strings.
-
-Rules:
-
-- Constructors are private.
-- Domain factory methods create new domain state and return `[entity, domainEvents]`.
-- Rehydration methods rebuild persisted domain state and return the entity without events.
-- State-changing methods return `[updatedEntity, domainEvents]`.
-- Entities do not store unpublished events internally.
-- Cross-entity permission and visibility rules live in pure domain policy functions.
-
-Example shape:
-
-```ts
-const [wish, events] = Wish.create(input);
-const [updatedWish, updateEvents] = wish.updateContent(input);
-const existingWish = Wish.rehydrate(row);
-```
-
-The domain does not depend on Zod. Domain invariants are enforced with domain code, value objects, policies, and typed domain errors.
-
-## 12. Domain Events
-
-Domain events represent business facts that already happened. Domain events are concrete classes implementing the patterns `DomainEvent` interface.
-
-Naming:
-
-- event names use business past tense;
-- examples: `EventCreated`, `ParticipantCreated`, `WishCreated`, `WishUpdated`, `ReservationCreated`, `ReservationContributorAdded`.
-
-Domain event files use kebab-case names matching the event name, for example `wish-created.ts` or `reservation-contributor-added.ts`.
-
-Event metadata:
-
-```ts
-interface DomainEvent {
-  readonly domainEventId: Uuid;
-  readonly occurredAt: Temporal.Instant;
-  readonly aggregateType: string;
-  readonly aggregateId: Uuid;
-}
-```
-
-`domainEventId` is the technical event identifier. `eventId` remains reserved for the product Event id.
-
-Domain events carry enough immutable facts for projections to update read models without consulting write-side repositories. They do not carry complete aggregate snapshots by default.
-
-The domain event handler registry is part of the CQRS abstraction. Its interface belongs in `packages/patterns`; concrete registry implementation and event-to-handler mappings belong in server configuration.
-
-## 13. Projections
-
-Projections are persisted from the start.
-
-Projection handlers consume domain events and update dedicated projection tables. Query handlers read from those projection tables.
-
-Persisted projections are designed by read surface rather than as a normalized mirror of the write model. Concrete projection schemas are introduced with the read surface they support.
-
-Projection tables are named after the read surface and use snake_case with the `_projection` suffix, for example `event_wishes_projection` or `participant_wishlist_projection`.
-
-Domain event handler classes are named as reactions with the `<DoSomething>On<EventName>` shape, for example `UpdateEventWishesOnWishCreated` or `UpdateParticipantWishlistOnWishDeleted`.
-
-Domain event handler files use kebab-case names matching the reaction name, for example `update-event-wishes-on-wish-created.ts`.
-
-Visibility-sensitive read models encode visibility at projection time. Query handlers read already-safe projection rows and must not rely on last-mile filtering to hide Purchase Coordination.
-
-Rules:
-
-- Projection handlers must not use write-side repositories.
-- Projection handlers may use their own projection tables or read-side database access.
-- Projection tables are part of the database schema managed by `packages/db`.
-- Projection lag is accepted as part of the architecture.
-- Tests should verify eventual consistency with bounded waiting, not exact timing.
-
-The `EventBus` is a port.
-
-Event bus shape:
-
-```ts
-interface EventBus {
-  publish(events: DomainEvent[]): Promise<void>;
-}
-```
-
-The current implementation is an `AsyncEventBus`. It accepts an ordered batch of domain events for asynchronous in-process dispatch and does not wait for projection handlers to complete.
-
-`EventBus.publish(...)` resolves according to the implementation's delivery guarantee. For `AsyncEventBus`, it resolves after the batch is accepted for asynchronous dispatch, not after projections are up to date.
-
-The `AsyncEventBus` uses event-specific middleware. It dispatches events sequentially in publication order. Projection handler failures are logged with the domain event metadata and handler name. A projection handler failure does not block dispatch of subsequent events.
-
-Projection handlers are resolved through explicit configuration mappings from domain event class to projection handler class.
-
-The current event publication mechanism is in-process and non-durable.
-
-Known tradeoff:
-
-```txt
-If a command succeeds and the process crashes before event publication or projection handling completes,
-projection tables may become stale.
-```
-
-That tradeoff is accepted for the current architecture and should be revisited when reliability needs exceed it.
-
-## 14. Eventual Consistency
-
-Command endpoints return command-side results only.
-
-After a successful command, clients must account for projection lag before assuming the updated read model is visible. The concrete refresh strategy is selected by the frontend flow.
-
-## 15. Repositories
-
-Write-side repository interfaces live in `server/src/domain/repositories`.
-
-Repository implementations live in `server/src/infrastructure/repositories` and use `packages/db`.
-
-Repositories reconstruct domain entities with rehydration methods.
-Repositories return `null` when data is missing. Command handlers translate missing data into typed domain `NotFound` errors.
-
-Read-side query handlers do not use repositories.
-
-## 16. Database Boundary
-
-`packages/db` owns Drizzle schema definitions, migrations, projection tables, and database client helpers.
-
-Database schema uses PostgreSQL-native types where appropriate, including `uuid` for ids and `timestamptz` for technical timestamps.
-
-Domain value objects and temporal types are converted at infrastructure boundaries. Repositories convert between domain entities/value objects and database rows. Projection handlers convert between domain events and projection table rows.
-
-`packages/db` does not contain domain entities, command/query handlers, business policies, or API DTOs. Projection tables are persistence artifacts managed by `packages/db`, even when their API read model DTOs live in `packages/shared`.
-
-## 17. Errors
-
-Business errors are typed classes and are transport-agnostic.
-
-Business error classes use the `*Error` suffix. Files use kebab-case names matching the class role, for example `wish-not-found-error.ts`.
-
-Application and domain code throw typed business errors for expected business-rule, not-found, and conflict cases. Boundary validation errors are handled by presentation validation.
-
-The HTTP presentation layer owns API error mapping. Resources and route-level error handlers map known business errors and validation errors to the API error contract.
-
-API error responses use a consistent JSON shape. The exact list of error codes grows with implementation, but the shape must remain stable once introduced.
-
-Routes must not leak raw infrastructure errors, stack traces, SQL errors, or unvalidated exception messages to clients.
-
-Examples:
-
-- `EventNotFoundError`
-- `ParticipantNotFoundError`
-- `WishNotFoundError`
-- `ReservationNotFoundError`
-- `BlankWishContentError`
-- `CannotEditAnotherParticipantWishError`
-- `CannotReserveOwnWishError`
-- `CannotAddWisherAsContributorError`
-- `ReservationAlreadyExistsError`
-
-## 18. Validation Boundary
-
-Zod validation is used at external boundaries.
-
-HTTP resources validate route params, query params, headers, and request bodies before constructing commands or queries. Environment variables are validated during server startup before the application begins accepting traffic.
-
-Shared API request and response schemas live in `packages/shared` when they are consumed by both server and web. Server-only infrastructure schemas stay in `server`.
-
-Domain entities, value objects, policies, commands, queries, and domain events do not depend on Zod. The domain still enforces its own invariants through value objects, constructors, factories, and business errors.
-
-Validation converts untrusted external input into trusted application input. It does not replace business invariants.
-
-## 19. Presentation
-
-The presentation layer is HTTP-only.
-
-Presentation uses Resource classes as the HTTP boundary. Fastify route files register URLs and delegate to resource methods.
-
-Resource classes use the `*Resource` suffix. Files use kebab-case names matching the class role, for example `wish-resource.ts`.
-
-Resources:
-
-- parse and validate route params, query params, headers, and bodies;
-- construct commands or queries;
-- execute them through the relevant bus;
-- map successful results to HTTP responses;
-- map typed errors to consistent HTTP errors.
-
-Resources and routes must not access Drizzle directly and must not contain domain rules.
-
-## 20. Identity And Permissions
-
-idkdo uses lightweight selected Participant identity, not user authentication.
-
-For API requests that need actor or viewer context, the HTTP resource reads `X-Participant-Id` and includes it when constructing the command or query. Command and query handlers do not read HTTP headers directly.
-
-The selected Participant id is treated as untrusted input. Before executing Event-scoped behavior, handlers must verify that the selected Participant belongs to the relevant Event.
-
-Commands receive an actor Participant id when they mutate Event-scoped state. Queries receive a viewer Participant id when their read model depends on the selected Participant perspective. Actor/viewer identity is explicit in commands and queries; do not use implicit request context for authorization.
-
-Permission rules for mutations are enforced in command handlers through domain policies and business errors. Purchase Coordination visibility is enforced through projections and API read models, not by frontend code.
-
-The frontend may persist selected Participant identity for convenience, scoped by Event id, but this state is never trusted as authorization by the server.
-
-## 21. Frontend Architecture
-
-The Web UI is an Angular Progressive Web App using modern Angular patterns.
-
-Frontend code is organized feature-first. Feature folders own their routes, page components, feature components, state, and repositories when those pieces are specific to the feature.
-
-Angular standalone components are the default. Feature routes are lazy-loaded where they represent distinct user-facing surfaces.
-
-Components do not call `HttpClient` directly. They use frontend repositories. Frontend repositories are client-side data access adapters, not DDD repositories, and do not enforce domain invariants.
-
-Frontend repositories are placed by reuse scope:
-
-- `core/` for app-wide concepts;
-- `features/shared/` for repositories shared across multiple features;
-- inside a feature when dedicated to that feature.
-
-The app starts without a third-party state management library. State uses native Angular primitives: services, signals, computed values, effects, route params, and forms. State stays as close as possible to the feature that owns it and is promoted upward only when multiple features need it.
-
-The frontend does not implement Purchase Coordination visibility rules. It renders server-provided read models whose visibility has already been enforced by projections and API queries.
-
-After successful command requests, frontend flows must account for projection lag. The refresh strategy is chosen per feature flow and may use re-query, pending state, bounded retry, or optimistic local state. Server projections remain authoritative for persisted read models.
+Frontend components should use frontend repositories or feature services for API access. Components should not call `HttpClient` directly and should not enforce domain invariants. Visibility-sensitive behavior must come from server-filtered read models.
 
 The service worker caches static application assets only. It must not cache REST API responses containing Event, Participant, Wish, Reservation, Contributor, or Purchase Coordination data.
 
-## 22. Testing
+## Cross-Cutting Invariants
 
-Tests should follow the architecture boundaries and focus on the risk of the layer under test.
+- `X-Participant-Id` is lightweight selected Participant identity, not authentication.
+- Server handlers treat selected Participant identity as untrusted input and verify Event membership before applying visibility or mutation rules.
+- Zod validation belongs at external boundaries. Domain invariants belong in domain code.
+- HTTP errors use the API contract in `docs/SPEC-implementation.md`.
+- PostgreSQL is the persistence target; Drizzle owns schema and migrations.
+- Tests and future structural checks should enforce dependency direction and anti-spoil behavior.
 
-Domain tests are pure and do not use database, HTTP, Fastify, Awilix, or Zod. They cover entities, value objects, policies, domain events, and business errors.
+## Design Docs
 
-Command handler tests verify application orchestration with repository test doubles by default. Database-backed tests are used when transaction behavior, repository implementations, or integration with Drizzle/PostgreSQL is the subject.
+Detailed architectural decisions are catalogued in `docs/design-docs/index.md`.
 
-Projection handler tests verify that domain events update persisted projection tables correctly, including visibility-sensitive read models. Eventual consistency tests may use bounded waiting, but should not assert exact timing.
+Read design docs only when a task touches that area:
 
-API integration tests verify route wiring, Zod validation, identity headers, error mapping, and permission enforcement.
-
-Configuration tests verify that DI registration, command/query/event handler mappings, and transaction-scoped dependencies resolve correctly.
-
-End-to-end tests cover the core gift coordination flow and anti-spoil behavior.
+- Backend DDD/CQRS boundaries: `docs/design-docs/backend-ddd-cqrs.md`
+- Design doc principles: `docs/design-docs/core-beliefs.md`
+- Projections and event bus: `docs/design-docs/projections-and-event-bus.md`
+- Workspace packages: `docs/design-docs/workspace-packages.md`
+- Frontend architecture: `docs/design-docs/frontend-architecture.md`
