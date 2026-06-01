@@ -1,0 +1,15 @@
+{
+  "name": "idkdo",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.5.0",
+  "scripts": {
+    "build": "pnpm -r --if-present run build",
+    "dev": "pnpm -r --parallel --if-present run dev",
+    "lint": "pnpm -r --if-present run lint",
+    "test": "pnpm -r --if-present run test",
+    "verify": "node scripts/verify-docs.mjs && git diff --check",
+    "verify:diff": "git diff --check",
+    "verify:docs": "node scripts/verify-docs.mjs"
+  }
+}
