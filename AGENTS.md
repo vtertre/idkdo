@@ -48,11 +48,11 @@ The application is not scaffolded yet.
 
 ## 8. Verification Before Hand-off
 
-Verification commands are not defined yet.
+Run `node scripts/verify-docs.mjs` and `git diff --check` before hand-off.
 
-Until they exist, say that no command exists and verify documentation coherence by inspecting the diff.
+Until broader application verification exists, this is the cheap default verification command.
 
-Once verification commands are introduced, run the documented cheap default verification before hand-off, and run broader PR-ready verification before creating a PR.
+When broader verification commands are introduced, run the documented cheap default verification before hand-off, and run broader PR-ready verification before creating a PR.
 
 ## 9. API Expectations
 
@@ -101,4 +101,6 @@ A change is done when:
 
 1. it matches `docs/SPEC-implementation.md` when applicable;
 2. existing docs remain coherent;
-3. PR description follows `.github/PULL_REQUEST_TEMPLATE.md` when a PR is created.
+3. `node scripts/verify-docs.mjs` passes;
+4. `git diff --check` passes;
+5. PR description follows `.github/PULL_REQUEST_TEMPLATE.md` when a PR is created.
