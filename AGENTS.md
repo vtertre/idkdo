@@ -25,6 +25,7 @@ Before making changes, read in this order:
 
 - `docs/`: product, implementation, and design docs
 - `ARCHITECTURE.md`: top-level technical map and entry point to detailed design docs
+- `packages/shared/`: shared package placeholder for future API contracts, schemas, and types
 
 ## 4. Dev Setup
 
