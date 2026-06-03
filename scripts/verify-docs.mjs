@@ -10,7 +10,7 @@ const requiredFiles = [
   "ARCHITECTURE.md",
   "README.md",
   ".github/PULL_REQUEST_TEMPLATE.md",
-  ".github/workflows/verify-docs.yml",
+  ".github/workflows/ci.yml",
   "docs/GOAL.md",
   "docs/PRODUCT.md",
   "docs/SPEC.md",
@@ -195,13 +195,18 @@ function verifyPrTemplate() {
 }
 
 function verifyWorkflowCommand() {
-  assertContains(".github/workflows/verify-docs.yml", "node scripts/verify-docs.mjs");
-  assertContains(".github/workflows/verify-docs.yml", "git diff --check");
+  assertContains(".github/workflows/ci.yml", "pnpm install --frozen-lockfile");
+  assertContains(".github/workflows/ci.yml", "pnpm build");
+  assertContains(".github/workflows/ci.yml", "pnpm lint");
+  assertContains(".github/workflows/ci.yml", "pnpm test");
+  assertContains(".github/workflows/ci.yml", "pnpm verify");
 }
 
 function verifyAgentCommand() {
-  assertContains("AGENTS.md", "node scripts/verify-docs.mjs");
-  assertContains("AGENTS.md", "git diff --check");
+  assertContains("AGENTS.md", "pnpm lint");
+  assertContains("AGENTS.md", "pnpm test");
+  assertContains("AGENTS.md", "pnpm build");
+  assertContains("AGENTS.md", "Docs/diff verification is a CI job");
 }
 
 function verifyMarkdownLinks() {
