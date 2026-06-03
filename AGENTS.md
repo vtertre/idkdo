@@ -53,11 +53,30 @@ The application is not scaffolded yet.
 
 ## 8. Verification Before Hand-off
 
-Run `node scripts/verify-docs.mjs` and `git diff --check` before hand-off.
+Default local/agent verification path:
 
-Until broader application verification exists, this is the cheap default verification command.
+```sh
+pnpm lint
+pnpm test
+```
 
-When broader verification commands are introduced, run the documented cheap default verification before hand-off, and run broader PR-ready verification before creating a PR.
+This is the cheap default for normal issue work and runs the available workspace lint and test scripts. Do not default to repo-wide build or docs verification when a narrower check is enough to prove the change.
+
+Docs/diff verification is a CI job. Run it locally when your change touches documentation or the harness:
+
+```sh
+pnpm verify
+```
+
+Run this full check before claiming repo work done in a PR-ready hand-off, or when the change scope is broad enough that targeted checks are not sufficient:
+
+```sh
+pnpm lint
+pnpm test
+pnpm build
+```
+
+If anything cannot be run, explicitly report what was not run and why.
 
 ## 9. API Expectations
 
@@ -102,10 +121,10 @@ Do not craft ad-hoc PR bodies.
 
 The application is not scaffolded yet, so this section is intentionally minimal.
 
-A change is done when:
+A change is done when all are true:
 
-1. it matches `docs/SPEC-implementation.md` when applicable;
-2. existing docs remain coherent;
-3. `node scripts/verify-docs.mjs` passes;
-4. `git diff --check` passes;
-5. PR description follows `.github/PULL_REQUEST_TEMPLATE.md` when a PR is created.
+1. Behavior matches `docs/SPEC-implementation.md` when applicable.
+2. Lint, tests, and build pass, or any skipped check is documented with the reason.
+3. Contracts stay synced across `packages/db`, `packages/shared`, `server`, and `web` when touched.
+4. Docs are updated when behavior, commands, architecture, or expectations change.
+5. PR description follows `.github/PULL_REQUEST_TEMPLATE.md` with all sections filled when a PR is created.
