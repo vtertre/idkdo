@@ -25,6 +25,10 @@ Before making changes, read in this order:
 
 - `docs/`: product, implementation, and design docs
 - `ARCHITECTURE.md`: top-level technical map and entry point to detailed design docs
+- `server/`: Fastify REST API and backend application
+- `web/`: Angular Progressive Web App
+- `packages/patterns/`: framework-independent DDD and CQRS base interfaces/classes
+- `packages/db/`: Drizzle schema, migrations, and database helpers
 - `packages/shared/`: shared package placeholder for future API contracts, schemas, and types
 
 ## 4. Dev Setup

@@ -11,5 +11,8 @@
     "verify": "node scripts/verify-docs.mjs && git diff --check",
     "verify:diff": "git diff --check",
     "verify:docs": "node scripts/verify-docs.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }
