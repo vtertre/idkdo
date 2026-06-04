@@ -57,6 +57,7 @@ The application is not scaffolded yet.
 Default local/agent verification path:
 
 ```sh
+pnpm typecheck
 pnpm lint
 pnpm test
 ```
@@ -72,6 +73,7 @@ pnpm verify
 Run this full check before claiming repo work done in a PR-ready hand-off, or when the change scope is broad enough that targeted checks are not sufficient:
 
 ```sh
+pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build

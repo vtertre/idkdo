@@ -12,6 +12,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "tsc -p tsconfig.json --noEmit",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",

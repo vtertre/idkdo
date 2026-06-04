@@ -198,12 +198,14 @@ function verifyPrTemplate() {
 function verifyWorkflowCommand() {
   assertContains(".github/workflows/ci.yml", "pnpm install --frozen-lockfile");
   assertContains(".github/workflows/ci.yml", "pnpm build");
+  assertContains(".github/workflows/ci.yml", "pnpm typecheck");
   assertContains(".github/workflows/ci.yml", "pnpm lint");
   assertContains(".github/workflows/ci.yml", "pnpm test");
   assertContains(".github/workflows/ci.yml", "pnpm verify");
 }
 
 function verifyAgentCommand() {
+  assertContains("AGENTS.md", "pnpm typecheck");
   assertContains("AGENTS.md", "pnpm lint");
   assertContains("AGENTS.md", "pnpm test");
   assertContains("AGENTS.md", "pnpm build");
