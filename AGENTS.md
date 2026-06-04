@@ -15,7 +15,8 @@ Before making changes, read in this order:
 1. `docs/GOAL.md`
 2. `docs/PRODUCT.md`
 3. `docs/SPEC-implementation.md`
-4. `ARCHITECTURE.md` when scaffolding, coding, or changing technical structure
+4. `docs/DATABASE.md` when working with local PostgreSQL, Drizzle, or database commands
+5. `ARCHITECTURE.md` when scaffolding, coding, or changing technical structure
 
 `docs/SPEC.md` is long-horizon product context.
 

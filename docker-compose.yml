@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: idkdo
+      POSTGRES_USER: idkdo
+      POSTGRES_PASSWORD: idkdo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U idkdo -d idkdo"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    ports:
+      - "5432:5432"
+    volumes:
+      - idkdo_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  idkdo_postgres_data:
+    name: idkdo_postgres_data
