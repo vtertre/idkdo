@@ -11,8 +11,8 @@
     "db:migrate": "pnpm --filter @idkdo/db run db:migrate",
     "db:up": "docker compose up -d postgres",
     "dev": "pnpm -r --parallel --if-present run dev",
-    "lint": "pnpm -r --if-present run lint",
-    "test": "pnpm -r --if-present run test",
+    "lint": "node scripts/verify-workspace-scripts.mjs lint && pnpm -r run lint",
+    "test": "node scripts/verify-workspace-scripts.mjs test && pnpm -r run test",
     "verify": "node scripts/verify-docs.mjs && git diff --check",
     "verify:diff": "git diff --check",
     "verify:docs": "node scripts/verify-docs.mjs"

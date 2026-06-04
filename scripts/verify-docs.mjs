@@ -17,6 +17,7 @@ const requiredFiles = [
   "docs/SPEC-implementation.md",
   "docs/design-docs/index.md",
   "scripts/verify-docs.mjs",
+  "scripts/verify-workspace-scripts.mjs",
 ];
 
 const requiredPrSections = [
