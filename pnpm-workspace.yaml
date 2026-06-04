@@ -2,3 +2,7 @@ packages:
   - server
   - web
   - packages/*
+# drizzle-kit pulls esbuild transitively; pnpm requires explicit approval for
+# esbuild's native binary install script.
+allowBuilds:
+  esbuild: true

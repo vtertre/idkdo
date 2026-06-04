@@ -57,10 +57,14 @@ docker compose down -v
 
 ```sh
 pnpm db:up
+DATABASE_URL=postgres://idkdo:idkdo@localhost:5432/idkdo pnpm db:generate
+DATABASE_URL=postgres://idkdo:idkdo@localhost:5432/idkdo pnpm db:migrate
 pnpm db:logs
 pnpm db:down
 ```
 
 `pnpm db:up` starts PostgreSQL in the background.
+`pnpm db:generate` generates Drizzle migrations from `packages/db/src/schema.ts`.
+`pnpm db:migrate` applies Drizzle migrations through `packages/db/drizzle.config.ts`.
 `pnpm db:logs` tails PostgreSQL logs.
 `pnpm db:down` stops the Compose services without deleting the database volume.
