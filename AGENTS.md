@@ -15,8 +15,9 @@ Before making changes, read in this order:
 1. `docs/GOAL.md`
 2. `docs/PRODUCT.md`
 3. `docs/SPEC-implementation.md`
-4. `docs/DATABASE.md` when working with local PostgreSQL, Drizzle, or database commands
-5. `ARCHITECTURE.md` when scaffolding, coding, or changing technical structure
+4. `docs/DEVELOPING.md`
+5. `docs/DATABASE.md` when working with local PostgreSQL, Drizzle, or database commands
+6. `ARCHITECTURE.md` when scaffolding, coding, or changing technical structure
 
 `docs/SPEC.md` is long-horizon product context.
 
@@ -34,7 +35,15 @@ Before making changes, read in this order:
 
 ## 4. Dev Setup
 
-The application is not scaffolded yet.
+```sh
+pnpm install
+pnpm db:up
+pnpm dev
+```
+
+The API starts on `http://localhost:3000`.
+
+Keep detailed local development commands in `docs/DEVELOPING.md`.
 
 ## 5. Core Engineering Rules
 
@@ -121,8 +130,6 @@ When creating a pull request, read and fill in every section of `.github/PULL_RE
 Do not craft ad-hoc PR bodies.
 
 ## 13. Definition Of Done
-
-The application is not scaffolded yet, so this section is intentionally minimal.
 
 A change is done when all are true:
 
