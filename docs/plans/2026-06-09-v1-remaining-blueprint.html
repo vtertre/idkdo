@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>idkdo V1 Remaining Build Blueprint</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d1117;
+      --text: #e6edf3;
+      --muted: #9da7b3;
+      --line: #263241;
+      --accent: #8ab4f8;
+      --accent-2: #9fe0c0;
+      --warn: #ffd28a;
+      --code-bg: #0b1220;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 36px 20px 72px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: #ffffff;
+      line-height: 1.2;
+      margin: 0 0 12px;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      margin-top: 36px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    h3 {
+      font-size: 1.05rem;
+      margin-top: 24px;
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    ul,
+    ol {
+      margin: 0 0 16px;
+      padding-left: 1.35rem;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px;
+      font-size: 0.95rem;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #151f2e;
+      color: #ffffff;
+    }
+
+    code {
+      color: #f2f6fa;
+      background: var(--code-bg);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 0.1rem 0.3rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      margin: 10px 0 22px;
+      padding: 16px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    pre code {
+      display: block;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      color: #edf4ff;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .meta {
+      color: var(--muted);
+      margin-bottom: 26px;
+    }
+
+    .note {
+      border-left: 3px solid var(--accent);
+      padding-left: 12px;
+      color: var(--muted);
+    }
+
+    .tag {
+      color: var(--accent-2);
+      font-weight: 600;
+    }
+
+    .warn {
+      color: var(--warn);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>idkdo V1 Remaining Build Blueprint</h1>
+  <p class="meta">Date: 2026-06-09. Scope: remaining V1 implementation from the current repository scaffold.</p>
+
+  <h2>Current Baseline</h2>
+  <p>The repository currently has a clean workspace, product and architecture docs, Docker Compose PostgreSQL, Drizzle setup, environment validation, a Fastify health endpoint, and placeholder package exports. Product behavior is still mostly ahead: the database has only a foundation <code>events</code> table with timestamps, the server has no product routes, and the web package is not yet an Angular PWA.</p>
+  <p>The remaining work must preserve these project rules:</p>
+  <ul>
+    <li>The V1 contract is <code>docs/SPEC-implementation.md</code>.</li>
+    <li>The server owns domain behavior, persistence, permission enforcement, visibility filtering, and projections.</li>
+    <li>The frontend renders server-filtered read models and must not hide Purchase Coordination as a substitute for backend enforcement.</li>
+    <li>Every selected-participant API request treats <code>X-Participant-Id</code> as untrusted and verifies Event membership.</li>
+    <li>The service worker may cache static assets only, not REST API responses with Event, Participant, Wish, Reservation, Contributor, or Purchase Coordination data.</li>
+  </ul>
+
+  <h2>Planning Correction</h2>
+  <p>The plan intentionally avoids horizontal setup tasks such as "write the whole database schema" or "write all shared API contracts." Schema, shared DTOs, domain objects, command/query infrastructure, projections, and frontend services are introduced just in time, inside the vertical slice that first uses them.</p>
+  <p class="note">A prompt should not add a table, contract, domain type, route, component, or service unless that same prompt wires it into tested product behavior or a directly consumed UI flow.</p>
+
+  <h2>Build Blueprint</h2>
+  <ol>
+    <li><span class="tag">Event creation:</span> add the first useful backend slice: Event name persistence, create Event API, just enough shared contract, just enough command handling, tests, and migration.</li>
+    <li><span class="tag">Event lookup:</span> add the Event share-link lookup path and any minimal projection/read model needed by that endpoint.</li>
+    <li><span class="tag">First browser-visible slice:</span> scaffold Angular only as far as needed to create an Event and open its shareable link.</li>
+    <li><span class="tag">Event entry:</span> add Participant list/create APIs and then wire the Event entry UI with local selected Participant persistence.</li>
+    <li><span class="tag">Wishlist:</span> add Wish persistence and own-wishlist API/UI in create/list form, then edit/delete behavior.</li>
+    <li><span class="tag">Event Wishes:</span> add Event-level Wishes browsing from selected Participant perspective, first without coordination, then extend the same read model as Reservation data appears.</li>
+    <li><span class="tag">Purchase Coordination:</span> add Reservation creation and Contributor management in separate vertical slices, each with API tests and UI wiring.</li>
+    <li><span class="tag">Release hardening:</span> consolidate API and browser regressions for anti-spoil behavior, Reservation lifecycle, static-only PWA caching, docs, and PR-ready verification.</li>
+  </ol>
+
+  <h2>Chunking Round 1</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Chunk</th>
+        <th>Vertical Behavior</th>
+        <th>Just-In-Time Additions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>A. Create and open Event</td>
+        <td>A user can create an Event and later resolve that Event by link.</td>
+        <td>Only Event name storage, Event create/lookup contracts, minimal backend command/query wiring, and first Event UI.</td>
+      </tr>
+      <tr>
+        <td>B. Enter Event as Participant</td>
+        <td>A user can create or select a Participant inside an Event.</td>
+        <td>Participants table, Participant contracts, membership checks used by selected-context behavior, and localStorage selection.</td>
+      </tr>
+      <tr>
+        <td>C. Manage own Wishlist</td>
+        <td>A selected Participant can create, view, edit, and delete their own Wishes.</td>
+        <td>Wishes table, Wish contracts, own-wishlist read model, ownership policies, line-break and URL display behavior.</td>
+      </tr>
+      <tr>
+        <td>D. Browse Event Wishes</td>
+        <td>A selected Participant can browse Wishes across the Event.</td>
+        <td>Event Wishes read model/projection and server-side selected Participant filtering, before coordination exists.</td>
+      </tr>
+      <tr>
+        <td>E. Coordinate Purchases</td>
+        <td>Participants can reserve other Participants' Wishes and manage Contributors.</td>
+        <td>Reservation and Contributor tables, contracts, policies, projection extensions, and UI controls.</td>
+      </tr>
+      <tr>
+        <td>F. Release Gate</td>
+        <td>The full create Event to anti-spoil coordination flow is verified in API and browser tests.</td>
+        <td>Regression suites, PWA cache checks, docs updates, and full workspace verification.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Chunking Round 2</h2>
+  <p>The chunk list above is still too large for safe code generation. The final prompt sequence below splits it into right-sized steps. Each prompt produces tested, integrated behavior and avoids unused scaffolding.</p>
+  <ol>
+    <li>Create Event API, adding only Event name persistence and contracts.</li>
+    <li>Get Event API for shareable links, adding only the lookup read model needed.</li>
+    <li>Angular PWA shell plus Event creation/open-link UI.</li>
+    <li>Participant list/create API, adding only Participant persistence and contracts.</li>
+    <li>Event entry UI with selected Participant localStorage.</li>
+    <li>Selected Participant membership guard integrated into a real selected-context endpoint.</li>
+    <li>Own Wishlist create/list API, adding only Wish persistence and contracts.</li>
+    <li>Wishlist create/list UI.</li>
+    <li>Wish edit/delete API.</li>
+    <li>Wishlist edit/delete UI.</li>
+    <li>Event Wishes API without coordination, adding only the read model required for browsing Wishes.</li>
+    <li>Event Wishes UI without coordination controls.</li>
+    <li>Reservation creation API, adding Reservation and first Contributor persistence only now.</li>
+    <li>Reservation creation UI and Event Wishes coordination display for non-Wishers.</li>
+    <li>Contributor add/remove API, including last-Contributor Reservation deletion.</li>
+    <li>Contributor management UI.</li>
+    <li>Release-critical API regressions.</li>
+    <li>End-to-end browser flow, PWA cache check, docs, and final verification.</li>
+  </ol>
+
+  <h2>Right-Sizing Review</h2>
+  <ul>
+    <li>The first prompt ships a callable product endpoint instead of a schema package milestone.</li>
+    <li>The first time a table appears, the same prompt uses it through a route, handler, and test.</li>
+    <li>The first time a shared DTO appears, the same prompt validates or consumes it from server behavior; frontend consumption follows when the UI slice arrives.</li>
+    <li>Backend infrastructure grows through the product slices. For example, command bus, query bus, projections, and error mapping are added in the smallest form needed by the endpoint under test.</li>
+    <li>The Angular scaffold is paired with the first visible Event flow, so the web package does not contain an orphan shell.</li>
+    <li>Reservation tables and contracts do not appear until Reservation creation is implemented. Contributor behavior appears only when Contributor management is implemented.</li>
+    <li>Each step can be tested with targeted package commands, and broad verification is reserved for integration points and release hardening.</li>
+  </ul>
+
+  <h2>Prompt Usage Rules</h2>
+  <p>Each prompt below is intended for a code-generation LLM to run in order. Do not skip prompts unless the exact behavior already exists and is verified. Each prompt should start with failing tests, implement only enough to pass, and end with the stated verification.</p>
+  <p class="note">All prompts assume the agent starts in <code>/Users/vincent/dev/idkdo</code>, reads <code>AGENTS.md</code>, then reads <code>docs/GOAL.md</code>, <code>docs/PRODUCT.md</code>, <code>docs/SPEC-implementation.md</code>, <code>docs/DEVELOPING.md</code>, and the relevant design docs before editing.</p>
+
+  <h2>Prompt 01: Create Event API Slice</h2>
+  <pre><code class="language-text">You are implementing the next small V1 step in /Users/vincent/dev/idkdo.
+
+Read AGENTS.md, docs/GOAL.md, docs/PRODUCT.md, docs/SPEC-implementation.md, docs/DEVELOPING.md, docs/DATABASE.md, ARCHITECTURE.md, docs/design-docs/backend-ddd-cqrs.md, and docs/design-docs/workspace-packages.md.
+
+Goal: ship the first real vertical slice: POST /api/events creates an Event with a name and returns the created Event DTO.
+
+Just-in-time scope:
+- Add only the Event name column needed by this endpoint to packages/db/src/schema.ts.
+- Add only shared Event create input, Event DTO, API error shape, and POST /events path/header constants needed by this endpoint.
+- Add only the minimal domain/value object/business error needed for Event creation.
+- Add only the minimal command handling or use-case infrastructure needed to keep route logic thin and compatible with ARCHITECTURE.md.
+- Do not add Participant, Wish, Reservation, Contributor, or full projection schema yet.
+
+Use TDD:
+1. Add API integration tests for creating an Event, rejecting a blank name, returning JSON, and preserving the existing /api/health behavior.
+2. Add focused package tests only where they protect new shared or DB behavior used by this slice.
+3. Implement POST /api/events through a Resource/route that validates with Zod and delegates to application code.
+4. Persist Event id, name, createdAt, and updatedAt.
+5. Generate and inspect the Drizzle migration.
+
+Verification:
+- pnpm --filter @idkdo/shared test
+- pnpm --filter @idkdo/db test
+- pnpm --filter @idkdo/server test
+- pnpm --filter @idkdo/server typecheck
+- pnpm --filter @idkdo/server lint
+- pnpm verify if docs or migrations affect diff checks</code></pre>
+
+  <h2>Prompt 02: Open Event By Shareable Link API Slice</h2>
+  <pre><code class="language-text">Continue from Prompt 01.
+
+Read docs/SPEC-implementation.md sections 6.1, 7 Event Entry, and 8 Events.
+
+Goal: ship GET /api/events/:eventId so an Event shareable link can be opened.
+
+Just-in-time scope:
+- Add only the shared Event route params schema and GET response contract needed by this endpoint.
+- Add a minimal Event lookup query/read model. If following the projection design now, add only an Event entry projection with Event id/name/timestamps and wire EventCreated into it.
+- Add only query bus or projection infrastructure that this endpoint actually uses.
+- Do not add Participants yet.
+
+Use TDD:
+1. Add API tests for retrieving an existing Event, returning 404 for a missing Event, and rejecting malformed ids.
+2. If using a projection, add a test proving creating an Event makes the Event lookup visible with bounded refresh or synchronous test dispatch.
+3. Implement the route/resource/query/repository or projection path.
+4. Keep POST /api/events passing.
+
+Verification:
+- pnpm --filter @idkdo/server test
+- pnpm --filter @idkdo/server typecheck
+- pnpm --filter @idkdo/server lint
+- pnpm test</code></pre>
+
+  <h2>Prompt 03: First Angular PWA Slice With Event Creation</h2>
+  <pre><code class="language-text">Continue from Prompt 02.
+
+Read docs/SPEC-implementation.md UI/PWA requirements and docs/design-docs/frontend-architecture.md.
+
+Goal: replace the placeholder web package with an Angular standalone PWA that actually creates an Event and opens its Event link.
+
+Just-in-time scope:
+- Add Angular dependencies and config only as needed for the first Event creation/open-link screen.
+- Add a frontend Event repository that calls only POST /api/events and GET /api/events/:eventId.
+- Add service worker/manifest setup, but ensure no /api responses are cached.
+- Do not add Participant, Wish, or Reservation frontend services yet.
+
+Use TDD or compile-first testing:
+1. Add tests for Event repository URL construction, create Event behavior, and visible API error handling.
+2. Add component/route tests for entering an Event name, submitting, and navigating to or showing the shareable Event URL.
+3. Implement a mobile-first no-Event-selected page. Do not build a marketing landing page.
+4. Implement an Event route that can load and display the Event name from the shareable link, with a clear placeholder for the upcoming Participant entry step.
+5. Update docs/DEVELOPING.md only for changed web dev commands or URLs.
+
+Verification:
+- pnpm --filter @idkdo/web test
+- pnpm --filter @idkdo/web typecheck
+- pnpm --filter @idkdo/web lint
+- pnpm --filter @idkdo/web build
+- pnpm verify if docs changed</code></pre>
+
+  <h2>Prompt 04: Participant API Slice</h2>
+  <pre><code class="language-text">Continue from Prompt 03.
+
+Read docs/SPEC-implementation.md sections 6.2, 7 Event Entry, and 8 Participants.
+
+Goal: ship GET /api/events/:eventId/participants and POST /api/events/:eventId/participants.
+
+Just-in-time scope:
+- Add only the participants table, indexes, constraints, and migration needed for this slice.
+- Add only Participant shared DTOs, create input, route params, and path helpers.
+- Add only ParticipantName domain validation, ParticipantCreated event if projections are already in use, and repository/query behavior needed by these endpoints.
+- Do not add selected Participant header enforcement beyond what this slice needs.
+
+Use TDD:
+1. Add API tests for listing Participants for an Event, creating a Participant, rejecting blank names, rejecting duplicate names within one Event with 409, allowing the same name in different Events, and 404 for a missing Event.
+2. Add DB/schema tests only for constraints this slice relies on.
+3. Implement Resource, route, command/query handlers, repository/projection updates, and shared validators.
+4. Generate and inspect the Drizzle migration.
+
+Verification:
+- pnpm --filter @idkdo/shared test
+- pnpm --filter @idkdo/db test
+- pnpm --filter @idkdo/server test
+- pnpm --filter @idkdo/server typecheck
+- pnpm --filter @idkdo/server lint</code></pre>
+
+  <h2>Prompt 05: Event Entry UI Slice</h2>
+  <pre><code class="language-text">Continue from Prompt 04.
+
+Read docs/SPEC-implementation.md Participant identity persistence decision and docs/design-docs/frontend-architecture.md.
+
+Goal: wire the Event page into a real entry flow where a person chooses or creates a Participant.
+
+Just-in-time scope:
+- Add only Participant frontend repository methods used by Event entry.
+- Add selected Participant localStorage state scoped by Event id.
+- Do not add Wish or Reservation UI/services.
+
+Use TDD:
+1. Add tests for loading an Event's Participants, creating a Participant, selecting an existing Participant, localStorage key scoping by Event id, duplicate-name error display, and stale stored Participant handling.
+2. Implement the Event entry route/state/components.
+3. After selection, navigate to a main Event route with a simple "selected Participant" state and placeholder for the upcoming Wishlist/Event Wishes surface.
+4. Keep identity lightweight; do not add accounts or authentication.
+
+Verification:
+- pnpm --filter @idkdo/web test
+- pnpm --filter @idkdo/web typecheck
+- pnpm --filter @idkdo/web lint
+- pnpm --filter @idkdo/web build</code></pre>
+
+  <h2>Prompt 06: Selected Participant Guard Integrated With Own Wishlist Stub</h2>
+  <pre><code class="language-text">Continue from Prompt 05.
+
+Read docs/SPEC-implementation.md Identity Header Contract and ARCHITECTURE.md Cross-Cutting Invariants.
+
+Goal: introduce selected Participant server validation through the first real selected-context endpoint: an empty own-wishlist list for a Participant before Wish creation exists.
+
+Just-in-time scope:
+- Add only the X-Participant-Id shared header constant if not already present.
+- Add only the membership-check application code needed by GET /api/participants/:participantId/wishes.
+- If the wishes table is not needed yet, return an empty list only after verifying the selected Participant is the requested Participant and belongs to an Event. Do not add Wish persistence in this prompt unless the implementation cannot avoid it cleanly.
+
+Use TDD:
+1. Add API tests for GET /api/participants/:participantId/wishes returning an empty list for the selected Participant.
+2. Test missing, malformed, wrong-Event, and different-Participant X-Participant-Id cases.
+3. Implement validation/error mapping in the HTTP boundary and application layer.
+4. Keep the response contract ready to hold Wish DTOs, but do not add unused Wish fields beyond the list item shape required by the next prompt.
+
+Verification:
+- pnpm --filter @idkdo/server test
+- pnpm --filter @idkdo/server typecheck
+- pnpm --filter @idkdo/server lint</code></pre>
+
+  <h2>Prompt 07: Own Wishlist Create/List API Slice</h2>
+  <pre><code class="language-text">Continue from Prompt 06.
+
+Read docs/SPEC-implementation.md sections 6.3, 7 Wishes, and 8 Wishes.
+
+Goal: let the selected Participant create Wishes for themselves and list their own Wishlist.
+
+Just-in-time scope:
+- Add only the wishes table, constraints, indexes, and migration needed for create/list.
+- Add only Wish shared create input and Wish DTO fields used by create/list.
+- Add WishContent domain validation and ownership policy needed by create/list.
+- Add a participant_wishlist read model/projection only if the query path uses it now.
+- Do not add edit/delete or Event Wishes browsing yet.
+
+Use TDD:
+1. Add API tests for creating a Wish, rejecting blank content, preserving line breaks, listing own Wishes, blocking creation for another Participant id, and requiring selected Participant membership.
+2. Implement POST /api/participants/:participantId/wishes and complete GET /api/participants/:participantId/wishes against persisted Wishes.
+3. Generate and inspect the Drizzle migration.
+4. Keep Event and Participant behavior green.
+
+Verification:
+- pnpm --filter @idkdo/shared test
+- pnpm --filter @idkdo/db test
+- pnpm --filter @idkdo/server test
+- pnpm --filter @idkdo/server typecheck
+- pnpm --filter @idkdo/server lint</code></pre>
+
+  <h2>Prompt 08: Wishlist Create/List UI Slice</h2>
+  <pre><code class="language-text">Continue from Prompt 07.
+
+Read docs/SPEC-implementation.md Wishlist management and Wish content decisions.
+
+Goal: let the selected Participant view and add Wishes from the web UI.
+
+Just-in-time scope:
+- Add only Wish frontend repository methods used for own Wishlist create/list.
+- Add URL detection/display helper only for rendered Wish content.
+- Do not add edit/delete controls yet.
+
+Use TDD:
+1. Add repository and component tests for loading own Wishlist with X-Participant-Id, creating a Wish, preserving line breaks in display, rendering detected URLs as links, and surfacing API failures.
+2. Wire the selected Event experience to show the selected Participant's Wishlist and an add-Wish form.
+3. Use re-query or bounded refresh after create to account for projection lag if projections are asynchronous.
+
+Verification:
+- pnpm --filter @idkdo/web test
+- pnpm --filter @idkdo/web typecheck
+- pnpm --filter @idkdo/web lint
+- pnpm --filter @idkdo/web build</code></pre>
+
+  <h2>Prompt 09: Wish Edit/Delete API Slice</h2>
+  <pre><code class="language-text">Continue from Prompt 08.
+
+Read docs/SPEC-implementation.md Wish edit/delete permissions.
+
+Goal: implement PATCH /api/wishes/:wishId and DELETE /api/wishes/:wishId for the Wisher.
+
+Just-in-time scope:
+- Add only shared update input/path contracts needed by edit/delete.
+- Add only domain policies and repository methods needed for edit/delete.
+- Do not add Reservation cascade tests yet unless Reservation tables already exist. Add a TODO-style test name only if the harness supports pending tests cleanly; otherwise defer cascade coverage to the Reservation prompt.
+
+Use TDD:
+1. Add API tests for Wisher edit, non-Wisher edit rejection, blank update rejection, Wisher delete, non-Wisher delete rejection, and projection/list updates after edit/delete.
+2. Implement update/delete commands, handlers, repository methods, projection updates, Resource methods, and routes.
+3. Keep create/list behavior green.
+
+Verification:
+- pnpm --filter @idkdo/server test
+- pnpm --filter @idkdo/server typecheck
+- pnpm --filter @idkdo/server lint</code></pre>
+
+  <h2>Prompt 10: Wishlist Edit/Delete UI Slice</h2>
+  <pre><code class="language-text">Continue from Prompt 09.
+
+Read docs/SPEC-implementation.md Specific Design Goals and Wishlist management requirements.
+
+Goal: add edit and delete controls for the selected Participant's own Wishes.
+
+Just-in-time scope:
+- Add only Wish repository update/delete methods and UI state needed for own Wishlist management.
+- Do not add Event Wishes browsing or Purchase Coordination UI yet.
+
+Use TDD:
+1. Add component tests for entering edit mode, saving changes, cancelling edits, deleting a Wish with a clear confirmation or reversible interaction, and showing API failures.
+2. Ensure long content, line breaks, and URLs display correctly after edits.
+3. Refresh or update local state after successful commands.
+
+Verification:
+- pnpm --filter @idkdo/web test
+- pnpm --filter @idkdo/web typecheck
+- pnpm --filter @idkdo/web lint
+- pnpm --filter @idkdo/web build</code></pre>
+
+  <h2>Prompt 11: Event Wishes API Slice Without Coordination</h2>
+  <pre><code class="language-text">Continue from Prompt 10.
+
+Read docs/SPEC-implementation.md Event Wishes listing and visibility rules.
+
+Goal: implement GET /api/events/:eventId/wishes from the selected Participant perspective before Reservations exist.
+
+Just-in-time scope:
+- Add only the Event Wishes shared DTO shape needed for Wishes without coordination.
+- Add an event_wishes read model/projection only for public Wish fields: wish id, event id, wisher id/name, content, timestamps.
+- Add selected Participant membership validation for Event-scoped queries.
+- Do not add Reservation or Contributor fields yet except an explicit null/absent coordination field documented in the shared DTO.
+
+Use TDD:
+1. Add API tests proving a selected Participant sees their own Wishes and other Participants' Wishes in the same Event.
+2. Test that selected Participant from another Event is rejected.
+3. Test that coordination data is absent because no coordination feature exists yet.
+4. Wire query/resource/route and projection updates from Wish create/update/delete.
+
+Verification:
+- pnpm --filter @idkdo/server test
+- pnpm --filter @idkdo/server typecheck
+- pnpm --filter @idkdo/server lint</code></pre>
+
+  <h2>Prompt 12: Event Wishes UI Slice Without Coordination</h2>
+  <pre><code class="language-text">Continue from Prompt 11.
+
+Read docs/SPEC-implementation.md Main Event experience and frontend architecture guidance.
+
+Goal: show all Event Wishes from the selected Participant perspective.
+
+Just-in-time scope:
+- Add only the Event Wishes frontend repository method and UI components needed to browse Wishes.
+- Do not add Reservation controls yet.
+
+Use TDD:
+1. Add tests for loading Event Wishes with X-Participant-Id, showing Wishes grouped or labeled by Wisher, rendering own and other Wishes, preserving line breaks, rendering URLs, and surfacing API failures.
+2. Integrate this view into the main Event experience alongside or near own Wishlist management in a mobile-first layout.
+3. Render only server-provided fields. Do not infer hidden coordination state.
+
+Verification:
+- pnpm --filter @idkdo/web test
+- pnpm --filter @idkdo/web typecheck
+- pnpm --filter @idkdo/web lint
+- pnpm --filter @idkdo/web build</code></pre>
+
+  <h2>Prompt 13: Reservation Creation API Slice</h2>
+  <pre><code class="language-text">Continue from Prompt 12.
+
+Read docs/SPEC-implementation.md Reservations and Purchase Coordination visibility rules.
+
+Goal: implement POST /api/wishes/:wishId/reservation, where the actor becomes the first Contributor.
+
+Just-in-time scope:
+- Add only reservations and reservation_contributors tables needed for Reservation creation.
+- Add only shared Reservation DTOs/contracts used by this endpoint and Event Wishes response extension.
+- Add only domain policies for CannotReserveOwnWish, ReservationAlreadyExists, and first Contributor creation.
+- Extend Event Wishes projection/query just enough to show coordination to non-Wishers and hide it from the Wisher.
+
+Use TDD:
+1. Add API tests for creating a Reservation on another Participant's Wish, actor becomes first Contributor, Wisher cannot reserve own Wish, duplicate Reservation returns 409, wrong-Event selected Participant is rejected, non-Wisher sees Reservation data, and Wisher does not see Reservation data.
+2. Implement command/handler/repository/projection/resource/route.
+3. Add delete cascade coverage for deleting a Wish with a Reservation now that Reservation tables exist.
+4. Generate and inspect the Drizzle migration.
+
+Verification:
+- pnpm --filter @idkdo/shared test
+- pnpm --filter @idkdo/db test
+- pnpm --filter @idkdo/server test
+- pnpm --filter @idkdo/server typecheck
+- pnpm --filter @idkdo/server lint</code></pre>
+
+  <h2>Prompt 14: Reservation Creation UI Slice</h2>
+  <pre><code class="language-text">Continue from Prompt 13.
+
+Read docs/SPEC-implementation.md Purchase Coordination UI requirements.
+
+Goal: let a selected Participant reserve another Participant's Wish and see Reservation state only where the server returns it.
+
+Just-in-time scope:
+- Add only Reservation create repository method and UI control.
+- Add coordination display only for fields returned by Event Wishes API.
+- Do not add add/remove Contributor controls yet.
+
+Use TDD:
+1. Add UI tests proving own Wishes show no coordination controls, other Participants' Wishes can be reserved, successful reservation refreshes Event Wishes, conflict errors are visible, and Wisher responses render without coordination.
+2. Implement reserve controls in the Event Wishes view.
+3. Keep refresh projection-lag-aware.
+
+Verification:
+- pnpm --filter @idkdo/web test
+- pnpm --filter @idkdo/web typecheck
+- pnpm --filter @idkdo/web lint
+- pnpm --filter @idkdo/web build</code></pre>
+
+  <h2>Prompt 15: Contributor Management API Slice</h2>
+  <pre><code class="language-text">Continue from Prompt 14.
+
+Read docs/SPEC-implementation.md Reservation Contributor rules.
+
+Goal: implement POST /api/reservations/:reservationId/contributors and DELETE /api/reservations/:reservationId/contributors/:participantId.
+
+Just-in-time scope:
+- Add only shared Contributor input/path contracts needed by add/remove.
+- Add only repository methods, domain policies, and projection updates needed for Contributor management.
+- Do not add UI changes in this prompt.
+
+Use TDD:
+1. Add API tests for adding another non-Wisher Contributor, rejecting Wisher as Contributor, duplicate Contributor conflict, removing self, removing another Contributor, any viewer can remove a Contributor, deleting the Reservation when the last Contributor is removed, and Wisher never seeing coordination after add/remove.
+2. Implement commands/handlers/resource/routes.
+3. Keep Reservation creation and Event Wishes anti-spoil tests green.
+
+Verification:
+- pnpm --filter @idkdo/server test
+- pnpm --filter @idkdo/server typecheck
+- pnpm --filter @idkdo/server lint
+- pnpm test</code></pre>
+
+  <h2>Prompt 16: Contributor Management UI Slice</h2>
+  <pre><code class="language-text">Continue from Prompt 15.
+
+Read docs/SPEC-implementation.md Purchase Coordination and Specific Design Goals.
+
+Goal: let Participants add and remove Contributors from visible Reservations.
+
+Just-in-time scope:
+- Add only Contributor add/remove repository methods and UI controls.
+- Use existing Participants list to choose Contributors; do not build admin roles or accounts.
+
+Use TDD:
+1. Add UI tests for joining an existing Reservation, adding another non-Wisher Contributor, removing self, removing another Contributor, last-Contributor removal returning the Wish to unreserved state, hiding controls on own Wishes, and visible API failure states.
+2. Implement compact mobile-first controls in the Event Wishes/Purchase Coordination area.
+3. Refresh Event Wishes after successful commands.
+
+Verification:
+- pnpm --filter @idkdo/web test
+- pnpm --filter @idkdo/web typecheck
+- pnpm --filter @idkdo/web lint
+- pnpm --filter @idkdo/web build</code></pre>
+
+  <h2>Prompt 17: Release-Critical API Regression Suite</h2>
+  <pre><code class="language-text">Continue from Prompt 16.
+
+Read docs/SPEC-implementation.md section 11.4.
+
+Goal: consolidate the release-blocking API regressions now that all core backend behavior exists.
+
+Just-in-time scope:
+- Add high-level tests only; do not add new product behavior unless a regression exposes a bug.
+
+Use TDD:
+1. Add an anti-spoil visibility regression that creates an Event, creates two Participants, creates a Wish as Participant A, reserves it as Participant B, and asserts Participant A never receives coordination while Participant B does.
+2. Add a Reservation lifecycle regression that adds multiple Contributors, removes them one by one, and asserts the Reservation is deleted after the last removal.
+3. Add a selected Participant membership regression covering cross-Event header misuse.
+4. Refactor test builders only enough to keep these regressions readable.
+
+Verification:
+- pnpm --filter @idkdo/server test
+- pnpm typecheck
+- pnpm lint
+- pnpm test</code></pre>
+
+  <h2>Prompt 18: End-To-End Flow, PWA Cache Check, Docs, And Final Wiring</h2>
+  <pre><code class="language-text">Continue from Prompt 17.
+
+Read docs/SPEC-implementation.md sections 9, 11, 12, and 13.
+
+Goal: finish V1 wiring and prove the product works end to end in the browser.
+
+Just-in-time scope:
+- Add only E2E/browser tooling and docs needed to verify the completed V1 flow.
+- Do not introduce new product scope beyond the V1 acceptance criteria.
+
+Use TDD:
+1. Add browser end-to-end tests for create Event, open shareable Event link, create/select two Participants, create a Wish as Participant A, reserve it as Participant B, verify Participant A is not spoiled, and verify Participant B can manage coordination.
+2. Add a service-worker/build-output check proving /api responses are not cached by the PWA config.
+3. Run the app locally and verify the core flow in a browser. Capture screenshots if preparing a PR.
+4. Update README.md, docs/DEVELOPING.md, docs/DATABASE.md, ARCHITECTURE.md, or design docs only where behavior, commands, or architecture changed.
+5. Fill in every section of .github/PULL_REQUEST_TEMPLATE.md when creating a PR; do not use an ad-hoc PR body.
+
+Verification:
+- pnpm typecheck
+- pnpm lint
+- pnpm test
+- pnpm build
+- pnpm verify</code></pre>
+
+  <h2>Closeout Standard</h2>
+  <p>After Prompt 18, V1 should satisfy the release gate in <code>docs/SPEC-implementation.md</code>: a user can create an Event, share a link, create/select Participants, manage Wishes, reserve Wishes owned by others, manage Contributors, remove the last Contributor to remove a Reservation, and the Wisher never sees Purchase Coordination for their own Wishes.</p>
+  <p class="warn">Do not call V1 complete if any regression in section 11.4 is missing or skipped without a documented blocker.</p>
+</main>
+</body>
+</html>
