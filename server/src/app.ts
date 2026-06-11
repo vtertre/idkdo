@@ -1,7 +1,7 @@
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 
 import type { ServerEnvironment } from "./configuration/environment.js";
-import { registerHealthRoute } from "./presentation/http/routes/health-route.js";
+import { healthRoute } from "./presentation/http/routes/health-route.js";
 
 export type BuildAppOptions = {
   environment: ServerEnvironment;
@@ -10,7 +10,12 @@ export type BuildAppOptions = {
 export function buildApp(options: BuildAppOptions): FastifyInstance {
   const app = Fastify(buildFastifyOptions(options.environment));
 
-  registerHealthRoute(app);
+  app.register(
+    async (api) => {
+      await api.register(healthRoute);
+    },
+    { prefix: "/api" },
+  );
 
   return app;
 }

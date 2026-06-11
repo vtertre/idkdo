@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyPluginCallback } from "fastify";
 
 type HealthResponse = {
   service: "idkdo-api";
@@ -22,9 +22,9 @@ export function getHealthResponse(): HealthResponse {
   };
 }
 
-export function registerHealthRoute(app: FastifyInstance): void {
+export const healthRoute: FastifyPluginCallback = (app) => {
   app.get(
-    "/api/health",
+    "/health",
     {
       schema: {
         response: {
@@ -34,4 +34,4 @@ export function registerHealthRoute(app: FastifyInstance): void {
     },
     (): HealthResponse => getHealthResponse(),
   );
-}
+};
