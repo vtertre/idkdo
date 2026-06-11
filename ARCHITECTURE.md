@@ -89,6 +89,7 @@ Detailed architectural decisions are catalogued in `docs/design-docs/index.md`.
 Read design docs only when a task touches that area:
 
 - Backend DDD/CQRS boundaries: `docs/design-docs/backend-ddd-cqrs.md`
+- Code organization and file boundaries: `docs/design-docs/code-organization.md`
 - Design doc principles: `docs/design-docs/core-beliefs.md`
 - Projections and event bus: `docs/design-docs/projections-and-event-bus.md`
 - Workspace packages: `docs/design-docs/workspace-packages.md`

@@ -21,7 +21,9 @@ Packages should be introduced with the workspace foundation, but their public su
 It owns base abstractions as they become necessary:
 
 - command, query, event bus, handler, and handler registry interfaces;
-- entity, aggregate root, value object, UUID, domain event, domain error, and repository abstractions.
+- entity, aggregate root, UUID, domain event, domain error, and repository abstractions.
+
+`packages/patterns` does not currently define a shared value-object base class or interface. Domain value objects should remain plain domain classes until repetition proves a shared abstraction useful.
 
 `packages/patterns` describes abstractions, not application wiring. It does not define idkdo commands, queries, domain events, entities, repositories, read models, or handlers.
 

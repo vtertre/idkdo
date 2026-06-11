@@ -119,8 +119,14 @@ Commands represent state-changing use cases.
 Commands are classes implementing the generic patterns `Command<TResult>` interface.
 
 ```ts
-interface Command<TResult> {}
+declare const commandResultType: unique symbol;
+
+interface Command<TResult> {
+  readonly [commandResultType]: TResult;
+}
 ```
+
+Command classes declare the phantom result member so TypeScript can infer `CommandBus.execute(...)` result types from concrete command instances. The member is type-only in command classes and does not represent runtime command data.
 
 Command classes use the `*Command` suffix and command handler classes use the `*CommandHandler` suffix. Files use kebab-case names matching the class role, for example `create-wish-command.ts` and `create-wish-command-handler.ts`.
 
@@ -187,8 +193,14 @@ Queries represent read use cases.
 Queries are classes implementing the generic patterns `Query<TResult>` interface.
 
 ```ts
-interface Query<TResult> {}
+declare const queryResultType: unique symbol;
+
+interface Query<TResult> {
+  readonly [queryResultType]: TResult;
+}
 ```
+
+Query classes declare the phantom result member so TypeScript can infer `QueryBus.execute(...)` result types from concrete query instances. The member is type-only in query classes and does not represent runtime query data.
 
 Query classes use the `*Query` suffix and query handler classes use the `*QueryHandler` suffix. Files use kebab-case names matching the class role, for example `list-event-wishes-query.ts` and `list-event-wishes-query-handler.ts`.
 
@@ -224,17 +236,22 @@ Domain entities are immutable TypeScript classes.
 Core domain shapes:
 
 ```ts
-interface Entity<TId = Uuid> {
+interface Entity<TId> {
   readonly id: TId;
+  equals(other: unknown): boolean;
 }
 
-abstract class BaseEntity<TId = Uuid> implements Entity<TId> {
+abstract class BaseEntity<TId> implements Entity<TId> {
   protected constructor(public readonly id: TId) {}
+
+  equals(other: unknown): boolean {
+    // Exact runtime class and id equality.
+  }
 }
 
-interface AggregateRoot<TId = Uuid> extends Entity<TId> {}
+interface AggregateRoot<TId> extends Entity<TId> {}
 
-abstract class BaseAggregateRoot<TId = Uuid>
+abstract class BaseAggregateRoot<TId>
   extends BaseEntity<TId>
   implements AggregateRoot<TId> {}
 ```
@@ -250,6 +267,8 @@ Technical timestamps in the domain use `Temporal.Instant`. API contracts seriali
 Domain value objects are used for business scalar values with invariants. Initial idkdo value objects include `EventName`, `ParticipantName`, and `WishContent`.
 
 Entities use these value objects instead of raw strings. API DTOs and read models may still expose these values as strings.
+
+The patterns package does not provide a shared value-object base class or interface yet. Domain value objects are plain domain classes unless repetition proves a shared abstraction useful.
 
 Rules:
 
