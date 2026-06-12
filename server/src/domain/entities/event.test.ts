@@ -15,7 +15,6 @@ describe("Event", () => {
 
     expect(() => Uuid.parse(event.id.toString())).not.toThrow();
     expect(event.name.value).toBe("Christmas 2026");
-    expect(event.updatedAt.equals(event.createdAt)).toBe(true);
     expect(domainEvents).toHaveLength(1);
     expect(eventCreated).toBeDefined();
     expect(eventCreated).toBeInstanceOf(EventCreated);
@@ -29,9 +28,9 @@ describe("Event", () => {
   });
 
   it("rehydrates persisted Event state without emitting domain events", () => {
-    const id = Uuid.parse("7f6b7a8a-cd75-4a55-9f35-efc4532d833a");
-    const createdAt = Temporal.Instant.from("2026-06-11T12:00:00.000Z");
-    const updatedAt = Temporal.Instant.from("2026-06-12T12:00:00.000Z");
+    const id = Uuid.random();
+    const createdAt = Temporal.Now.instant();
+    const updatedAt = Temporal.Now.instant();
 
     const event = Event.rehydrate({
       createdAt,

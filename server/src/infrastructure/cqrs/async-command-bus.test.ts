@@ -10,13 +10,16 @@ import {
 import { describe, expect, it } from "vitest";
 
 import { CreateEventCommand } from "../../commands/events/create-event-command.js";
-import { InProcessCommandBus } from "./in-process-command-bus.js";
+import { AsyncCommandBus } from "./async-command-bus.js";
 import { StaticCommandHandlerRegistry } from "./static-command-handler-registry.js";
 
-describe("InProcessCommandBus", () => {
+describe("AsyncCommandBus", () => {
   it("executes the command with the handler", async () => {
-    const createEventCommandHandler = new RecordingCreateEventCommandHandler();
-    const commandBus = new InProcessCommandBus({
+    const expectedEventId = Uuid.random();
+    const createEventCommandHandler = new RecordingCreateEventCommandHandler(
+      expectedEventId,
+    );
+    const commandBus = new AsyncCommandBus({
       commandHandlerRegistry: new StaticCommandHandlerRegistry([
         {
           commandClass: CreateEventCommand,
@@ -28,17 +31,17 @@ describe("InProcessCommandBus", () => {
 
     const result = await commandBus.execute(command);
 
-    expect(result.toString()).toBe("9d1e5384-0933-4bbf-8f04-8160229d0486");
+    expect(result.equals(expectedEventId)).toBe(true);
     expect(createEventCommandHandler.handledCommand).toBe(command);
   });
 
   it("chains middleware in constructor order", async () => {
     const calls: string[] = [];
-    const commandBus = new InProcessCommandBus({
+    const commandBus = new AsyncCommandBus({
       commandHandlerRegistry: new StaticCommandHandlerRegistry([
         {
           commandClass: CreateEventCommand,
-          handler: new RecordingCreateEventCommandHandler(),
+          handler: new RecordingCreateEventCommandHandler(Uuid.random()),
         },
       ]),
       middlewares: [
@@ -58,7 +61,7 @@ describe("InProcessCommandBus", () => {
   });
 
   it("throws when no handler is registered for a command", async () => {
-    const commandBus = new InProcessCommandBus({
+    const commandBus = new AsyncCommandBus({
       commandHandlerRegistry: new StaticCommandHandlerRegistry([]),
     });
 
@@ -72,7 +75,8 @@ class RecordingCreateEventCommandHandler
   implements CommandHandler<CreateEventCommand, Uuid>
 {
   handledCommand: CreateEventCommand | undefined;
-  private readonly eventId = Uuid.parse("9d1e5384-0933-4bbf-8f04-8160229d0486");
+
+  constructor(private readonly eventId: Uuid) {}
 
   execute(command: CreateEventCommand): Promise<[Uuid, []]> {
     this.handledCommand = command;

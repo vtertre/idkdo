@@ -5,7 +5,7 @@ import { CreateEventCommandHandler } from "./commands/events/create-event-comman
 import { CreateEventCommand } from "./commands/events/create-event-command.js";
 import type { ServerEnvironment } from "./configuration/environment.js";
 import { EventDispatcherMiddleware } from "./infrastructure/cqrs/event-dispatcher-middleware.js";
-import { InProcessCommandBus } from "./infrastructure/cqrs/in-process-command-bus.js";
+import { AsyncCommandBus } from "./infrastructure/cqrs/async-command-bus.js";
 import { StaticCommandHandlerRegistry } from "./infrastructure/cqrs/static-command-handler-registry.js";
 import { NoopEventBus } from "./infrastructure/event-bus/noop-event-bus.js";
 import { DrizzleEventRepository } from "./infrastructure/repositories/drizzle-event-repository.js";
@@ -47,7 +47,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   return app;
 }
 
-function buildCommandBus(database: Database): InProcessCommandBus {
+function buildCommandBus(database: Database): AsyncCommandBus {
   const eventRepository = new DrizzleEventRepository(database);
   const createEventCommandHandler = new CreateEventCommandHandler(eventRepository);
   const commandHandlerRegistry = new StaticCommandHandlerRegistry([
@@ -60,7 +60,7 @@ function buildCommandBus(database: Database): InProcessCommandBus {
     new NoopEventBus(),
   );
 
-  return new InProcessCommandBus({
+  return new AsyncCommandBus({
     commandHandlerRegistry,
     middlewares: [eventDispatcherMiddleware],
   });

@@ -8,15 +8,15 @@ import type {
 
 import { InvokeCommandHandlerMiddleware } from "./invoke-command-handler-middleware.js";
 
-export type InProcessCommandBusOptions = {
+export type AsyncCommandBusOptions = {
   readonly commandHandlerRegistry: CommandHandlerRegistry;
   readonly middlewares?: readonly CommandBusMiddleware[];
 };
 
-export class InProcessCommandBus implements CommandBus {
+export class AsyncCommandBus implements CommandBus {
   private readonly middlewareChain: MiddlewareChainLink;
 
-  constructor(options: InProcessCommandBusOptions) {
+  constructor(options: AsyncCommandBusOptions) {
     const finalChain = new MiddlewareChainLink(
       new InvokeCommandHandlerMiddleware(options.commandHandlerRegistry),
       null,

@@ -13,7 +13,8 @@ import { StaticCommandHandlerRegistry } from "./static-command-handler-registry.
 
 describe("InvokeCommandHandlerMiddleware", () => {
   it("invokes the registered command handler", async () => {
-    const handler = new FakeCommandHandler();
+    const expectedResult = Uuid.random();
+    const handler = new FakeCommandHandler(expectedResult);
     const middleware = new InvokeCommandHandlerMiddleware(
       new StaticCommandHandlerRegistry([
         {
@@ -29,7 +30,7 @@ describe("InvokeCommandHandlerMiddleware", () => {
     );
 
     expect(handler.handledCommand).toBe(command);
-    expect(result.toString()).toBe("9d1e5384-0933-4bbf-8f04-8160229d0486");
+    expect(result.equals(expectedResult)).toBe(true);
     expect(domainEvents).toEqual([]);
   });
 
@@ -77,7 +78,8 @@ class UnknownCommand implements Command<Uuid> {
 
 class FakeCommandHandler implements CommandHandler<FakeCommand, Uuid> {
   handledCommand: FakeCommand | undefined;
-  private readonly result = Uuid.parse("9d1e5384-0933-4bbf-8f04-8160229d0486");
+
+  constructor(private readonly result: Uuid = Uuid.random()) {}
 
   execute(command: FakeCommand): Promise<[Uuid, DomainEvent[]]> {
     this.handledCommand = command;

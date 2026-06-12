@@ -17,9 +17,9 @@ const createEventResponseSchema = z.object({
 
 describe("event creation integration", () => {
   let app: FastifyInstance | undefined;
-  let databaseClient: ReturnType<typeof createDatabaseClient> | undefined;
-  let postgresContainer: StartedPostgreSqlContainer | undefined;
-  let testEnvironment: ServerEnvironment | undefined;
+  let databaseClient: ReturnType<typeof createDatabaseClient>;
+  let postgresContainer: StartedPostgreSqlContainer;
+  let testEnvironment: ServerEnvironment;
 
   beforeAll(async () => {
     postgresContainer = await new PostgreSqlContainer("postgres:17-alpine").start();
@@ -39,7 +39,7 @@ describe("event creation integration", () => {
   }, 120_000);
 
   beforeEach(async () => {
-    await databaseClient?.db.delete(events);
+    await databaseClient.db.delete(events);
   });
 
   afterEach(async () => {
@@ -48,18 +48,11 @@ describe("event creation integration", () => {
   });
 
   afterAll(async () => {
-    await databaseClient?.close();
-    await postgresContainer?.stop();
-    databaseClient = undefined;
-    postgresContainer = undefined;
-    testEnvironment = undefined;
+    await databaseClient.close();
+    await postgresContainer.stop();
   }, 120_000);
 
   it("persists an Event and returns the created id", async () => {
-    if (!databaseClient || !testEnvironment) {
-      throw new Error("Expected database client and test environment.");
-    }
-
     app = buildApp({
       databaseClient,
       environment: testEnvironment,
@@ -83,13 +76,9 @@ describe("event creation integration", () => {
     expect(persistedEvents).toHaveLength(1);
     expect(persistedEvent).toBeDefined();
 
-    if (!persistedEvent) {
-      throw new Error("Expected persisted Event.");
-    }
-
-    expect(persistedEvent.id).toBe(responseBody.id);
-    expect(persistedEvent.name).toBe("Christmas 2026");
-    expect(persistedEvent.createdAt).toBeInstanceOf(Date);
-    expect(persistedEvent.updatedAt).toBeInstanceOf(Date);
+    expect(persistedEvent!.id).toBe(responseBody.id);
+    expect(persistedEvent!.name).toBe("Christmas 2026");
+    expect(persistedEvent!.createdAt).toBeInstanceOf(Date);
+    expect(persistedEvent!.updatedAt).toBeInstanceOf(Date);
   });
 });
