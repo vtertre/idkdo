@@ -1,4 +1,4 @@
-import { pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 const timestamps = () => ({
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -8,6 +8,7 @@ const timestamps = () => ({
 // Foundation-only table; product fields are added by later feature migrations.
 export const events = pgTable("events", {
   id: uuid("id").primaryKey(),
+  name: text("name").notNull(),
   ...timestamps(),
 });
 

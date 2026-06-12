@@ -5,4 +5,7 @@ packages:
 # drizzle-kit pulls esbuild transitively; pnpm requires explicit approval for
 # esbuild's native binary install script.
 allowBuilds:
+  cpu-features: false
   esbuild: true
+  protobufjs: false
+  ssh2: false
