@@ -42,6 +42,25 @@ describe("apiErrorHandler", () => {
     });
   });
 
+  it("preserves Fastify client error status codes", () => {
+    const reply = new RecordingReply();
+    const request = fakeRequest();
+    const error = new Error("Body is not valid JSON.") as FastifyError;
+    error.code = "FST_ERR_CTP_INVALID_JSON_BODY";
+    error.statusCode = 400;
+
+    apiErrorHandler(error, request, reply.asFastifyReply());
+
+    expect(reply.statusCode).toBe(400);
+    expect(reply.body).toEqual({
+      error: {
+        code: "FST_ERR_CTP_INVALID_JSON_BODY",
+        message: "Body is not valid JSON.",
+      },
+    });
+    expect(request.log.error).not.toHaveBeenCalled();
+  });
+
   it("maps unknown errors to 500 and logs them", () => {
     const reply = new RecordingReply();
     const request = fakeRequest();
