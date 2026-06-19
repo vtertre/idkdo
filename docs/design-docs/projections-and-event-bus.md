@@ -76,11 +76,11 @@ interface EventBus {
 }
 ```
 
-The current implementation is an `AsyncEventBus`. It accepts an ordered batch of domain events for asynchronous in-process dispatch and does not wait for projection handlers to complete.
+The current implementation is an `AsyncEventBus`. It accepts a batch of domain events for asynchronous in-process dispatch and does not wait for projection handlers to complete.
 
 `EventBus.publish(...)` resolves according to the implementation's delivery guarantee. For `AsyncEventBus`, it resolves after the batch is accepted for asynchronous dispatch, not after projections are up to date.
 
-The `AsyncEventBus` uses event-specific middleware. It dispatches events sequentially in publication order. Projection handler failures are logged with the domain event metadata and handler name. A projection handler failure does not block dispatch of subsequent events.
+The `AsyncEventBus` schedules each event independently through event-specific middleware. Its terminal chain link invokes every projection handler registered for the event's concrete class. The bus does not add dispatch-failure reporting or recovery behavior.
 
 Projection handlers are resolved through explicit configuration mappings from domain event class to projection handler class.
 

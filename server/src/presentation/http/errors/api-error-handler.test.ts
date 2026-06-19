@@ -42,6 +42,26 @@ describe("apiErrorHandler", () => {
     });
   });
 
+  it("maps Fastify route parameter validation errors to 400", () => {
+    const reply = new RecordingReply();
+    const error = new Error("params validation failed") as FastifyError;
+    error.code = "FST_ERR_VALIDATION";
+    Object.assign(error, {
+      validation: [{ keyword: "format" }],
+      validationContext: "params",
+    });
+
+    apiErrorHandler(error, fakeRequest(), reply.asFastifyReply());
+
+    expect(reply.statusCode).toBe(400);
+    expect(reply.body).toEqual({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid route parameters.",
+      },
+    });
+  });
+
   it("preserves Fastify client error status codes", () => {
     const reply = new RecordingReply();
     const request = fakeRequest();
