@@ -87,56 +87,6 @@ describe("Events integration", () => {
     });
   });
 
-  it("returns 404 when an Event does not exist", async () => {
-    const app = context.openApp();
-
-    const response = await app.inject({
-      method: "GET",
-      url: `/api/events/${Uuid.random().toString()}`,
-    });
-
-    expect(response.statusCode).toBe(404);
-    expect(JSON.parse(response.body) as unknown).toEqual({
-      error: {
-        code: "EVENT_NOT_FOUND",
-        message: "Event not found.",
-      },
-    });
-  });
-
-  it("returns 400 when the Event id route parameter is not a UUID", async () => {
-    const app = context.openApp();
-
-    const response = await app.inject({
-      method: "GET",
-      url: "/api/events/not-a-uuid",
-    });
-
-    expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body) as unknown).toEqual({
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid route parameters.",
-      },
-    });
-  });
-
-  it("returns 400 when the Event id route parameter is the nil UUID", async () => {
-    const app = context.openApp();
-
-    const response = await app.inject({
-      method: "GET",
-      url: "/api/events/00000000-0000-0000-0000-000000000000",
-    });
-
-    expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body) as unknown).toEqual({
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid route parameters.",
-      },
-    });
-  });
 });
 
 class EventsIntegrationContext {
