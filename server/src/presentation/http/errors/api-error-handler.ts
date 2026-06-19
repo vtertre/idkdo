@@ -35,7 +35,7 @@ function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
       body: {
         error: {
           code: "VALIDATION_ERROR",
-          message: "Invalid request body.",
+          message: error.message,
         },
       },
       statusCode: 400,
@@ -51,6 +51,20 @@ function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
         },
       },
       statusCode: 422,
+    };
+  }
+
+  const validationMessage = getFastifyValidationMessage(error);
+
+  if (validationMessage !== undefined) {
+    return {
+      body: {
+        error: {
+          code: "VALIDATION_ERROR",
+          message: validationMessage,
+        },
+      },
+      statusCode: 400,
     };
   }
 
@@ -77,6 +91,20 @@ function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
     },
     statusCode: 500,
   };
+}
+
+function getFastifyValidationMessage(error: unknown): string | undefined {
+  if (
+    !isRecord(error) ||
+    error["code"] !== "FST_ERR_VALIDATION" ||
+    !Array.isArray(error["validation"])
+  ) {
+    return undefined;
+  }
+
+  return error["validationContext"] === "params"
+    ? "Invalid route parameters."
+    : "Invalid request.";
 }
 
 function getClientErrorStatusCode(error: unknown): number | undefined {

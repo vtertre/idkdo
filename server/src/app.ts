@@ -4,15 +4,22 @@ import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastif
 import { CreateEventCommandHandler } from "./commands/events/create-event-command-handler.js";
 import { CreateEventCommand } from "./commands/events/create-event-command.js";
 import type { ServerEnvironment } from "./configuration/environment.js";
-import { EventDispatcherMiddleware } from "./infrastructure/cqrs/event-dispatcher-middleware.js";
 import { AsyncCommandBus } from "./infrastructure/cqrs/async-command-bus.js";
+import { AsyncQueryBus } from "./infrastructure/cqrs/async-query-bus.js";
+import { EventDispatcherMiddleware } from "./infrastructure/cqrs/event-dispatcher-middleware.js";
 import { StaticCommandHandlerRegistry } from "./infrastructure/cqrs/static-command-handler-registry.js";
-import { NoopEventBus } from "./infrastructure/event-bus/noop-event-bus.js";
+import { StaticQueryHandlerRegistry } from "./infrastructure/cqrs/static-query-handler-registry.js";
+import { EventCreated } from "./domain/events/event-created.js";
+import { AsyncEventBus } from "./infrastructure/event-bus/async-event-bus.js";
+import { StaticDomainEventHandlerRegistry } from "./infrastructure/event-bus/static-domain-event-handler-registry.js";
 import { DrizzleEventRepository } from "./infrastructure/repositories/drizzle-event-repository.js";
 import { apiErrorHandler } from "./presentation/http/errors/api-error-handler.js";
 import { EventResource } from "./presentation/http/resources/event-resource.js";
 import { eventsRoute } from "./presentation/http/routes/events-route.js";
 import { healthRoute } from "./presentation/http/routes/health-route.js";
+import { UpdateEventEntryPageOnEventCreated } from "./projections/update-event-entry-page-on-event-created.js";
+import { GetEventEntryPageQueryHandler } from "./queries/events/get-event-entry-page-query-handler.js";
+import { GetEventEntryPageQuery } from "./queries/events/get-event-entry-page-query.js";
 
 export type BuildAppOptions = {
   databaseClient?: DatabaseClient;
@@ -27,14 +34,16 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     options.databaseClient ??
     createDatabaseClient({ databaseUrl: options.environment.databaseUrl });
   const ownsDatabaseClient = options.databaseClient === undefined;
-  const commandBus = buildCommandBus(databaseClient.db);
-  const eventResource = new EventResource(commandBus);
+  const eventBus = buildEventBus(databaseClient.db);
+  const commandBus = buildCommandBus(databaseClient.db, eventBus);
+  const queryBus = buildQueryBus(databaseClient.db);
+  const eventResource = new EventResource(commandBus, queryBus);
 
-  if (ownsDatabaseClient) {
-    app.addHook("onClose", async () => {
+  app.addHook("onClose", async () => {
+    if (ownsDatabaseClient) {
       await databaseClient.close();
-    });
-  }
+    }
+  });
 
   app.register(
     async (api) => {
@@ -47,7 +56,10 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   return app;
 }
 
-function buildCommandBus(database: Database): AsyncCommandBus {
+function buildCommandBus(
+  database: Database,
+  eventBus: AsyncEventBus,
+): AsyncCommandBus {
   const eventRepository = new DrizzleEventRepository(database);
   const createEventCommandHandler = new CreateEventCommandHandler(eventRepository);
   const commandHandlerRegistry = new StaticCommandHandlerRegistry([
@@ -56,13 +68,39 @@ function buildCommandBus(database: Database): AsyncCommandBus {
       handler: createEventCommandHandler,
     },
   ]);
-  const eventDispatcherMiddleware = new EventDispatcherMiddleware(
-    new NoopEventBus(),
-  );
+  const eventDispatcherMiddleware = new EventDispatcherMiddleware(eventBus);
 
   return new AsyncCommandBus({
     commandHandlerRegistry,
     middlewares: [eventDispatcherMiddleware],
+  });
+}
+
+function buildQueryBus(database: Database): AsyncQueryBus {
+  const getEventEntryPageQueryHandler = new GetEventEntryPageQueryHandler(database);
+  const queryHandlerRegistry = new StaticQueryHandlerRegistry([
+    {
+      handler: getEventEntryPageQueryHandler,
+      queryClass: GetEventEntryPageQuery,
+    },
+  ]);
+
+  return new AsyncQueryBus({ queryHandlerRegistry });
+}
+
+function buildEventBus(database: Database): AsyncEventBus {
+  const updateEventEntryPageOnEventCreated = new UpdateEventEntryPageOnEventCreated(
+    database,
+  );
+  const domainEventHandlerRegistry = new StaticDomainEventHandlerRegistry([
+    {
+      eventClass: EventCreated,
+      handler: updateEventEntryPageOnEventCreated,
+    },
+  ]);
+
+  return new AsyncEventBus({
+    domainEventHandlerRegistry,
   });
 }
 
