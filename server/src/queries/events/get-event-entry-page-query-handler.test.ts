@@ -1,60 +1,72 @@
-import { eventEntryPageProjection, type Database } from "@idkdo/db";
+import { eventEntryPageProjection } from "@idkdo/db";
 import { Uuid } from "@idkdo/patterns";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { GetEventEntryPageQueryHandler } from "./get-event-entry-page-query-handler.js";
 import { GetEventEntryPageQuery } from "./get-event-entry-page-query.js";
+import {
+  createMigratedPgliteTemplate,
+  type PgliteTestDatabaseTemplate,
+} from "../../test/database/pglite-test-database.js";
 
 describe("GetEventEntryPageQueryHandler", () => {
-  it("maps the Event entry page projection to the API response", async () => {
-    const eventId = Uuid.random();
-    const createdAt = new Date("2026-06-19T10:00:00.000Z");
-    const database = new FakeQueryDatabase({
-      createdAt,
-      id: eventId.toString(),
-      name: "Christmas 2026",
-      updatedAt: createdAt,
-    });
-    const handler = new GetEventEntryPageQueryHandler(database.asDatabase());
+  let template: PgliteTestDatabaseTemplate;
 
-    await expect(
-      handler.execute(new GetEventEntryPageQuery(eventId)),
-    ).resolves.toEqual({
-      createdAt: createdAt.toISOString(),
-      id: eventId.toString(),
-      name: "Christmas 2026",
-      updatedAt: createdAt.toISOString(),
-    });
+  beforeAll(async () => {
+    template = await createMigratedPgliteTemplate();
+  });
+
+  afterAll(async () => {
+    await template.close();
+  });
+
+  it("maps the requested Event entry page projection to the API response", async () => {
+    const eventId = Uuid.random();
+    const otherEventId = Uuid.random();
+    const createdAt = new Date("2026-06-19T10:00:00.000Z");
+    const database = await template.clone();
+    const handler = new GetEventEntryPageQueryHandler(database.applicationDatabase);
+
+    try {
+      await database.db.insert(eventEntryPageProjection).values([
+        {
+          createdAt,
+          id: otherEventId.toString(),
+          name: "Family Birthday",
+          updatedAt: createdAt,
+        },
+        {
+          createdAt,
+          id: eventId.toString(),
+          name: "Christmas 2026",
+          updatedAt: createdAt,
+        },
+      ]);
+
+      await expect(
+        handler.execute(new GetEventEntryPageQuery(eventId)),
+      ).resolves.toEqual({
+        createdAt: createdAt.toISOString(),
+        id: eventId.toString(),
+        name: "Christmas 2026",
+        updatedAt: createdAt.toISOString(),
+      });
+    } finally {
+      await database.close();
+    }
   });
 
   it("returns null when the Event entry page projection does not exist", async () => {
     const eventId = Uuid.random();
-    const handler = new GetEventEntryPageQueryHandler(
-      new FakeQueryDatabase(undefined).asDatabase(),
-    );
+    const database = await template.clone();
+    const handler = new GetEventEntryPageQueryHandler(database.applicationDatabase);
 
-    await expect(
-      handler.execute(new GetEventEntryPageQuery(eventId)),
-    ).resolves.toBeNull();
+    try {
+      await expect(
+        handler.execute(new GetEventEntryPageQuery(eventId)),
+      ).resolves.toBeNull();
+    } finally {
+      await database.close();
+    }
   });
 });
-
-type EventEntryPageProjectionRow = typeof eventEntryPageProjection.$inferSelect;
-
-class FakeQueryDatabase {
-  constructor(private readonly row: EventEntryPageProjectionRow | undefined) {}
-
-  asDatabase(): Database {
-    const rows = this.row ? [this.row] : [];
-
-    return {
-      select: () => ({
-        from: () => ({
-          where: () => ({
-            limit: () => Promise.resolve(rows),
-          }),
-        }),
-      }),
-    } as unknown as Database;
-  }
-}

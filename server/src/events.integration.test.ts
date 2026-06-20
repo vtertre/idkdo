@@ -11,7 +11,17 @@ import {
   type StartedPostgreSqlContainer,
 } from "@testcontainers/postgresql";
 import type { FastifyInstance } from "fastify";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { buildApp } from "./app.js";
@@ -58,19 +68,34 @@ describe("Events integration", () => {
 
   it("returns an Event entry page read model by id", async () => {
     const app = context.openApp();
-    const eventId = Uuid.random().toString();
-    const createdAt = new Date("2026-06-19T10:00:00.000Z");
+    const createResponse = await app.inject({
+      method: "POST",
+      payload: { name: "Christmas 2026" },
+      url: "/api/events",
+    });
 
-    await context.databaseClient.db.insert(eventEntryPageProjection).values({
-      createdAt,
-      id: eventId,
-      name: "Christmas 2026",
-      updatedAt: createdAt,
+    expect(createResponse.statusCode).toBe(201);
+
+    const createResponseBody = createEventResponseSchema.parse(
+      JSON.parse(createResponse.body) as unknown,
+    );
+    let projectionRow:
+      | typeof eventEntryPageProjection.$inferSelect
+      | undefined;
+
+    await vi.waitFor(async () => {
+      const rows = await context.databaseClient.db
+        .select()
+        .from(eventEntryPageProjection)
+        .where(eq(eventEntryPageProjection.id, createResponseBody.id));
+
+      projectionRow = rows[0];
+      expect(rows).toHaveLength(1);
     });
 
     const getResponse = await app.inject({
       method: "GET",
-      url: `/api/events/${eventId}`,
+      url: `/api/events/${createResponseBody.id}`,
     });
 
     expect(getResponse.statusCode).toBe(200);
@@ -80,10 +105,10 @@ describe("Events integration", () => {
     );
 
     expect(getResponseBody).toEqual({
-      createdAt: createdAt.toISOString(),
-      id: eventId,
+      id: createResponseBody.id,
       name: "Christmas 2026",
-      updatedAt: createdAt.toISOString(),
+      createdAt: projectionRow!.createdAt.toISOString(),
+      updatedAt: projectionRow!.updatedAt.toISOString(),
     });
   });
 

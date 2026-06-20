@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>PGlite for idkdo database-backed tests</title>
+  <style>
+    :root {
+      --bg: #09111f;
+      --surface: #101c2f;
+      --surface-2: #16243a;
+      --text: #eef5ff;
+      --muted: #aebed2;
+      --line: #2b3e58;
+      --accent: #72e1b3;
+      --accent-2: #7db7ff;
+      --good: #77e0a1;
+      --warn: #ffd479;
+      --bad: #ff9a9a;
+      --code: #07101c;
+      --shadow: 0 18px 55px rgb(0 0 0 / 0.24);
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f4f7fb;
+        --surface: #ffffff;
+        --surface-2: #edf3fa;
+        --text: #172338;
+        --muted: #52647b;
+        --line: #cfdae7;
+        --accent: #087956;
+        --accent-2: #245fac;
+        --good: #157447;
+        --warn: #8b5c00;
+        --bad: #a23838;
+        --code: #eef3f8;
+        --shadow: 0 18px 55px rgb(44 65 90 / 0.12);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 88% 4%, rgb(71 137 213 / 0.16), transparent 26rem),
+        radial-gradient(circle at 8% 2%, rgb(35 179 125 / 0.13), transparent 25rem),
+        var(--bg);
+      color: var(--text);
+      font: 16px/1.65 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: var(--accent-2); text-underline-offset: 0.18em; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    code {
+      padding: 0.08rem 0.32rem;
+      border-radius: 0.3rem;
+      background: var(--code);
+      font-size: 0.9em;
+    }
+    pre {
+      overflow-x: auto;
+      margin: 1rem 0 0;
+      padding: 1rem 1.1rem;
+      border: 1px solid var(--line);
+      border-radius: 0.75rem;
+      background: var(--code);
+      color: var(--text);
+      font-size: 0.84rem;
+      line-height: 1.55;
+    }
+    pre code { padding: 0; background: transparent; }
+    h1, h2, h3 { line-height: 1.2; letter-spacing: -0.025em; }
+    h1 { margin: 0.5rem 0 1rem; font-size: clamp(2.2rem, 6vw, 4.7rem); max-width: 16ch; }
+    h2 { margin: 0 0 1rem; font-size: clamp(1.55rem, 3vw, 2.2rem); }
+    h3 { margin: 1.4rem 0 0.55rem; font-size: 1.12rem; }
+    p { margin: 0.7rem 0; }
+    ul, ol { margin: 0.65rem 0; padding-left: 1.25rem; }
+    li + li { margin-top: 0.42rem; }
+
+    .shell { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; }
+    .hero { padding: 5.5rem 0 3rem; }
+    .eyebrow {
+      display: inline-flex;
+      gap: 0.55rem;
+      align-items: center;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .hero-copy { max-width: 760px; color: var(--muted); font-size: 1.13rem; }
+    .meta { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
+    .pill {
+      display: inline-flex;
+      padding: 0.32rem 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgb(255 255 255 / 0.035);
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 2rem; align-items: start; }
+    nav {
+      position: sticky;
+      top: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      box-shadow: var(--shadow);
+    }
+    nav strong { display: block; margin-bottom: 0.55rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    nav a { display: block; padding: 0.28rem 0; color: var(--muted); text-decoration: none; font-size: 0.88rem; }
+    nav a:hover { color: var(--text); }
+    main { min-width: 0; padding-bottom: 5rem; }
+    section {
+      margin-bottom: 1.4rem;
+      padding: clamp(1.2rem, 3vw, 2rem);
+      border: 1px solid var(--line);
+      border-radius: 1.1rem;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .decision {
+      border-color: color-mix(in srgb, var(--accent) 62%, var(--line));
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface));
+    }
+    .decision-line { font-size: clamp(1.22rem, 2.5vw, 1.7rem); font-weight: 760; line-height: 1.4; max-width: 38ch; }
+    .callout {
+      margin: 1rem 0;
+      padding: 0.85rem 1rem;
+      border-left: 4px solid var(--accent-2);
+      border-radius: 0.2rem 0.7rem 0.7rem 0.2rem;
+      background: var(--surface-2);
+    }
+    .callout.warn { border-left-color: var(--warn); }
+    .callout.good { border-left-color: var(--good); }
+    .muted { color: var(--muted); }
+
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1.2rem; }
+    .metric { padding: 1rem; border: 1px solid var(--line); border-radius: 0.85rem; background: var(--surface-2); }
+    .metric b { display: block; font-size: 1.55rem; color: var(--accent); }
+    .metric span { color: var(--muted); font-size: 0.8rem; }
+
+    .table-wrap { overflow-x: auto; margin-top: 1rem; }
+    table { width: 100%; border-collapse: collapse; min-width: 720px; font-size: 0.9rem; }
+    th, td { padding: 0.78rem 0.72rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.73rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+    .tag { display: inline-flex; white-space: nowrap; padding: 0.16rem 0.52rem; border-radius: 999px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.035em; text-transform: uppercase; }
+    .yes { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+    .keep { color: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 14%, transparent); }
+    .no { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
+    .card { padding: 1rem; border: 1px solid var(--line); border-radius: 0.85rem; background: var(--surface-2); }
+    .card h3 { margin-top: 0; }
+    .finding-id { color: var(--accent); font: 700 0.76rem/1 ui-monospace, monospace; letter-spacing: 0.05em; }
+    .evidence { color: var(--muted); font-size: 0.88rem; }
+    .evidence code { color: var(--text); }
+
+    .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.55rem; margin: 1rem 0; }
+    .flow > div { position: relative; padding: 0.9rem; border: 1px solid var(--line); border-radius: 0.75rem; background: var(--surface-2); font-size: 0.82rem; }
+    .flow b { display: block; color: var(--accent); margin-bottom: 0.2rem; }
+    .flow > div:not(:last-child)::after { content: "→"; position: absolute; right: -0.48rem; top: 50%; z-index: 1; color: var(--accent-2); font-weight: 900; }
+
+    .stage { display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: 1rem; padding: 1.1rem 0; border-top: 1px solid var(--line); }
+    .stage:first-of-type { border-top: 0; }
+    .stage-num { color: var(--accent); font: 800 0.78rem/1.2 ui-monospace, monospace; text-transform: uppercase; }
+    .stage h3 { margin: 0 0 0.45rem; }
+    .scope { color: var(--muted); font-size: 0.86rem; }
+
+    .source-list { columns: 2; column-gap: 2rem; padding-left: 1.2rem; }
+    .source-list li { break-inside: avoid; }
+    footer { padding: 1.5rem 0 4rem; color: var(--muted); font-size: 0.82rem; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      nav { position: static; }
+      nav a { display: inline-block; margin-right: 0.8rem; }
+      .metrics, .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow > div::after { display: none; }
+    }
+    @media (max-width: 620px) {
+      .hero { padding-top: 3rem; }
+      .metrics, .cards, .flow { grid-template-columns: 1fr; }
+      .stage { grid-template-columns: 1fr; gap: 0.4rem; }
+      .source-list { columns: 1; }
+    }
+    @media print {
+      body { background: white; }
+      nav { display: none; }
+      .layout { display: block; }
+      section { box-shadow: none; break-inside: avoid; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero shell">
+    <div class="eyebrow">idkdo · test architecture investigation</div>
+    <h1>PGlite for database-backed tests</h1>
+    <p class="hero-copy">
+      Where an embedded PostgreSQL engine improves handler-test fidelity, where existing doubles are the better tool,
+      and how to add a small PGlite tier without weakening the real PostgreSQL contract.
+    </p>
+    <div class="meta">
+      <span class="pill">Investigated 2026-06-19</span>
+      <span class="pill">Repository commit 6b90c5a</span>
+      <span class="pill">Scope: server handlers, projections, persistence tests</span>
+      <span class="pill">No production or test code changed</span>
+    </div>
+  </header>
+
+  <div class="shell layout">
+    <nav aria-label="Report sections">
+      <strong>Contents</strong>
+      <a href="#decision">Decision</a>
+      <a href="#baseline">Current baseline</a>
+      <a href="#fit">Where PGlite fits</a>
+      <a href="#findings">Evidence</a>
+      <a href="#design">Fixture design</a>
+      <a href="#concerns">Integration concerns</a>
+      <a href="#plan">Staged plan</a>
+      <a href="#verification">Verification</a>
+      <a href="#sources">Sources</a>
+    </nav>
+
+    <main>
+      <section id="decision" class="decision">
+        <div class="eyebrow">Recommendation</div>
+        <h2>Adopt PGlite narrowly as a middle test tier</h2>
+        <p class="decision-line">
+          Replace the two hand-built Drizzle-chain fakes in the projection and query-handler tests. Keep pure command
+          tests on repository doubles and keep Testcontainers as the PostgreSQL 17 parity gate.
+        </p>
+        <div class="callout good">
+          <strong>Why now:</strong> the current read side already executes real SQL-shaped behavior, while its tests only
+          replay configured values. That gap will become more consequential when participant-aware joins and anti-spoil
+          filtering arrive.
+        </div>
+        <p class="muted">
+          PGlite is not a wholesale replacement for PostgreSQL integration testing. It is an embedded PostgreSQL engine
+          that can make database-bearing component tests fast and isolated without starting another container.
+        </p>
+      </section>
+
+      <section id="baseline">
+        <h2>Current baseline</h2>
+        <p>
+          The repository uses Vitest, Drizzle's PostgreSQL dialect, the <code>postgres</code> driver in production, and
+          PostgreSQL 17 Testcontainers for repository and HTTP integration coverage. Unit and integration files currently
+          run under the same Vitest configuration.
+        </p>
+        <div class="metrics" aria-label="Repository test metrics">
+          <div class="metric"><b>19</b><span>server test files</span></div>
+          <div class="metric"><b>2</b><span>Testcontainer-backed suites</span></div>
+          <div class="metric"><b>0</b><span>shared database-test helpers</span></div>
+          <div class="metric"><b>326 ms</b><span>focused 3-file baseline run</span></div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Layer</th><th>Current pattern</th><th>What it proves</th><th>Observed gap</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Command handler</td>
+                <td><code>MemoryEventRepository</code></td>
+                <td>Domain creation, repository orchestration, returned id and emitted event</td>
+                <td>None that PGlite should solve</td>
+              </tr>
+              <tr>
+                <td>Projection handler</td>
+                <td>Recording object shaped like a Drizzle insert chain</td>
+                <td>Arguments passed to <code>values()</code> and <code>onConflictDoUpdate()</code></td>
+                <td>Does not execute SQL, constraints, or conflict behavior</td>
+              </tr>
+              <tr>
+                <td>Query handler</td>
+                <td>Preset row returned by a fake select chain</td>
+                <td>DTO timestamp serialization and null mapping</td>
+                <td>Ignores table, predicate, requested UUID, and limit</td>
+              </tr>
+              <tr>
+                <td>Repository</td>
+                <td>PostgreSQL 17 Testcontainer</td>
+                <td>Production driver, canonical migrations, repository CRUD and type mapping</td>
+                <td>Good parity coverage; container lifecycle is duplicated</td>
+              </tr>
+              <tr>
+                <td>HTTP Events flow</td>
+                <td>PostgreSQL 17 Testcontainer + Fastify injection</td>
+                <td>POST persistence and GET response shape</td>
+                <td>GET seeds the projection directly, so command-to-projection wiring is not covered</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="fit">
+        <h2>Fit matrix</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Test target</th><th>Verdict</th><th>Reason</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><code>UpdateEventEntryPageOnEventCreated</code></td>
+                <td><span class="tag yes">Use PGlite</span></td>
+                <td>The behavior is a persisted PostgreSQL upsert. Assert the resulting row and idempotency, not builder calls.</td>
+              </tr>
+              <tr>
+                <td><code>GetEventEntryPageQueryHandler</code></td>
+                <td><span class="tag yes">Use PGlite</span></td>
+                <td>Seed two rows and prove that the actual UUID predicate selects the requested projection.</td>
+              </tr>
+              <tr>
+                <td>Future visibility-sensitive query handlers</td>
+                <td><span class="tag yes">Use PGlite</span></td>
+                <td>Joins, nullability, predicates, constraints, and anti-spoil filtering are database behavior worth executing.</td>
+              </tr>
+              <tr>
+                <td><code>CreateEventCommandHandler</code></td>
+                <td><span class="tag keep">Keep double</span></td>
+                <td>The accepted architecture explicitly uses repository doubles for ordinary command orchestration.</td>
+              </tr>
+              <tr>
+                <td>CQRS registries, middleware, event-bus scheduling</td>
+                <td><span class="tag keep">Keep fakes</span></td>
+                <td>Recording handlers and deferred promises isolate ordering and asynchronous guarantees better.</td>
+              </tr>
+              <tr>
+                <td>Repository production-driver contract</td>
+                <td><span class="tag no">Keep real PG</span></td>
+                <td>PGlite would not exercise <code>drizzle-orm/postgres-js</code>, TCP, pooling, or the deployed PostgreSQL server.</td>
+              </tr>
+              <tr>
+                <td>Concurrent transactions, locks, roles, network failures</td>
+                <td><span class="tag no">Keep real PG</span></td>
+                <td>PGlite is single-user/single-connection; these behaviors require multiple real PostgreSQL sessions.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warn">
+          <strong>Not a SQLite substitute:</strong> PGlite runs PostgreSQL compiled to WebAssembly, so it is substantially
+          closer to production SQL semantics than a SQLite test database. Its main boundary is server/process and
+          multi-connection behavior, not SQL dialect identity.
+        </div>
+      </section>
+
+      <section id="findings">
+        <h2>Evidence-grounded findings</h2>
+        <div class="cards">
+          <article class="card">
+            <div class="finding-id">TEST-01 · HIGH CONFIDENCE</div>
+            <h3>The query fake can pass with the wrong predicate</h3>
+            <p class="evidence">
+              <code>server/src/queries/events/get-event-entry-page-query-handler.test.ts:44-58</code>
+              returns its configured row without inspecting the selected table, <code>where</code> clause, or UUID.
+              Production performs those operations at
+              <code>...query-handler.ts:16-20</code>.
+            </p>
+            <p><strong>Impact:</strong> a removed filter or wrong id can remain green. <strong>Effort:</strong> M. <strong>Risk:</strong> Low after the fixture exists.</p>
+          </article>
+
+          <article class="card">
+            <div class="finding-id">TEST-02 · HIGH CONFIDENCE</div>
+            <h3>The projection test checks syntax shape, not upsert behavior</h3>
+            <p class="evidence">
+              <code>server/src/projections/update-event-entry-page-on-event-created.test.ts:40-64</code>
+              records builder arguments through <code>as unknown as Database</code>. The real handler relies on PostgreSQL
+              conflict handling at <code>...on-event-created.ts:14-28</code>.
+            </p>
+            <p><strong>Impact:</strong> invalid SQL or incorrect conflict semantics can remain green. <strong>Effort:</strong> M. <strong>Risk:</strong> Low.</p>
+          </article>
+
+          <article class="card">
+            <div class="finding-id">ARCH-01 · HIGH CONFIDENCE</div>
+            <h3>The current database type is driver-bound</h3>
+            <p class="evidence">
+              <code>packages/db/src/client.ts:19-32</code> derives
+              <code>Database</code> from the postgres.js Drizzle client, and
+              <code>packages/db/src/migrate.ts:3-18</code> imports the
+              postgres.js migrator.
+            </p>
+            <p><strong>Impact:</strong> naive adoption spreads unchecked casts or migration-path duplication. <strong>Effort:</strong> M. <strong>Risk:</strong> Medium if solved with a broad abstraction.</p>
+          </article>
+
+          <article class="card">
+            <div class="finding-id">TEST-03 · HIGH CONFIDENCE</div>
+            <h3>The command-to-projection path has no regression test</h3>
+            <p class="evidence">
+              <code>server/src/events.integration.test.ts:32-88</code>
+              verifies POST against <code>events</code>, then tests GET using a manually inserted projection. Wiring lives at
+              <code>server/src/app.ts:91-104</code>.
+            </p>
+            <p><strong>Impact:</strong> event registration, dispatch, projection SQL, or eventual visibility can regress together. <strong>Effort:</strong> S. <strong>Risk:</strong> Low with bounded polling.</p>
+          </article>
+
+          <article class="card">
+            <div class="finding-id">ARCH-02 · HIGH CONFIDENCE</div>
+            <h3>PGlite must complement, not replace, PostgreSQL 17</h3>
+            <p class="evidence">
+              <code>server/src/infrastructure/repositories/drizzle-event-repository.test.ts:24-41</code>
+              and <code>server/src/events.integration.test.ts:99-120</code>
+              exercise the production adapter and canonical migrations against PostgreSQL 17.
+            </p>
+            <p><strong>Impact:</strong> removing these loses protocol, driver, server-version, and multi-session confidence. <strong>Effort:</strong> S to retain. <strong>Risk:</strong> Low.</p>
+          </article>
+
+          <article class="card">
+            <div class="finding-id">TEST-04 · HIGH CONFIDENCE</div>
+            <h3>Database-test lifecycle is duplicated</h3>
+            <p class="evidence">
+              Container startup, migration, table deletion, and shutdown are local to both
+              <code>events.integration.test.ts:92-140</code> and
+              <code>drizzle-event-repository.test.ts:20-41</code>.
+            </p>
+            <p><strong>Impact:</strong> more projections mean longer reset lists and duplicated lifecycle logic. <strong>Effort:</strong> S-M. <strong>Risk:</strong> Low if helpers stay test-only.</p>
+          </article>
+        </div>
+
+        <div class="callout">
+          <strong>Related but not a reason to adopt PGlite:</strong> the memory repository keys a <code>Map</code> by
+          <code>Uuid</code> object identity, while <code>Uuid.equals()</code> is value-based. That test-double semantic should
+          be corrected directly if reconstructed ids begin appearing in command tests; moving all command tests to a
+          database would mask the smaller issue.
+        </div>
+      </section>
+
+      <section id="design">
+        <h2>Suggested fixture design</h2>
+        <p>
+          Start with one test-only helper, not a new database framework. It should create a migrated in-memory template,
+          clone it for isolated tests, wrap each clone with Drizzle's PGlite adapter, and own cleanup.
+        </p>
+        <div class="flow" aria-label="PGlite fixture lifecycle">
+          <div><b>1 · Create</b><code>PGlite.create()</code> in memory</div>
+          <div><b>2 · Migrate</b>Apply checked-in SQL with the PGlite migrator</div>
+          <div><b>3 · Clone</b>Fresh database per test or suite</div>
+          <div><b>4 · Close</b>Close clone and template explicitly</div>
+        </div>
+
+        <h3>Initial files</h3>
+        <ul>
+          <li><code>server/src/test/database/pglite-test-database.ts</code> — lifecycle factory and the only adapter seam.</li>
+          <li><code>server/src/test/database/pglite-test-database.test.ts</code> — proves all checked-in migrations apply and current tables accept representative rows.</li>
+          <li>No generic fixture builders yet. Seed rows directly with Drizzle until a third test repeats the same graph.</li>
+        </ul>
+
+        <h3>Illustrative API</h3>
+        <pre><code>type PgliteTestDatabase = {
+  client: PGlite;
+  db: PgliteDatabase&lt;typeof schema&gt;;
+  applicationDatabase: Database;
+  close(): Promise&lt;void&gt;;
+};
+
+const template = await createMigratedPgliteTemplate();
+const testDatabase = await template.clone();
+
+// Execute the real projection or query handler against testDatabase.
+
+await testDatabase.close();
+await template.close();</code></pre>
+
+        <div class="callout warn">
+          <strong>Type-seam gate:</strong> first check whether <code>PgliteDatabase&lt;typeof schema&gt;</code> is assignable to
+          the current <code>Database</code> type. If it is not, contain one reviewed conversion inside the test helper for
+          the pilot. Do not scatter <code>as unknown as Database</code> across tests, and do not introduce a broad production
+          database abstraction before the pilot proves that it is needed.
+        </div>
+
+        <h3>Use the canonical migrations</h3>
+        <p>
+          Use <code>drizzle-orm/pglite/migrator</code> against <code>packages/db/migrations</code>. Do not recreate tables
+          from test SQL and do not use schema push. The current migrations exercise <code>uuid</code>,
+          <code>timestamptz</code>, <code>ALTER TABLE</code>, defaults, and the projection backfill in
+          <code>0002_wonderful_captain_midlands.sql:8-10</code>.
+        </p>
+      </section>
+
+      <section id="concerns">
+        <h2>Integration concerns and tradeoffs</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Concern</th><th>Assessment for idkdo</th><th>Control</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Schema and migrations</td>
+                <td>Strong fit today. Current SQL uses core PostgreSQL features and no extensions.</td>
+                <td>Apply the checked-in migration directory in the helper and keep one real-PG migration gate.</td>
+              </tr>
+              <tr>
+                <td>Setup and teardown</td>
+                <td>PGlite is in-process, but each instance owns WASM/database memory and must be closed.</td>
+                <td>Use <code>PGlite.create()</code>, migrated templates, clones, and explicit <code>close()</code> in hooks.</td>
+              </tr>
+              <tr>
+                <td>Isolation</td>
+                <td>Memory databases are private per instance. Shared mutable instances would create order dependence.</td>
+                <td>Clone per test for SQL-bearing handlers; never use one process-global mutable database.</td>
+              </tr>
+              <tr>
+                <td>Vitest concurrency</td>
+                <td>Files may execute in parallel workers. Each PGlite instance is still single-connection.</td>
+                <td>Keep the template inside the worker/file. Avoid fixed filesystem paths. Cap workers only after measuring memory.</td>
+              </tr>
+              <tr>
+                <td>Transactions</td>
+                <td>Callback transactions and rollback are supported. Current runtime has no implemented command-transaction middleware yet.</td>
+                <td>Use PGlite later for single-connection commit/rollback behavior; use real PG for isolation anomalies and lock contention.</td>
+              </tr>
+              <tr>
+                <td>Asynchronous projections</td>
+                <td>The event bus resolves before projection handlers finish and suppresses their rejection.</td>
+                <td>Use bounded <code>vi.waitFor</code>; never close/reset the database until the projection predicate succeeds.</td>
+              </tr>
+              <tr>
+                <td>Extensions</td>
+                <td>No extension is currently required. PGlite supports a curated set, loaded when the instance starts.</td>
+                <td>Review every future <code>CREATE EXTENSION</code>. Unsupported or version-sensitive behavior stays on real PG.</td>
+              </tr>
+              <tr>
+                <td>PostgreSQL compatibility</td>
+                <td>Actual PostgreSQL semantics are much stronger than builder fakes, but single-user mode differs from a server.</td>
+                <td>Keep PostgreSQL 17 Testcontainers for the production driver, migrations, roles, connections, and concurrent sessions.</td>
+              </tr>
+              <tr>
+                <td>Performance</td>
+                <td>No repository-specific PGlite benchmark was run. It will be slower than the current 9 ms fake assertions but avoids container startup.</td>
+                <td>Measure cold initialization, migrated-template clone time, full server duration, and peak memory before expanding.</td>
+              </tr>
+              <tr>
+                <td>CI behavior</td>
+                <td>Node support and bundled WASM remove Docker from PGlite tests. CI still needs Docker while parity suites remain.</td>
+                <td>Keep PGlite in the normal fast tier; retain a required PostgreSQL contract job or suite.</td>
+              </tr>
+              <tr>
+                <td>Dependency cost</td>
+                <td>The package is pre-1.0 and adds a WASM payload. Registry data inspected on 2026-06-19 reports version 0.5.3 and about 25.4 MB unpacked.</td>
+                <td>Add it only to <code>@idkdo/server</code> dev dependencies, lock it through pnpm, and review upgrades deliberately.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="plan">
+        <h2>Pragmatic staged migration plan</h2>
+
+        <div class="stage">
+          <div class="stage-num">Stage 0</div>
+          <div>
+            <h3>Prove the helper and type seam</h3>
+            <p>Add <code>@electric-sql/pglite</code> as a server dev dependency, build one migrated in-memory helper, and add a migration smoke test. Measure setup and memory before converting tests.</p>
+            <p class="scope"><strong>Scope:</strong> <code>server/package.json</code>, lockfile, one helper, one helper test. <strong>Stop if:</strong> current migrations fail or the only type-safe route requires a broad production refactor.</p>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-num">Stage 1</div>
+          <div>
+            <h3>Convert the query handler first</h3>
+            <p>Replace <code>FakeQueryDatabase</code>. Seed two projection rows, query one UUID, verify the exact row and ISO timestamps, then verify a missing UUID returns <code>null</code>.</p>
+            <p class="scope"><strong>Done signal:</strong> changing or removing the production UUID predicate makes the test fail.</p>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-num">Stage 2</div>
+          <div>
+            <h3>Convert the projection handler</h3>
+            <p>Replace <code>RecordingProjectionDatabase</code>. Handle an event, read the persisted projection, then handle the same event id with changed data and assert one row remains with the correct conflict-update behavior.</p>
+            <p class="scope"><strong>Done signal:</strong> removing <code>onConflictDoUpdate</code> or targeting the wrong conflict column makes the test fail.</p>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-num">Stage 3</div>
+          <div>
+            <h3>Close the wired projection gap on real PostgreSQL</h3>
+            <p>Extend the existing Events Testcontainer suite: POST an Event, use bounded waiting for its projection, then GET the Event entry page. Reuse the current <code>vi.waitFor</code> pattern; do not use fixed sleeps.</p>
+            <p class="scope"><strong>Reason for real PG:</strong> this is the production adapter, migration, Fastify wiring, event registry, and eventual-consistency contract in one path.</p>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-num">Stage 4</div>
+          <div>
+            <h3>Reassess; do not migrate by default</h3>
+            <p>Keep the command-handler, domain, CQRS, and event-bus mechanics tests pure. Keep current repository tests on PostgreSQL unless Docker time becomes material or repository cases grow substantially.</p>
+            <p class="scope"><strong>Expansion trigger:</strong> visibility-sensitive joins and projection queries repeat database fakes, or measured feedback time justifies a separate fast/PGlite and PostgreSQL contract tier.</p>
+          </div>
+        </div>
+
+        <div class="callout good">
+          <strong>Expected steady state:</strong> pure tests for domain/orchestration, PGlite tests for SQL-bearing handlers,
+          and a compact required PostgreSQL 17 suite for the production driver and server-level behavior.
+        </div>
+      </section>
+
+      <section id="verification">
+        <h2>Verification and acceptance gates</h2>
+        <p>The current focused baseline was executed without code changes:</p>
+        <pre><code>pnpm --filter @idkdo/server exec vitest run \
+  src/commands/events/create-event-command-handler.test.ts \
+  src/projections/update-event-entry-page-on-event-created.test.ts \
+  src/queries/events/get-event-entry-page-query-handler.test.ts
+
+Result: 3 files passed, 4 tests passed, 326 ms total.</code></pre>
+
+        <h3>Required after an adoption implementation</h3>
+        <ol>
+          <li>Run the helper migration smoke test and both converted handler tests directly.</li>
+          <li>Run the PostgreSQL 17 repository and Events integration suites.</li>
+          <li>Run <code>pnpm typecheck</code>, <code>pnpm lint</code>, and <code>pnpm test</code>.</li>
+          <li>Run <code>pnpm verify</code> if docs, test commands, or harness guidance change.</li>
+          <li>Record cold CI duration and peak memory. Do not claim a speed improvement from upstream benchmarks alone.</li>
+        </ol>
+
+        <h3>Pilot acceptance criteria</h3>
+        <ul>
+          <li>The query test fails when the UUID predicate is wrong.</li>
+          <li>The projection test fails when the upsert is removed or misconfigured.</li>
+          <li>Tests are isolated under Vitest file parallelism and close every PGlite instance.</li>
+          <li>No production database behavior is changed solely to accommodate the test engine.</li>
+          <li>PostgreSQL 17 parity coverage remains required.</li>
+        </ul>
+      </section>
+
+      <section id="sources">
+        <h2>Sources reviewed</h2>
+        <h3>Repository evidence</h3>
+        <ul class="source-list">
+          <li><code>docs/SPEC-implementation.md</code></li>
+          <li><code>docs/design-docs/backend-ddd-cqrs.md</code></li>
+          <li><code>docs/design-docs/projections-and-event-bus.md</code></li>
+          <li><code>packages/db/src/schema.ts</code></li>
+          <li><code>packages/db/src/client.ts</code></li>
+          <li><code>packages/db/src/migrate.ts</code></li>
+          <li><code>server/src/projections/update-event-entry-page-on-event-created.test.ts</code></li>
+          <li><code>server/src/queries/events/get-event-entry-page-query-handler.test.ts</code></li>
+          <li><code>server/src/commands/events/create-event-command-handler.test.ts</code></li>
+          <li><code>server/src/events.integration.test.ts</code></li>
+          <li><code>server/src/infrastructure/repositories/drizzle-event-repository.test.ts</code></li>
+          <li><code>server/vitest.config.ts</code></li>
+        </ul>
+
+        <h3>Primary external sources</h3>
+        <ul class="source-list">
+          <li><a href="https://github.com/electric-sql/pglite#readme">PGlite README and limitations</a></li>
+          <li><a href="https://pglite.dev/docs/api">PGlite API: create, clone, transaction, close</a></li>
+          <li><a href="https://pglite.dev/docs/filesystems">PGlite in-memory and filesystem modes</a></li>
+          <li><a href="https://pglite.dev/docs/orm-support">PGlite ORM support: Drizzle</a></li>
+          <li><a href="https://pglite.dev/docs/pglite-socket">PGlite socket and multi-connection limitations</a></li>
+          <li><a href="https://pglite.dev/extensions/">PGlite extension catalog</a></li>
+          <li><a href="https://orm.drizzle.team/docs/connect-pglite">Drizzle PGlite adapter</a></li>
+          <li><a href="https://github.com/drizzle-team/drizzle-orm/blob/main/drizzle-orm/src/pglite/migrator.ts">Drizzle PGlite migrator source</a></li>
+          <li><a href="https://www.npmjs.com/package/@electric-sql/pglite">PGlite package registry page</a></li>
+          <li><a href="https://vitest.dev/config/fileparallelism.html">Vitest file parallelism</a></li>
+        </ul>
+
+        <p class="muted">
+          Not audited: frontend behavior, unrelated domain/API correctness, and long-horizon V1 feature completeness.
+          No PGlite dependency was installed and no PGlite performance benchmark was run; performance conclusions are
+          intentionally framed as measurement gates.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <footer class="shell">
+    Prepared as a read-only architecture investigation. The only repository change is this report.
+  </footer>
+</body>
+</html>

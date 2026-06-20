@@ -1,66 +1,66 @@
-import { eventEntryPageProjection, type Database } from "@idkdo/db";
+import { eventEntryPageProjection } from "@idkdo/db";
 import { Uuid } from "@idkdo/patterns";
 import { Temporal } from "@js-temporal/polyfill";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 
 import { EventCreated } from "../domain/events/event-created.js";
 import { EventName } from "../domain/value-objects/event-name.js";
+import {
+  createMigratedPgliteTemplate,
+  type PgliteTestDatabaseTemplate,
+} from "../test/database/pglite-test-database.js";
 import { UpdateEventEntryPageOnEventCreated } from "./update-event-entry-page-on-event-created.js";
 
 describe("UpdateEventEntryPageOnEventCreated", () => {
+  let template: PgliteTestDatabaseTemplate;
+
+  beforeAll(async () => {
+    template = await createMigratedPgliteTemplate();
+  });
+
+  afterAll(async () => {
+    await template.close();
+  });
+
   it("upserts an Event entry page projection row", async () => {
-    const database = new RecordingProjectionDatabase();
     const occurredAt = Temporal.Instant.from("2026-06-19T10:00:00Z");
-    const event = EventCreated.create({
-      eventId: Uuid.random(),
+    const eventId = Uuid.random();
+    const database = await template.clone();
+    const handler = new UpdateEventEntryPageOnEventCreated(
+      database.applicationDatabase,
+    );
+
+    const firstEvent = EventCreated.create({
+      eventId,
       name: EventName.create("Christmas 2026"),
       occurredAt,
     });
-    const handler = new UpdateEventEntryPageOnEventCreated(database.asDatabase());
-
-    await handler.handle(event);
-
-    expect(database.insertedTable).toBe(eventEntryPageProjection);
-    expect(database.insertedValues).toEqual({
-      createdAt: new Date(occurredAt.epochMilliseconds),
-      id: event.eventId.toString(),
-      name: "Christmas 2026",
-      updatedAt: new Date(occurredAt.epochMilliseconds),
+    const secondOccurredAt = Temporal.Instant.from("2026-06-20T10:00:00Z");
+    const secondEvent = EventCreated.create({
+      eventId,
+      name: EventName.create("Family Birthday"),
+      occurredAt: secondOccurredAt,
     });
-    expect(database.conflictConfig).toMatchObject({
-      set: {
-        name: "Christmas 2026",
-        updatedAt: new Date(occurredAt.epochMilliseconds),
-      },
-      target: eventEntryPageProjection.id,
-    });
+
+    try {
+      await handler.handle(firstEvent);
+      await handler.handle(secondEvent);
+
+      const rows = await database.db
+        .select()
+        .from(eventEntryPageProjection)
+        .where(eq(eventEntryPageProjection.id, eventId.toString()));
+      const row = rows[0];
+
+      expect(rows).toHaveLength(1);
+      expect(row).toBeDefined();
+      expect(row!.id).toBe(eventId.toString());
+      expect(row!.name).toBe("Family Birthday");
+      expect(row!.createdAt.toISOString()).toBe("2026-06-19T10:00:00.000Z");
+      expect(row!.updatedAt.toISOString()).toBe("2026-06-20T10:00:00.000Z");
+    } finally {
+      await database.close();
+    }
   });
 });
-
-class RecordingProjectionDatabase {
-  conflictConfig: unknown;
-  insertedTable: unknown;
-  insertedValues: unknown;
-
-  asDatabase(): Database {
-    return {
-      insert: (table: unknown) => {
-        this.insertedTable = table;
-
-        return {
-          values: (values: unknown) => {
-            this.insertedValues = values;
-
-            return {
-              onConflictDoUpdate: (config: unknown) => {
-                this.conflictConfig = config;
-
-                return Promise.resolve();
-              },
-            };
-          },
-        };
-      },
-    } as unknown as Database;
-  }
-}
