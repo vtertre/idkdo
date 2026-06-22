@@ -78,6 +78,7 @@ The service worker caches static application assets only. It must not cache REST
 - `X-Participant-Id` is lightweight selected Participant identity, not authentication.
 - Server handlers treat selected Participant identity as untrusted input and verify Event membership before applying visibility or mutation rules.
 - Zod validation belongs at external boundaries. Domain invariants belong in domain code.
+- Fastify executes shared Zod wire contracts through the HTTP boundary's validator and serializer compilers. Routes should reference shared request and response schemas directly rather than defining server-local API wire schemas.
 - HTTP errors use the API contract in `docs/SPEC-implementation.md`.
 - PostgreSQL is the persistence target; Drizzle owns schema and migrations.
 - Tests and future structural checks should enforce dependency direction and anti-spoil behavior.

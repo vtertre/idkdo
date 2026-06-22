@@ -1,26 +1,18 @@
 import {
+  apiErrorResponseSchema,
+  type CreateEventRequestBody,
+  createEventRequestBodySchema,
+  createEventResponseSchema,
   getEventEntryPageResponseSchema,
   getEventEntryPageRouteParamsSchema,
   type GetEventEntryPageRouteParams,
 } from "@idkdo/shared";
 import type { FastifyInstance } from "fastify";
-import { z } from "zod";
-
-import { apiErrorResponseSchema } from "../errors/api-error-response-schema.js";
 import type { EventResource } from "../resources/event-resource.js";
 
 export type EventsRouteOptions = {
   readonly eventResource: EventResource;
 };
-
-const createEventResponseSchema = {
-  additionalProperties: false,
-  properties: {
-    id: { type: "string" },
-  },
-  required: ["id"],
-  type: "object",
-} as const;
 
 // eslint-disable-next-line @typescript-eslint/require-await -- Fastify async plugins may only register routes.
 export async function eventsRoute(
@@ -31,13 +23,9 @@ export async function eventsRoute(
     "/events/:eventId",
     {
       schema: {
-        params: z.toJSONSchema(getEventEntryPageRouteParamsSchema, {
-          target: "draft-07",
-        }),
+        params: getEventEntryPageRouteParamsSchema,
         response: {
-          200: z.toJSONSchema(getEventEntryPageResponseSchema, {
-            target: "draft-07",
-          }),
+          200: getEventEntryPageResponseSchema,
           400: apiErrorResponseSchema,
           404: apiErrorResponseSchema,
         },
@@ -46,10 +34,11 @@ export async function eventsRoute(
     (request, reply) => options.eventResource.getEventEntryPage(request, reply),
   );
 
-  app.post(
+  app.post<{ Body: CreateEventRequestBody }>(
     "/events",
     {
       schema: {
+        body: createEventRequestBodySchema,
         response: {
           201: createEventResponseSchema,
           400: apiErrorResponseSchema,

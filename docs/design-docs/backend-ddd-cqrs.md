@@ -49,8 +49,10 @@ server/src/
 
   presentation/
     http/
+      errors/
       resources/
       routes/
+      validation/
 ```
 
 ## TypeScript Style
@@ -66,6 +68,18 @@ Default style:
 - small pure domain policies and local helpers may use functions.
 
 Plain object types are acceptable for API DTOs, read models, schema-inferred types, and small local helper shapes. Do not use them for commands, queries, or domain events.
+
+## HTTP Boundary
+
+Fastify owns HTTP parsing, route registration, and error handling. The HTTP boundary uses shared Zod schemas from `packages/shared` through Fastify's validator and serializer compilers.
+
+Implications:
+
+- routes declare shared request and response schemas directly;
+- Fastify validation runs before resources and passes parsed Zod output into the handler;
+- response serialization validates declared response contracts strictly at runtime;
+- resources translate validated transport data into commands and queries;
+- domain, commands, queries, repositories, and projections must not import Zod.
 
 ## Dependency Injection
 

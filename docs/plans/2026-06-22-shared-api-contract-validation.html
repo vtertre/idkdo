@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>idkdo Shared API Contracts and Fastify Validation</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #10141b;
+      --panel: #171d27;
+      --panel-2: #1d2531;
+      --text: #e8edf4;
+      --muted: #aab5c4;
+      --line: #334052;
+      --accent: #7dd3fc;
+      --good: #86efac;
+      --warn: #fde68a;
+      --bad: #fca5a5;
+      --code: #0b0f15;
+      --max: 1080px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(calc(100% - 32px), var(--max));
+      margin: 0 auto;
+      padding: 48px 0 80px;
+    }
+
+    header, section {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      padding: clamp(20px, 4vw, 36px);
+      margin-bottom: 20px;
+    }
+
+    header {
+      background: linear-gradient(145deg, #172334, var(--panel));
+      border-top: 4px solid var(--accent);
+    }
+
+    h1, h2, h3 { line-height: 1.25; margin-top: 0; }
+    h1 { font-size: clamp(2rem, 5vw, 3.35rem); margin-bottom: 12px; }
+    h2 { font-size: 1.5rem; margin-bottom: 18px; }
+    h3 { font-size: 1.05rem; margin-top: 26px; color: var(--accent); }
+    p { margin: 0 0 14px; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { margin: 8px 0 0; padding-left: 24px; }
+    li + li { margin-top: 8px; }
+
+    a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    code { color: #c4e8ff; }
+    pre {
+      background: var(--code);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      overflow-x: auto;
+      line-height: 1.55;
+      white-space: pre;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .lede { color: var(--muted); font-size: 1.1rem; max-width: 72ch; }
+    .meta { color: var(--muted); font-size: 0.88rem; margin-top: 22px; }
+
+    .verdict {
+      border-left: 4px solid var(--good);
+      background: #14251d;
+      padding: 18px 20px;
+      border-radius: 8px;
+      margin: 18px 0;
+    }
+
+    .verdict strong { color: var(--good); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .card h3 { margin: 0 0 8px; }
+    .card p { color: var(--muted); }
+
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; min-width: 720px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 12px 14px; text-align: left; vertical-align: top; }
+    th { color: var(--accent); background: var(--panel-2); }
+    td { color: var(--muted); }
+    td strong { color: var(--text); }
+
+    .phase {
+      counter-increment: phase;
+      position: relative;
+      padding-left: 54px;
+      margin-top: 26px;
+    }
+
+    .phases { counter-reset: phase; }
+    .phase::before {
+      content: counter(phase);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #071018;
+      font-weight: 800;
+    }
+
+    .phase h3 { color: var(--text); margin: 0 0 8px; }
+    .note { color: var(--warn); }
+    .risk { color: var(--bad); }
+    .success { color: var(--good); }
+    .small { color: var(--muted); font-size: 0.9rem; }
+
+    @media (max-width: 720px) {
+      main { width: min(calc(100% - 20px), var(--max)); padding-top: 20px; }
+      .grid { grid-template-columns: 1fr; }
+      header, section { border-radius: 9px; padding: 20px; }
+      .phase { padding-left: 46px; }
+    }
+
+    @media print {
+      :root { --bg: #fff; --panel: #fff; --panel-2: #f5f7fa; --text: #111827; --muted: #374151; --line: #cbd5e1; --code: #f3f4f6; --accent: #0369a1; }
+      body { background: #fff; }
+      header, section { break-inside: avoid; }
+      a { color: #0369a1; }
+      code { color: #0c4a6e; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">Architecture assessment and implementation plan</p>
+      <h1>Shared API contracts and Fastify validation</h1>
+      <p class="lede">Where idkdo's request and response schemas should live, how Fastify should execute them, and how to migrate the current Event slice without building speculative contract infrastructure.</p>
+      <p class="meta">Prepared 22 June 2026 · Assessed at idkdo commit <code>b210c59</code> · Paperclip comparison at <code>9ac24317</code></p>
+    </header>
+
+    <section>
+      <h2>Executive verdict</h2>
+      <div class="verdict">
+        <p><strong>Your ownership assumption is correct.</strong> API-facing request and response Zod schemas should live in <code>packages/shared</code>, with their TypeScript DTOs inferred from those schemas.</p>
+      </div>
+      <p>This is not a new architectural direction. It is already the accepted idkdo design: the shared package owns API contracts and validators, while Zod validation belongs at external boundaries and not in the domain model.</p>
+      <p>The current Event implementation follows that decision only partially. Its GET route parameters and successful response are shared, but the POST body schema, POST response schema, API error schema, and health response schema are still server-local.</p>
+      <div class="verdict">
+        <p><strong>The middleware assumption needs one Fastify-specific correction.</strong> Validation should run before resource methods, but it should use Fastify's validator compiler rather than Express-style middleware or a validation class.</p>
+      </div>
+      <p>Fastify's compiler is its native validation extension point. It can run a shared Zod schema, replace the request value with Zod's parsed output, and stop invalid requests before the resource executes. A stateless function fits that interface; wrapping it in a class would add ceremony without state, lifecycle, or policy to encapsulate.</p>
+    </section>
+
+    <section>
+      <h2>Objective evidence</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Fact</th><th>Evidence</th><th>Consequence</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Shared contracts are an accepted idkdo boundary.</strong></td>
+              <td><a href="https://github.com/vtertre/idkdo/blob/b210c59fb26e04f28a4634803bf730a86ef8ae89/ARCHITECTURE.md">ARCHITECTURE.md</a> assigns API-facing contracts and validators to <code>packages/shared</code>. The <a href="https://github.com/vtertre/idkdo/blob/b210c59fb26e04f28a4634803bf730a86ef8ae89/docs/design-docs/workspace-packages.md">workspace package decision</a> says response DTOs and API read models live there too.</td>
+              <td>Local request or response schemas in routes/resources are architectural drift, not an alternative design.</td>
+            </tr>
+            <tr>
+              <td><strong>The V1 contract explicitly requires Zod at HTTP boundaries.</strong></td>
+              <td><a href="https://github.com/vtertre/idkdo/blob/b210c59fb26e04f28a4634803bf730a86ef8ae89/docs/SPEC-implementation.md">SPEC-implementation.md</a> names bodies, parameters, queries, and shared response contracts.</td>
+              <td>The server must validate untrusted transport data before it reaches commands and queries.</td>
+            </tr>
+            <tr>
+              <td><strong>The current Event slice is inconsistent.</strong></td>
+              <td><a href="https://github.com/vtertre/idkdo/blob/b210c59fb26e04f28a4634803bf730a86ef8ae89/server/src/presentation/http/resources/event-resource.ts">EventResource</a> defines and parses the POST body locally. <a href="https://github.com/vtertre/idkdo/blob/b210c59fb26e04f28a4634803bf730a86ef8ae89/server/src/presentation/http/routes/events-route.ts">events-route.ts</a> defines POST output locally but imports GET contracts from shared.</td>
+              <td>The next endpoints could easily repeat two competing validation styles unless the boundary is corrected now.</td>
+            </tr>
+            <tr>
+              <td><strong>Paperclip demonstrates shared ownership and early body parsing.</strong></td>
+              <td>Paperclip keeps request schemas in <a href="https://github.com/paperclipai/paperclip/tree/9ac24317e6d70107dfebda40b6902025bc2c392b/packages/shared/src/validators">shared validators</a> and its <a href="https://github.com/paperclipai/paperclip/blob/9ac24317e6d70107dfebda40b6902025bc2c392b/server/src/middleware/validate.ts">Express middleware</a> assigns <code>schema.parse(req.body)</code> back to the request.</td>
+              <td>The ownership principle transfers to idkdo; the Express mechanism does not.</td>
+            </tr>
+            <tr>
+              <td><strong>Fastify does not provide Express middleware natively.</strong></td>
+              <td><a href="https://fastify.dev/docs/latest/Reference/Middleware/">Fastify's middleware documentation</a> requires an external compatibility plugin and notes that native Fastify request/reply objects are not available in that phase.</td>
+              <td>Adding Express middleware compatibility solely for validation would be unnecessary framework surface.</td>
+            </tr>
+            <tr>
+              <td><strong>Fastify supports custom validators directly.</strong></td>
+              <td><a href="https://fastify.dev/docs/latest/Reference/Validation-and-Serialization/">Fastify validation and serialization</a> defines <code>setValidatorCompiler</code> for bodies, parameters, headers, and query strings, with parsed values returned as <code>{ value }</code>.</td>
+              <td>A small Zod compiler function provides the same useful behavior as Paperclip while staying inside Fastify's lifecycle.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Paperclip: what to copy and what not to copy</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Copy the ownership rule</h3>
+          <p>Wire schemas belong in the package shared by API producer and consumer. Types should be inferred from schemas rather than separately handwritten.</p>
+        </article>
+        <article class="card">
+          <h3>Copy parsed-value replacement</h3>
+          <p>The handler should receive Zod's result, including trimming, coercion, defaults, and stripped or rejected keys according to the schema.</p>
+        </article>
+        <article class="card">
+          <h3>Do not copy Express middleware literally</h3>
+          <p>Paperclip imports Express <code>Request</code>, <code>Response</code>, and <code>NextFunction</code>. Fastify has a different lifecycle and a native compiler interface.</p>
+        </article>
+        <article class="card">
+          <h3>Do not overstate Paperclip's response coverage</h3>
+          <p>Paperclip shares many request validators and response types, but it does not consistently define a Zod response schema for every endpoint. idkdo can adopt the stronger, internally consistent rule.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Target boundary</h2>
+      <pre><code>HTTP JSON
+   |
+   v
+Fastify parser
+   |
+   v
+Zod validator compiler
+   |  shared body / params / query / header schema
+   |  returns parsed and transformed value
+   v
+Resource class
+   |  constructs a transport-independent command or query
+   v
+Command bus / query bus -> domain and persistence
+   |
+   v
+Shared response DTO
+   |
+   v
+Zod serializer compiler
+   |  validates the declared status-specific response schema
+   v
+HTTP JSON</code></pre>
+      <p>The boundary separates transport validation from domain invariants. A blank Event name is rejected as a <code>400</code> at HTTP input, while the domain keeps its blank-name rule so non-HTTP command callers cannot bypass it.</p>
+      <p class="note">Zod should remain absent from domain entities, commands, handlers, repositories, and projections. Only the shared contract package and HTTP boundary adapter need it.</p>
+    </section>
+
+    <section>
+      <h2>Contract organization</h2>
+      <p>Keep the existing one-concept-per-file convention and add contracts only for implemented endpoints.</p>
+      <pre><code>packages/shared/src/validators/
+  api-error-response-schema.ts
+  create-event-request-body-schema.ts
+  create-event-response-schema.ts
+  get-event-entry-page-route-params-schema.ts
+  get-event-entry-page-response-schema.ts
+  health-response-schema.ts</code></pre>
+      <p>Each schema exports its inferred type, for example:</p>
+      <pre><code>export const createEventRequestBodySchema = z
+  .object({
+    name: z.string().trim().min(1),
+  })
+  .strict();
+
+export type CreateEventRequestBody = z.infer&lt;
+  typeof createEventRequestBodySchema
+&gt;;</code></pre>
+      <p>Do not pre-create schemas for Participants, Wishes, Reservations, or Contributors. Introduce each endpoint's body, parameter, query, header, success response, and error contracts with that vertical slice.</p>
+    </section>
+
+    <section>
+      <h2>Fastify adapter design</h2>
+      <h3>Request validation compiler</h3>
+      <pre><code>export const zodValidatorCompiler = ({ schema }) =&gt; (data) =&gt; {
+  const result = schema.safeParse(data);
+
+  return result.success
+    ? { value: result.data }
+    : { error: result.error };
+};</code></pre>
+      <p>Fastify requires custom validators to return errors rather than throw them. Returning <code>result.data</code> ensures transformations such as <code>.trim()</code> reach the resource.</p>
+
+      <h3>Strict response serializer</h3>
+      <pre><code>export const zodSerializerCompiler = ({ schema }) =&gt; (data) =&gt; {
+  const result = schema.safeParse(data);
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  return JSON.stringify(result.data);
+};</code></pre>
+      <p>This plan chooses strict runtime response validation. Missing, wrongly typed, or additional fields are server contract violations. They are logged internally and returned as the shared generic <code>500</code> response, without Zod details.</p>
+
+      <h3>Registration</h3>
+      <pre><code>const app = Fastify(options);
+app.setValidatorCompiler(zodValidatorCompiler);
+app.setSerializerCompiler(zodSerializerCompiler);
+app.setErrorHandler(apiErrorHandler);</code></pre>
+      <p>Register the compilers before routes. Route definitions then use shared Zod schemas directly, while resources stop importing Zod and stop calling <code>parseRequestBody</code>.</p>
+    </section>
+
+    <section>
+      <h2>Implementation sequence</h2>
+      <div class="phases">
+        <article class="phase">
+          <h3>Centralize the contracts already in use</h3>
+          <p>Move the Event POST body, Event POST response, API error response, and health response schemas into <code>packages/shared</code>. Strengthen the created Event id from an arbitrary string to a UUID. Export inferred DTOs from the package barrel.</p>
+          <p class="small">Gate: shared schema tests and <code>pnpm --filter @idkdo/shared typecheck</code>.</p>
+        </article>
+
+        <article class="phase">
+          <h3>Add the Fastify Zod boundary adapter</h3>
+          <p>Add one validator-compiler function and one serializer-compiler function under the HTTP presentation boundary. Register both in application construction before route registration.</p>
+          <p class="small">Gate: compiler unit tests cover parsed output, validation failure, response serialization, and response rejection.</p>
+        </article>
+
+        <article class="phase">
+          <h3>Migrate current routes</h3>
+          <p>Use shared Zod schemas directly in health and Event route definitions. Type the POST body with <code>CreateEventRequestBody</code>. Remove resource-local parsing and annotate reply objects with shared response DTOs where compile-time checking adds value.</p>
+          <p class="small">Gate: focused HTTP integration tests pass.</p>
+        </article>
+
+        <article class="phase">
+          <h3>Consolidate error handling</h3>
+          <p>Recognize Fastify validation through <code>FST_ERR_VALIDATION</code> and <code>validationContext</code>, not Ajv-specific error-array structure. Map body, params, query, and headers to stable <code>400</code> messages. Keep response validation failures on the logged generic <code>500</code> path.</p>
+          <p class="small">Gate: no validation details or infrastructure messages appear in client responses.</p>
+        </article>
+
+        <article class="phase">
+          <h3>Remove the superseded manual path</h3>
+          <p>Delete <code>parse-request-body.ts</code>, its tests, and <code>RequestValidationError</code> after all callers are migrated. Update the backend and workspace design docs with the compiler convention and strict response policy.</p>
+          <p class="small">Gate: repository search finds no remaining manual request-body parser or server-local API schema.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Behavior and error semantics</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Condition</th><th>Result</th><th>Reason</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Valid body with padded name</td><td><strong>Parsed and trimmed before resource execution</strong></td><td>Zod output replaces the raw request body.</td></tr>
+            <tr><td>Missing, blank, wrongly typed, or additional body field</td><td><strong>400 VALIDATION_ERROR</strong></td><td>The request does not satisfy the wire contract.</td></tr>
+            <tr><td>Invalid or nil Event route UUID</td><td><strong>400 VALIDATION_ERROR</strong></td><td>Route parameter validation runs through the same compiler.</td></tr>
+            <tr><td>Valid transport value violating a domain rule</td><td><strong>422 domain error</strong></td><td>Domain invariants remain authoritative after transport parsing.</td></tr>
+            <tr><td>Missing Event</td><td><strong>404 shared API error</strong></td><td>Resource lookup outcome, not input validation.</td></tr>
+            <tr><td>Response violates its declared shared schema</td><td><strong>Logged generic 500</strong></td><td>A producer-side contract failure must not be hidden or exposed in detail.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Test and acceptance plan</h2>
+      <h3>Shared contract tests</h3>
+      <ul>
+        <li>Accept valid request and response payloads.</li>
+        <li>Prove trimming and defaults return the expected parsed value.</li>
+        <li>Reject missing fields, wrong types, unknown properties, and invalid or nil UUIDs.</li>
+        <li>Prove the API error schema accepts only the stable <code>error.code</code> and <code>error.message</code> structure.</li>
+      </ul>
+
+      <h3>Server boundary tests</h3>
+      <ul>
+        <li>The validator compiler returns parsed Zod output and returns—not throws—request errors.</li>
+        <li>The serializer compiler serializes valid output and rejects missing, wrong, or additional fields.</li>
+        <li>The error handler maps body, params, query, and header contexts without leaking Zod issues.</li>
+        <li>Unknown and response-contract errors are logged once and return the generic shared <code>500</code> contract.</li>
+      </ul>
+
+      <h3>HTTP integration tests</h3>
+      <ul>
+        <li>POST Event persists a trimmed name and returns a shared UUID response.</li>
+        <li>Invalid POST bodies return <code>400</code> and perform no database write.</li>
+        <li>Invalid GET Event ids return <code>400</code>; absent valid ids return <code>404</code>.</li>
+        <li>Event entry and health success bodies parse with their shared response schemas.</li>
+      </ul>
+
+      <pre><code>pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+pnpm verify</code></pre>
+      <p class="success">Done means all five commands exit successfully and no route/resource defines an API wire schema outside <code>packages/shared</code>.</p>
+    </section>
+
+    <section>
+      <h2>Risks and explicit non-goals</h2>
+      <ul>
+        <li><span class="risk">Response strictness:</span> an undeclared output field becomes a <code>500</code> rather than being silently removed. This is intentional and requires strong integration tests.</li>
+        <li><span class="risk">Error-handler shape:</span> a custom Zod validator does not expose Ajv's exact error-array structure. Detection must rely on Fastify's stable validation code/context.</li>
+        <li><span class="note">No speculative contracts:</span> do not create every V1 endpoint schema in advance.</li>
+        <li><span class="note">No domain validation migration:</span> domain value objects and policies keep their invariants.</li>
+        <li><span class="note">No Express compatibility plugin:</span> Fastify's compiler is sufficient.</li>
+        <li><span class="note">No new type-provider dependency:</span> explicit inferred DTO types are adequate for the current codebase. Reconsider a Fastify Zod type provider only if OpenAPI generation or route-level inference becomes a demonstrated need.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Final recommendation</h2>
+      <p>Correct the current Event slice before adding Participants. Make <code>packages/shared</code> the single source of truth for the wire contract, let Fastify execute those schemas through two small compiler functions, and keep resource classes focused on translating validated HTTP data into commands and queries.</p>
+      <p>This preserves the useful part of Paperclip's approach while matching Fastify's lifecycle and idkdo's existing DDD/CQRS boundaries.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,14 +1,6 @@
 import { BusinessRuleViolation } from "@idkdo/patterns";
+import type { ApiErrorResponse } from "@idkdo/shared";
 import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
-
-import { RequestValidationError } from "./request-validation-error.js";
-
-type ApiErrorResponse = {
-  readonly error: {
-    readonly code: string;
-    readonly message: string;
-  };
-};
 
 type HttpErrorResponse = {
   readonly body: ApiErrorResponse;
@@ -30,18 +22,6 @@ export function apiErrorHandler(
 }
 
 function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
-  if (error instanceof RequestValidationError) {
-    return {
-      body: {
-        error: {
-          code: "VALIDATION_ERROR",
-          message: error.message,
-        },
-      },
-      statusCode: 400,
-    };
-  }
-
   if (error instanceof BusinessRuleViolation) {
     return {
       body: {
@@ -94,17 +74,23 @@ function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
 }
 
 function getFastifyValidationMessage(error: unknown): string | undefined {
-  if (
-    !isRecord(error) ||
-    error["code"] !== "FST_ERR_VALIDATION" ||
-    !Array.isArray(error["validation"])
-  ) {
+  if (!isRecord(error) || error["code"] !== "FST_ERR_VALIDATION") {
     return undefined;
   }
 
-  return error["validationContext"] === "params"
-    ? "Invalid route parameters."
-    : "Invalid request.";
+  switch (error["validationContext"]) {
+    case "body":
+      return "Invalid request body.";
+    case "headers":
+      return "Invalid request headers.";
+    case "params":
+      return "Invalid route parameters.";
+    case "query":
+    case "querystring":
+      return "Invalid query parameters.";
+    default:
+      return "Invalid request.";
+  }
 }
 
 function getClientErrorStatusCode(error: unknown): number | undefined {

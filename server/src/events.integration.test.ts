@@ -5,7 +5,11 @@ import {
   migrateDatabase,
 } from "@idkdo/db";
 import { Uuid } from "@idkdo/patterns";
-import { getEventEntryPageResponseSchema } from "@idkdo/shared";
+import {
+  createEventResponseSchema,
+  getEventEntryPageResponseSchema,
+  healthResponseSchema,
+} from "@idkdo/shared";
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
@@ -22,14 +26,9 @@ import {
   vi,
 } from "vitest";
 import { eq } from "drizzle-orm";
-import { z } from "zod";
 
 import { buildApp } from "./app.js";
 import type { ServerEnvironment } from "./configuration/environment.js";
-
-const createEventResponseSchema = z.object({
-  id: z.string().uuid(),
-});
 
 describe("Events integration", () => {
   const context = new EventsIntegrationContext();
@@ -65,6 +64,56 @@ describe("Events integration", () => {
     expect(persistedEvent!.createdAt).toBeInstanceOf(Date);
     expect(persistedEvent!.updatedAt).toBeInstanceOf(Date);
   });
+
+  it("trims the Event name before persistence", async () => {
+    const app = context.openApp();
+
+    const response = await app.inject({
+      method: "POST",
+      payload: { name: "  Christmas 2026  " },
+      url: "/api/events",
+    });
+
+    expect(response.statusCode).toBe(201);
+
+    const responseBody = createEventResponseSchema.parse(
+      JSON.parse(response.body) as unknown,
+    );
+    const persistedEvents = await context.databaseClient.db.select().from(events);
+
+    expect(responseBody.id).toBe(persistedEvents[0]?.id);
+    expect(persistedEvents[0]?.name).toBe("Christmas 2026");
+  });
+
+  it("rejects invalid Event create bodies without writing to the database", async () => {
+    const app = context.openApp();
+
+    const response = await app.inject({
+      method: "POST",
+      payload: { name: "   ", extra: true },
+      url: "/api/events",
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body)).toEqual({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid request body.",
+      },
+    });
+
+    const persistedEvents = await context.databaseClient.db.select().from(events);
+    expect(persistedEvents).toHaveLength(0);
+  });
+});
+
+describe("Event lookup integration", () => {
+  const context = new EventsIntegrationContext();
+
+  beforeAll(() => context.start(), 120_000);
+  beforeEach(() => context.resetDatabase());
+  afterEach(() => context.closeApp());
+  afterAll(() => context.stop(), 120_000);
 
   it("returns an Event entry page read model by id", async () => {
     const app = context.openApp();
@@ -112,6 +161,48 @@ describe("Events integration", () => {
     });
   });
 
+  it("returns 400 for an invalid Event id", async () => {
+    const app = context.openApp();
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/events/not-a-uuid",
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body)).toEqual({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid route parameters.",
+      },
+    });
+  });
+});
+
+describe("Health integration", () => {
+  const context = new EventsIntegrationContext();
+
+  beforeAll(() => context.start(), 120_000);
+  beforeEach(() => context.resetDatabase());
+  afterEach(() => context.closeApp());
+  afterAll(() => context.stop(), 120_000);
+
+  it("returns the shared health response contract", async () => {
+    const app = context.openApp();
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/health",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(
+      healthResponseSchema.parse(JSON.parse(response.body) as unknown),
+    ).toEqual({
+      service: "idkdo-api",
+      status: "ok",
+    });
+  });
 });
 
 class EventsIntegrationContext {

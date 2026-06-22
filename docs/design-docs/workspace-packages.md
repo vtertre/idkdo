@@ -51,6 +51,7 @@ Guidelines:
 - `types/` contains TypeScript interfaces and API-facing read model types.
 - `validators/` contains Zod schemas and input types inferred from those schemas.
 - Zod schemas live at application boundaries, not in the domain model.
+- Implemented HTTP endpoints should keep their request bodies, params, query strings, headers, success responses, and shared error responses in `packages/shared` one contract file at a time.
 - API paths and shared constants should be centralized when multiple packages need them.
 
 API response DTOs and API-facing read model types live in `packages/shared`. Server query handlers return these shared DTO types, and the Web UI consumes the same types.

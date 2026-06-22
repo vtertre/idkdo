@@ -3,27 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { BlankEventNameError } from "../../../domain/errors/blank-event-name-error.js";
 import { apiErrorHandler } from "./api-error-handler.js";
-import { RequestValidationError } from "./request-validation-error.js";
 
 describe("apiErrorHandler", () => {
-  it("maps request validation errors to 400", () => {
-    const reply = new RecordingReply();
-
-    apiErrorHandler(
-      new RequestValidationError() as FastifyError,
-      fakeRequest(),
-      reply.asFastifyReply(),
-    );
-
-    expect(reply.statusCode).toBe(400);
-    expect(reply.body).toEqual({
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid request body.",
-      },
-    });
-  });
-
   it("maps business rule violations to 422", () => {
     const reply = new RecordingReply();
 
@@ -38,26 +19,6 @@ describe("apiErrorHandler", () => {
       error: {
         code: "BLANK_EVENT_NAME",
         message: "Event name must not be blank.",
-      },
-    });
-  });
-
-  it("maps Fastify route parameter validation errors to 400", () => {
-    const reply = new RecordingReply();
-    const error = new Error("params validation failed") as FastifyError;
-    error.code = "FST_ERR_VALIDATION";
-    Object.assign(error, {
-      validation: [{ keyword: "format" }],
-      validationContext: "params",
-    });
-
-    apiErrorHandler(error, fakeRequest(), reply.asFastifyReply());
-
-    expect(reply.statusCode).toBe(400);
-    expect(reply.body).toEqual({
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid route parameters.",
       },
     });
   });
@@ -99,6 +60,69 @@ describe("apiErrorHandler", () => {
       },
     });
     expect(request.log.error).toHaveBeenCalledOnce();
+  });
+});
+
+describe("apiErrorHandler validation mapping", () => {
+  it("maps Fastify body validation errors to 400", () => {
+    const reply = new RecordingReply();
+    const error = new Error("body validation failed") as FastifyError;
+    error.code = "FST_ERR_VALIDATION";
+    Object.assign(error, {
+      validationContext: "body",
+    });
+
+    apiErrorHandler(
+      error,
+      fakeRequest(),
+      reply.asFastifyReply(),
+    );
+
+    expect(reply.statusCode).toBe(400);
+    expect(reply.body).toEqual({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid request body.",
+      },
+    });
+  });
+
+  it("maps Fastify route parameter validation errors to 400", () => {
+    const reply = new RecordingReply();
+    const error = new Error("params validation failed") as FastifyError;
+    error.code = "FST_ERR_VALIDATION";
+    Object.assign(error, {
+      validationContext: "params",
+    });
+
+    apiErrorHandler(error, fakeRequest(), reply.asFastifyReply());
+
+    expect(reply.statusCode).toBe(400);
+    expect(reply.body).toEqual({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid route parameters.",
+      },
+    });
+  });
+
+  it("maps Fastify query validation errors to 400", () => {
+    const reply = new RecordingReply();
+    const error = new Error("query validation failed") as FastifyError;
+    error.code = "FST_ERR_VALIDATION";
+    Object.assign(error, {
+      validationContext: "query",
+    });
+
+    apiErrorHandler(error, fakeRequest(), reply.asFastifyReply());
+
+    expect(reply.statusCode).toBe(400);
+    expect(reply.body).toEqual({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid query parameters.",
+      },
+    });
   });
 });
 

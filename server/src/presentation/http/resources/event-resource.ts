@@ -1,18 +1,14 @@
-import type { GetEventEntryPageRouteParams } from "@idkdo/shared";
+import type {
+  CreateEventRequestBody,
+  CreateEventResponse,
+  GetEventEntryPageRouteParams,
+} from "@idkdo/shared";
 import type { CommandBus, QueryBus } from "@idkdo/patterns";
 import { Uuid } from "@idkdo/patterns";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { z } from "zod";
 
 import { CreateEventCommand } from "../../../commands/events/create-event-command.js";
 import { GetEventEntryPageQuery } from "../../../queries/events/get-event-entry-page-query.js";
-import { parseRequestBody } from "../validation/parse-request-body.js";
-
-const createEventRequestSchema = z
-  .object({
-    name: z.string().trim().min(1),
-  })
-  .strict();
 
 export class EventResource {
   constructor(
@@ -20,11 +16,16 @@ export class EventResource {
     private readonly queryBus: QueryBus,
   ) {}
 
-  async createEvent(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const body = parseRequestBody(createEventRequestSchema, request.body);
+  async createEvent(
+    request: FastifyRequest<{ Body: CreateEventRequestBody }>,
+    reply: FastifyReply,
+  ): Promise<void> {
+    const body: CreateEventRequestBody = request.body;
     const eventId = await this.commandBus.execute(new CreateEventCommand(body.name));
 
-    reply.status(201).send({ id: eventId.toString() });
+    const response: CreateEventResponse = { id: eventId.toString() };
+
+    reply.status(201).send(response);
   }
 
   async getEventEntryPage(

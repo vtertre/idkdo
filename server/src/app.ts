@@ -17,6 +17,8 @@ import { apiErrorHandler } from "./presentation/http/errors/api-error-handler.js
 import { EventResource } from "./presentation/http/resources/event-resource.js";
 import { eventsRoute } from "./presentation/http/routes/events-route.js";
 import { healthRoute } from "./presentation/http/routes/health-route.js";
+import { zodSerializerCompiler } from "./presentation/http/validation/zod-serializer-compiler.js";
+import { zodValidatorCompiler } from "./presentation/http/validation/zod-validator-compiler.js";
 import { UpdateEventEntryPageOnEventCreated } from "./projections/update-event-entry-page-on-event-created.js";
 import { GetEventEntryPageQueryHandler } from "./queries/events/get-event-entry-page-query-handler.js";
 import { GetEventEntryPageQuery } from "./queries/events/get-event-entry-page-query.js";
@@ -28,6 +30,8 @@ export type BuildAppOptions = {
 
 export function buildApp(options: BuildAppOptions): FastifyInstance {
   const app = Fastify(buildFastifyOptions(options.environment));
+  app.setValidatorCompiler(zodValidatorCompiler);
+  app.setSerializerCompiler(zodSerializerCompiler);
   app.setErrorHandler(apiErrorHandler);
 
   const databaseClient =
