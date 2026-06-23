@@ -5,7 +5,10 @@ packages:
 # drizzle-kit pulls esbuild transitively; pnpm requires explicit approval for
 # esbuild's native binary install script.
 allowBuilds:
+  '@parcel/watcher': true
   cpu-features: false
   esbuild: true
+  lmdb: true
+  msgpackr-extract: true
   protobufjs: false
   ssh2: false

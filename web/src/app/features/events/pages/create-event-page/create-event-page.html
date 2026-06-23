@@ -1,0 +1,28 @@
+<section class="panel" aria-labelledby="create-event-title">
+  <h1 id="create-event-title">Create an Event</h1>
+  <p>Start a private place where your group can coordinate gifts.</p>
+
+  <form (submit)="onSubmit($event)" novalidate>
+    <label for="event-name">Event name</label>
+    <input
+      id="event-name"
+      type="text"
+      autocomplete="off"
+      [formField]="eventForm.name"
+    />
+
+    @if (eventForm.name().touched() && eventForm.name().invalid()) {
+      <p class="field-error" id="event-name-error">
+        {{ eventForm.name().errors()[0]?.message }}
+      </p>
+    }
+
+    <button type="submit" [disabled]="eventForm().submitting()">
+      {{ eventForm().submitting() ? "Creating…" : "Create Event" }}
+    </button>
+
+    @if (submitError()) {
+      <p class="submit-error" aria-live="polite">{{ submitError() }}</p>
+    }
+  </form>
+</section>

@@ -1,0 +1,18 @@
+<section class="panel" aria-labelledby="event-title">
+  @if (loading()) {
+    <p aria-live="polite">Loading Event…</p>
+  } @else if (event(); as loadedEvent) {
+    <p class="eyebrow">Your Event</p>
+    <h1 id="event-title">{{ loadedEvent.name }}</h1>
+    <div class="share">
+      <h2>Share this Event</h2>
+      <p>Send this link to the people you want to coordinate with.</p>
+      <a [href]="shareUrl()">{{ shareUrl() }}</a>
+    </div>
+    <p class="next-step">Participant entry is the next step and is not available yet.</p>
+  } @else {
+    <h1 id="event-title">Event unavailable</h1>
+    <p class="error" aria-live="polite">{{ error() }}</p>
+    <a class="back-link" href="/">Create another Event</a>
+  }
+</section>
