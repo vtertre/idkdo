@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Plan 001 · Angular Event creation PWA · idkdo</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0d12;
+      --panel: #131722;
+      --panel-2: #191f2d;
+      --text: #edf1f7;
+      --muted: #9da8ba;
+      --line: #2b3447;
+      --accent: #8cb4ff;
+      --accent-2: #78dbc1;
+      --warning: #ffca74;
+      --danger: #ff929f;
+      --code: #090b10;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 12% 0%, rgba(75, 113, 190, 0.18), transparent 34rem),
+        radial-gradient(circle at 88% 8%, rgba(43, 145, 121, 0.12), transparent 30rem),
+        var(--bg);
+      color: var(--text);
+      font: 16px/1.65 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--accent); }
+    a:hover { color: #b6cfff; }
+
+    .shell {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 56px 0 96px;
+    }
+
+    header {
+      padding: 32px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: linear-gradient(145deg, rgba(24, 31, 46, 0.96), rgba(13, 16, 24, 0.96));
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent-2);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 { line-height: 1.2; }
+    h1 { max-width: 850px; margin: 0; font-size: clamp(2rem, 5vw, 4.2rem); letter-spacing: -0.045em; }
+    h2 { margin: 0 0 18px; font-size: clamp(1.35rem, 3vw, 2rem); letter-spacing: -0.02em; }
+    h3 { margin: 24px 0 10px; font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .lede {
+      max-width: 800px;
+      margin: 20px 0 0;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .meta, .grid, .steps { display: grid; gap: 14px; }
+    .meta { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 28px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .meta div, .card, .step {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel-2);
+    }
+
+    .meta div { padding: 12px 14px; }
+    .meta span { display: block; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .meta strong { display: block; margin-top: 3px; }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin: 22px 0 0;
+    }
+
+    nav a {
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.86rem;
+    }
+
+    nav a:hover { border-color: var(--accent); color: var(--text); }
+
+    section {
+      margin-top: 24px;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(19, 23, 34, 0.94);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .card { padding: 18px; }
+    .card h3 { margin-top: 0; }
+    .step { padding: 20px; }
+    .step h3 { margin-top: 0; }
+    .step .gate { margin-top: 14px; color: var(--accent-2); }
+
+    .callout {
+      padding: 16px 18px;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      background: rgba(78, 120, 199, 0.12);
+    }
+
+    .callout.warning { border-color: var(--warning); background: rgba(190, 128, 31, 0.11); }
+    .callout.danger { border-color: var(--danger); background: rgba(185, 67, 81, 0.11); }
+
+    .muted, small { color: var(--muted); }
+    .good { color: var(--accent-2); }
+    .risk { color: var(--warning); }
+
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    code { color: #d8e4ff; }
+    p code, li code, td code { padding: 0.12em 0.36em; border-radius: 5px; background: var(--code); }
+
+    pre {
+      overflow-x: auto;
+      margin: 14px 0 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--code);
+      color: #dbe7fb;
+      font-size: 0.86rem;
+      line-height: 1.55;
+      white-space: pre;
+    }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 11px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.07em; }
+    tr:last-child td { border-bottom: 0; }
+
+    ul, ol { margin: 10px 0 0; padding-left: 1.35rem; }
+    li + li { margin-top: 7px; }
+
+    .checks { list-style: none; padding: 0; }
+    .checks li { position: relative; padding-left: 1.65rem; }
+    .checks li::before { content: "□"; position: absolute; left: 0; color: var(--accent-2); }
+
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 20px, 1120px); padding-top: 16px; }
+      header, section { padding: 20px; border-radius: 16px; }
+      .meta, .grid.two { grid-template-columns: 1fr; }
+      h1 { font-size: 2.35rem; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <p class="eyebrow">idkdo · Improve plan 001 · revised 2026-06-23</p>
+      <h1>Replace the web placeholder with the Event creation Angular PWA</h1>
+      <p class="lede">A focused first browser slice: create an Event, navigate to its deep link, load the Event read model, and expose the URL for sharing. It deliberately stops before Participant, Wish, Reservation, or Contributor frontend data access.</p>
+      <div class="meta">
+        <div><span>Priority</span><strong>P1</strong></div>
+        <div><span>Effort</span><strong>M</strong></div>
+        <div><span>Risk</span><strong>Medium</strong></div>
+        <div><span>Depends on</span><strong>None</strong></div>
+      </div>
+      <nav aria-label="Plan sections">
+        <a href="#outcome">Outcome</a>
+        <a href="#state">Current state</a>
+        <a href="#decisions">Decisions</a>
+        <a href="#scope">Scope</a>
+        <a href="#steps">Steps</a>
+        <a href="#tests">Tests</a>
+        <a href="#done">Done</a>
+        <a href="#stop">STOP conditions</a>
+        <a href="#prompt">Executor prompt</a>
+      </nav>
+    </header>
+
+    <section id="outcome">
+      <h2>Outcome and drift check</h2>
+      <div class="callout">
+        <p><strong>Executor instruction:</strong> follow the steps in order, run each gate, and do not improvise past a STOP condition.</p>
+      </div>
+      <p><strong>Planned at:</strong> commit <code>1790decb6bb9588cf0885357a3b7fffc48e55b2f</code>; revised on 2026-06-23 for Angular 22, Node 24.17, eager entry routes, and Signal Forms.</p>
+      <p><strong>Run first:</strong></p>
+      <pre><code>git diff --stat 1790decb6bb9588cf0885357a3b7fffc48e55b2f..HEAD -- \
+  web package.json pnpm-lock.yaml .github/workflows/ci.yml docs/DEVELOPING.md \
+  packages/shared/src server/src/presentation/http/routes/events-route.ts</code></pre>
+      <p class="muted">If an in-scope file or either Event contract changed, compare the live code with this plan before editing. A contract mismatch is a STOP condition.</p>
+
+      <div class="grid two">
+        <article class="card">
+          <h3>User-visible result</h3>
+          <ol>
+            <li>Open <code>/</code> on the web app.</li>
+            <li>Enter an Event name and submit.</li>
+            <li>The browser posts to <code>/api/events</code> and navigates to <code>/events/:eventId</code>.</li>
+            <li>The deep-linked page loads the Event, displays its name, and shows the current absolute URL as the shareable link.</li>
+            <li>A clear message says Participant entry is the next product step.</li>
+          </ol>
+        </article>
+        <article class="card">
+          <h3>Architecture result</h3>
+          <ul>
+            <li>Angular standalone, feature-first, zoneless PWA.</li>
+            <li>Components use one frontend Event repository; they never inject <code>HttpClient</code>.</li>
+            <li>Shared Zod schemas validate API success and error payloads at the browser boundary.</li>
+            <li>The service worker caches application assets and explicitly excludes <code>/api/**</code>.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="state">
+      <h2>Current state and evidence</h2>
+      <p>The backend prerequisites are complete. The web package is still a TypeScript placeholder, so this task is both the Angular scaffold and the first useful UI slice.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fact</th><th>Observed evidence</th><th>Planning consequence</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>V1 requires an Angular PWA and deep-linkable Event entry.</td>
+              <td><a href="https://github.com/vtertre/idkdo/blob/1790decb6bb9588cf0885357a3b7fffc48e55b2f/docs/SPEC-implementation.md">V1 implementation spec</a>, sections 4, 9, and 13.</td>
+              <td>The slice is incomplete without routing, manifest, service worker, and a mobile-first layout.</td>
+            </tr>
+            <tr>
+              <td>The web package has no Angular application.</td>
+              <td><a href="https://github.com/vtertre/idkdo/blob/1790decb6bb9588cf0885357a3b7fffc48e55b2f/web/src/main.ts">web/src/main.ts</a> contains only <code>export {};</code>; <a href="https://github.com/vtertre/idkdo/blob/1790decb6bb9588cf0885357a3b7fffc48e55b2f/web/package.json">web/package.json</a> runs plain <code>tsc</code>.</td>
+              <td>Replace the package configuration rather than layering Angular around the placeholder.</td>
+            </tr>
+            <tr>
+              <td>The repository toolchain predates Angular 22.</td>
+              <td>The root <a href="https://github.com/vtertre/idkdo/blob/1790decb6bb9588cf0885357a3b7fffc48e55b2f/package.json">package.json</a> uses TypeScript 5.9, <a href="https://github.com/vtertre/idkdo/blob/1790decb6bb9588cf0885357a3b7fffc48e55b2f/docs/DEVELOPING.md">DEVELOPING.md</a> says Node 20+, and CI tracks moving Node <code>latest</code>.</td>
+              <td>Adopt one TypeScript 6 workspace toolchain, document Node 24.15+ support, and pin CI to Node 24.17.</td>
+            </tr>
+            <tr>
+              <td>The required Event endpoints exist.</td>
+              <td><a href="https://github.com/vtertre/idkdo/blob/1790decb6bb9588cf0885357a3b7fffc48e55b2f/server/src/presentation/http/routes/events-route.ts">events-route.ts</a> registers <code>POST /events</code> and <code>GET /events/:eventId</code> under the app's <code>/api</code> prefix.</td>
+              <td>No server feature work belongs in this plan.</td>
+            </tr>
+            <tr>
+              <td>Browser-consumable contracts already exist.</td>
+              <td><a href="https://github.com/vtertre/idkdo/tree/1790decb6bb9588cf0885357a3b7fffc48e55b2f/packages/shared/src/validators">packages/shared validators</a> export request, success, route-param, and API-error schemas.</td>
+              <td>The Event repository must consume these schemas; do not duplicate DTOs in <code>web/</code>.</td>
+            </tr>
+            <tr>
+              <td>Event lookup is projection-backed and may lag creation.</td>
+              <td><a href="https://github.com/vtertre/idkdo/blob/1790decb6bb9588cf0885357a3b7fffc48e55b2f/server/src/events.integration.test.ts#L118-L161">Event lookup integration test</a> waits for the read-side projection before GET.</td>
+              <td>The deep-linked page needs a small bounded retry for transient post-create <code>404</code> responses.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Load-bearing current excerpts</h3>
+      <pre><code>web/src/main.ts:1
+export {};
+
+web/package.json:6-14
+"scripts": {
+  "build": "tsc -p tsconfig.json",
+  "typecheck": "tsc -p tsconfig.json --noEmit",
+  "lint": "eslint \"src/**/*.ts\" --max-warnings=0 --format ../scripts/eslint-agent-formatter.mjs",
+  "test": "tsc -p tsconfig.json --noEmit"
+},
+"dependencies": {
+  "@idkdo/shared": "workspace:*"
+}
+
+packages/shared/src/validators/create-event-response-schema.ts:3-7
+export const createEventResponseSchema = z
+  .object({ id: z.string().uuid() })
+  .strict();
+
+packages/shared/src/validators/get-event-entry-page-response-schema.ts:3-10
+export const getEventEntryPageResponseSchema = z
+  .object({
+    createdAt: z.string().datetime(),
+    id: z.string().uuid(),
+    name: z.string(),
+    updatedAt: z.string().datetime(),
+  })
+  .strict();</code></pre>
+    </section>
+
+    <section id="decisions">
+      <h2>Decisions the executor must preserve</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Decision</th><th>Chosen shape</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Framework version</td>
+              <td>Latest stable Angular <strong>22.x</strong> patches available when execution begins.</td>
+              <td><a href="https://angular.dev/reference/versions">Angular compatibility</a> requires Node 22.22.3+, 24.15+, or 26 and TypeScript 6.0. This plan standardizes the repository on the operator's Node 24.17 line.</td>
+            </tr>
+            <tr>
+              <td>Application model</td>
+              <td>Standalone APIs, Angular's default zoneless and <code>OnPush</code> behavior, native signals, and stable Signal Forms.</td>
+              <td>This matches <a href="https://angular.dev/cli/new">current Angular defaults</a> and uses Angular 22's <a href="https://angular.dev/api/forms/signals/form">stable Signal Forms API</a> without adding a state library.</td>
+            </tr>
+            <tr>
+              <td>API access</td>
+              <td>One feature-local <code>EventRepository</code> wraps <code>HttpClient</code> and shared Zod parsing.</td>
+              <td>Components remain presentation-focused and no unused cross-feature service layer is introduced.</td>
+            </tr>
+            <tr>
+              <td>API origin</td>
+              <td>Use relative <code>/api</code> URLs. The dev server proxies <code>/api</code> to <code>http://localhost:3000</code>.</td>
+              <td>This avoids CORS changes and makes the deep link use the web application's current origin.</td>
+            </tr>
+            <tr>
+              <td>Routes</td>
+              <td>Eagerly load <code>/</code> for Event creation and <code>/events/:eventId</code> for Event entry; redirect unknown routes to <code>/</code>.</td>
+              <td>Both small pages are primary landing surfaces. Angular <a href="https://angular.dev/guide/routing/loading-strategies">recommends eager loading primary landing pages</a>; later, heavier feature routes can be lazy-loaded.</td>
+            </tr>
+            <tr>
+              <td>Projection lag</td>
+              <td>Retry GET only for <code>404</code>, up to four retries with short increasing delays; surface a clear not-found state after exhaustion.</td>
+              <td>A just-created Event may not yet exist in the read projection. Do not retry validation errors, server errors, or malformed success payloads.</td>
+            </tr>
+            <tr>
+              <td>PWA cache policy</td>
+              <td>Asset groups only, no API <code>dataGroups</code>, and an explicit <code>!/api/**</code> navigation exclusion.</td>
+              <td><a href="https://angular.dev/ecosystem/service-workers/config">Angular service-worker configuration</a> supports explicit asset and navigation rules. API data must always use the network.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warning">
+        <p><strong>Version drift rule:</strong> install the latest stable 22.x patch available when execution begins and keep all Angular framework packages on the same major/minor line. Use one workspace TypeScript version in Angular's supported <code>&gt;=6.0 &lt;6.1</code> range. If that combination does not install on Node 24.17, stop instead of selecting a prerelease or mixing Angular majors.</p>
+      </div>
+    </section>
+
+    <section id="structure">
+      <h2>Target structure and conventions</h2>
+      <p>Follow the accepted feature-first frontend architecture and the repository's one-primary-concept-per-TypeScript-file rule. Use Angular's concise 2025 file names consistently.</p>
+      <pre><code>web/
+  angular.json
+  ngsw-config.json
+  proxy.conf.json
+  package.json
+  tsconfig.json
+  tsconfig.app.json
+  tsconfig.spec.json
+  scripts/
+    verify-pwa-cache-policy.mjs
+  public/
+    manifest.webmanifest
+    icons/...
+  src/
+    index.html
+    main.ts
+    styles.css
+    app/
+      app.ts
+      app.html
+      app.css
+      app.config.ts
+      app.routes.ts
+      features/
+        events/
+          data-access/
+            event-repository.ts
+            event-repository.spec.ts
+          pages/
+            create-event-page/
+              create-event-page.ts
+              create-event-page.html
+              create-event-page.css
+              create-event-page.spec.ts
+            event-entry-page/
+              event-entry-page.ts
+              event-entry-page.html
+              event-entry-page.css
+              event-entry-page.spec.ts</code></pre>
+      <ul>
+        <li>Import sibling web code from its owning file, not a local barrel.</li>
+        <li>Keep the root component to application framing and <code>RouterOutlet</code>.</li>
+        <li>Keep request URLs, HTTP behavior, response validation, and transport-error normalization inside <code>EventRepository</code>.</li>
+        <li>Use signals for <code>submitting</code>, <code>loading</code>, loaded Event, and visible error state so zoneless rendering remains deterministic.</li>
+        <li>Do not add a generic repository abstraction, base API client, global store, design system, or speculative shared frontend folder.</li>
+      </ul>
+    </section>
+
+    <section id="commands">
+      <h2>Commands and expected results</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Purpose</th><th>Command</th><th>Expected success</th></tr></thead>
+          <tbody>
+            <tr><td>Runtime</td><td><code>node --version</code></td><td>Reports Node 24.17.x before install or verification.</td></tr>
+            <tr><td>Install</td><td><code>pnpm install</code></td><td>Exit 0; lockfile updated for Angular 22, TypeScript 6, and browser test dependencies.</td></tr>
+            <tr><td>Web tests</td><td><code>pnpm --filter @idkdo/web test</code></td><td>Exit 0; Vitest runs once, all Event tests pass, PWA policy check passes.</td></tr>
+            <tr><td>Web typecheck</td><td><code>pnpm --filter @idkdo/web typecheck</code></td><td>Exit 0; strict application and test TypeScript checks have no errors.</td></tr>
+            <tr><td>Web lint</td><td><code>pnpm --filter @idkdo/web lint</code></td><td>Exit 0 with zero warnings.</td></tr>
+            <tr><td>Web build</td><td><code>pnpm --filter @idkdo/web build</code></td><td>Exit 0; production browser output, manifest assets, worker, and <code>ngsw.json</code> exist.</td></tr>
+            <tr><td>Workspace gate</td><td><code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build</code></td><td>All four exit 0.</td></tr>
+            <tr><td>Docs and diff</td><td><code>pnpm verify</code></td><td>Exit 0; docs checks and <code>git diff --check</code> pass.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="scope">
+      <h2>Scope and git workflow</h2>
+      <div class="grid two">
+        <article class="card">
+          <h3 class="good">In scope</h3>
+          <ul>
+            <li>All replacement scaffold and feature files under <code>web/</code>.</li>
+            <li><code>pnpm-lock.yaml</code> for the web dependencies.</li>
+            <li>Root <code>package.json</code> to declare Node <code>&gt;=24.15 &lt;25</code> and upgrade the single workspace TypeScript dependency to the Angular-supported 6.0 range.</li>
+            <li><code>.github/workflows/ci.yml</code> to pin both jobs to Node 24.17 instead of moving <code>latest</code>.</li>
+            <li><code>docs/DEVELOPING.md</code> to state Node 24.15+ and document web/API dev URLs.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3 class="risk">Explicitly out of scope</h3>
+          <ul>
+            <li>Any server, database schema, migration, projection, or shared-contract behavior change.</li>
+            <li>Participant selection or creation UI.</li>
+            <li>Participant, Wish, Reservation, Contributor, identity, or local-storage frontend repositories/services.</li>
+            <li>Accounts, authentication, <code>X-Participant-Id</code>, purchase coordination, or anti-spoil UI.</li>
+            <li>SSR, prerendering, deployment configuration, CORS, analytics, notifications, update prompts, offline mutations, or API response caching.</li>
+            <li>A component library, CSS framework, generic design system, global store, or marketing landing page.</li>
+            <li>Browser end-to-end tooling; route/component tests are sufficient for this slice.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Branch:</strong> <code>codex/001-angular-event-pwa</code>. Use Conventional Commits, for example <code>feat(web): add Event creation Angular PWA</code>. Do not push or open a pull request unless the operator asks.</p>
+    </section>
+
+    <section id="steps">
+      <h2>Implementation steps</h2>
+      <div class="steps">
+        <article class="step">
+          <h3>1. Establish the Angular 22 workspace and real package gates</h3>
+          <ol>
+            <li>Replace the placeholder web package setup with a single-application Angular 22 workspace using standalone APIs, the application builder, Vitest, strict template checking, CSS, routing, zoneless change detection, and Angular's default <code>OnPush</code> behavior.</li>
+            <li>Keep the package name <code>@idkdo/web</code> and workspace dependency <code>@idkdo/shared: workspace:*</code>.</li>
+            <li>Add runtime packages only for Angular common/compiler/core/forms/platform-browser/router/service-worker, RxJS, and tslib. Add CLI/build/compiler/test DOM dependencies only as development dependencies. Do not add <code>zone.js</code>.</li>
+            <li>Upgrade the root TypeScript dependency to the latest compatible 6.0.x release and use it across all workspace packages. Do not install a second TypeScript version only under <code>web/</code>.</li>
+            <li>Replace scripts with meaningful <code>dev</code>, <code>build</code>, <code>typecheck</code>, <code>lint</code>, and non-watch <code>test</code> commands. Preserve the root ESLint formatter and zero-warning policy.</li>
+            <li>Declare Node <code>&gt;=24.15 &lt;25</code> in the root package, pin both CI jobs to 24.17, and document Node 24.15+ as the local prerequisite.</li>
+          </ol>
+          <p class="gate"><strong>Gate:</strong> <code>pnpm install &amp;&amp; pnpm --filter @idkdo/web typecheck</code> exits 0 after the minimal root shell exists.</p>
+        </article>
+
+        <article class="step">
+          <h3>2. Build the standalone shell, routes, and mobile-first baseline</h3>
+          <ol>
+            <li>Bootstrap with <code>bootstrapApplication</code>; register the router, <code>provideHttpClient()</code>, and production service worker through <code>ApplicationConfig</code>.</li>
+            <li>Make the root component render a compact idkdo header, a constrained main region, and <code>RouterOutlet</code>. It must not own feature state.</li>
+            <li>Statically import both standalone page components and register them with the route <code>component</code> property for <code>/</code> and <code>/events/:eventId</code>. Both are primary entry points and must be in the initial application bundle. Redirect unknown paths to <code>/</code>.</li>
+            <li>Create usable global defaults: readable contrast, 44px touch targets, visible focus styles, form labels, responsive spacing, and no fixed desktop width.</li>
+            <li>Keep the root creation surface functional, not promotional: one sentence of context, one form, and no marketing sections.</li>
+          </ol>
+          <p class="gate"><strong>Gate:</strong> a small root/router smoke test passes and <code>pnpm --filter @idkdo/web build</code> exits 0.</p>
+        </article>
+
+        <article class="step">
+          <h3>3. Write the Event repository tests, then the adapter</h3>
+          <ol>
+            <li>Use <code>provideHttpClientTesting()</code> and <code>HttpTestingController</code>.</li>
+            <li>Test that create sends exactly <code>POST /api/events</code> with <code>{ name }</code>, returns a schema-validated UUID response, and does not invent fields.</li>
+            <li>Test that lookup sends exactly <code>GET /api/events/:eventId</code> and returns a schema-validated Event entry DTO.</li>
+            <li>Test malformed 2xx payload rejection so <code>HttpClient&lt;T&gt;</code> generics are not mistaken for runtime validation.</li>
+            <li>Test API error normalization: use the shared API error schema when valid and a stable generic fallback when the body is absent or malformed.</li>
+            <li>Implement only <code>createEvent(name)</code> and <code>getEvent(eventId)</code>. Components must never inject <code>HttpClient</code>.</li>
+          </ol>
+          <p class="gate"><strong>Gate:</strong> <code>pnpm --filter @idkdo/web test -- event-repository</code> exits 0 with all repository cases passing.</p>
+        </article>
+
+        <article class="step">
+          <h3>4. Write the creation-page tests, then ship the create flow</h3>
+          <ol>
+            <li>Create a model signal containing <code>{ name: "" }</code>, wrap it with <code>form()</code>, and bind the input with <code>FormField</code> from <code>@angular/forms/signals</code>. Do not use <code>ReactiveFormsModule</code>, <code>FormControl</code>, or <code>FormGroup</code>.</li>
+            <li>Apply <code>required()</code> to the name field for field semantics and validate the root model with stable <code>validateStandardSchema()</code> against <code>createEventRequestBodySchema</code>, so whitespace-only values fail the same shared contract used at the API boundary.</li>
+            <li>Submit through stable Signal Forms <code>submit()</code>. Use the form's submitting state to disable the button and prevent concurrent requests; surface normalized repository failures as visible form-level submission errors.</li>
+            <li>Test that a valid submit calls the Event repository once and navigates to <code>/events/&lt;returned-id&gt;</code>.</li>
+            <li>Test double-submit prevention while the request is pending.</li>
+            <li>Test that a rejected request keeps the user on the form, re-enables submission, preserves the entered name, and shows the normalized error in an <code>aria-live</code> region.</li>
+            <li>Keep non-form page state in signals and use the router directly. Do not add an Event feature service between the page and repository.</li>
+          </ol>
+          <p class="gate"><strong>Gate:</strong> <code>pnpm --filter @idkdo/web test -- create-event-page</code> exits 0 and the route navigation assertion passes.</p>
+        </article>
+
+        <article class="step">
+          <h3>5. Write the deep-link tests, then ship Event entry</h3>
+          <ol>
+            <li>Read <code>eventId</code> from the route and request the Event through the repository.</li>
+            <li>Render distinct loading, loaded, and error states. Loaded state shows the Event name, the current absolute URL as a normal HTTPS/HTTP link, and a plain placeholder that Participant selection is coming next.</li>
+            <li>Account for projection lag with at most four retries after the initial GET, only when the response status is <code>404</code>, using short increasing delays. Do not retry <code>400</code>, <code>500</code>, network failures, or malformed 2xx payloads.</li>
+            <li>Test direct navigation with <code>RouterTestingHarness</code>, successful loaded rendering, transient <code>404</code> then success, exhausted <code>404</code>, and non-retryable error behavior. Use fake timers for deterministic retry tests.</li>
+            <li>Do not add Participant buttons that imply unsupported API behavior. The placeholder may explain the next step but cannot fake it.</li>
+          </ol>
+          <p class="gate"><strong>Gate:</strong> <code>pnpm --filter @idkdo/web test -- event-entry-page</code> exits 0; retry tests prove the exact request count.</p>
+        </article>
+
+        <article class="step">
+          <h3>6. Make installability and the no-API-cache rule executable</h3>
+          <ol>
+            <li>Add a valid app manifest with idkdo name/short name, <code>start_url</code>, standalone display mode, theme/background colors, and generated local icons in the standard PWA sizes.</li>
+            <li>Configure the Angular service worker for build assets only. Keep <code>dataGroups</code> absent or empty and add a negative navigation rule for <code>/api/**</code>.</li>
+            <li>Add <code>web/scripts/verify-pwa-cache-policy.mjs</code>. It must parse the source config and built <code>ngsw.json</code>, fail when an API data group/asset pattern exists or the navigation exclusion is missing, and confirm the worker output exists after a production build.</li>
+            <li>Run this policy verifier from the web test/build gate so future changes cannot silently cache visibility-sensitive API responses.</li>
+            <li>Do not add offline API fallbacks, background sync, update notifications, or a custom service worker.</li>
+          </ol>
+          <p class="gate"><strong>Gate:</strong> <code>pnpm --filter @idkdo/web build &amp;&amp; pnpm --filter @idkdo/web test</code> exits 0 and the generated <code>ngsw.json</code> contains no API cache group.</p>
+        </article>
+
+        <article class="step">
+          <h3>7. Document the actual workflow and run the complete handoff gate</h3>
+          <ol>
+            <li>Update <code>docs/DEVELOPING.md</code>: Node 24.15+ minimum with 24.17 used by CI; <code>pnpm dev</code> runs API at port 3000 and web at port 4200; browser users open the web URL; <code>/api</code> is proxied in development.</li>
+            <li>Run the focused web commands first. Then run the required workspace typecheck, lint, tests, build, and docs/diff verification.</li>
+            <li>Inspect <code>git status --short</code> and <code>git diff --check</code>. Confirm every modified file is in scope and no generated <code>dist/</code>, coverage, or dependency files are staged.</li>
+          </ol>
+          <p class="gate"><strong>Gate:</strong> <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build &amp;&amp; pnpm verify</code> exits 0.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="tests">
+      <h2>Test plan</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Test file</th><th>Cases that must exist</th><th>Pattern/tool</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>event-repository.spec.ts</code></td>
+              <td>Exact POST URL/method/body; exact GET URL/method; valid schema parsing; malformed 2xx rejection; shared API error message; malformed-error fallback.</td>
+              <td><code>HttpTestingController</code>; import DTO schemas from <code>@idkdo/shared</code>.</td>
+            </tr>
+            <tr>
+              <td><code>create-event-page.spec.ts</code></td>
+              <td>Blank validation; successful create and navigation; pending disabled state; no duplicate POST; visible error; input preserved after failure.</td>
+              <td>Signal Forms <code>form</code>/<code>FormField</code>/<code>submit</code>, repository test double, TestBed, accessible DOM queries, router test providers.</td>
+            </tr>
+            <tr>
+              <td><code>event-entry-page.spec.ts</code></td>
+              <td>Route-param lookup; loading state; Event name and absolute share link; transient 404 recovery; exhausted 404; 500 not retried; Participant placeholder.</td>
+              <td><a href="https://angular.dev/guide/routing/testing">RouterTestingHarness</a>, repository test double, fake timers.</td>
+            </tr>
+            <tr>
+              <td><code>verify-pwa-cache-policy.mjs</code></td>
+              <td>Production worker exists; app manifest copied; API navigation excluded; no data group or asset pattern captures <code>/api</code>.</td>
+              <td>Node standard library only; deterministic nonzero exit on policy failure.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Angular's current CLI uses Vitest for new applications; follow its supported TestBed/Vitest setup rather than introducing Jest or Karma. See <a href="https://angular.dev/guide/testing">Angular testing overview</a>.</p>
+    </section>
+
+    <section id="done">
+      <h2>Machine-checkable done criteria</h2>
+      <ul class="checks">
+        <li><code>pnpm --filter @idkdo/web test</code> exits 0 and runs real Vitest tests plus the PWA policy check.</li>
+        <li><code>pnpm --filter @idkdo/web typecheck</code> exits 0 with strict template and TypeScript checking.</li>
+        <li><code>pnpm --filter @idkdo/web lint</code> exits 0 with zero warnings.</li>
+        <li><code>pnpm --filter @idkdo/web build</code> exits 0 and produces <code>ngsw.json</code>, a worker, manifest, icons, HTML, CSS, and JS bundles.</li>
+        <li><code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build &amp;&amp; pnpm verify</code> exits 0.</li>
+        <li><code>rg -n "HttpClient" web/src/app --glob '*.ts'</code> matches the Event repository and its test only, never a component/page.</li>
+        <li><code>rg -n "@angular/forms/signals" web/src/app</code> matches the creation page and its tests, while <code>rg -n "ReactiveFormsModule|FormControl|FormGroup" web/src/app</code> returns no matches.</li>
+        <li><code>rg -ni "participant|wish|reservation|contributor" web/src/app</code> matches only the Event-page placeholder copy, never a repository, service, route, DTO, state object, or API request.</li>
+        <li><code>rg -n 'dataGroups|/api' web/ngsw-config.json</code> shows no API data group and shows the explicit negative <code>/api/**</code> navigation rule.</li>
+        <li><code>git status --short</code> contains only the in-scope files and no <code>web/dist</code>, coverage, or <code>node_modules</code> artifacts.</li>
+        <li>Manual smoke: with PostgreSQL running, <code>pnpm dev</code>, create “Christmas 2026” at <code>http://localhost:4200</code>; the browser navigates to <code>/events/&lt;uuid&gt;</code>, displays “Christmas 2026”, and shows that absolute URL as the shareable link.</li>
+      </ul>
+    </section>
+
+    <section id="stop">
+      <h2>STOP conditions</h2>
+      <div class="callout danger">
+        <p>Stop and report; do not broaden the task or invent a workaround if any condition below occurs.</p>
+      </div>
+      <ul>
+        <li>The live Event request, response, error, or route-param contracts no longer match the shared schemas cited here.</li>
+        <li>The latest stable Angular 22 cannot install or build with Node 24.17 and a single workspace TypeScript 6.0.x version.</li>
+        <li>The implementation appears to require a server CORS change, server route change, shared-contract change, database change, or deployment decision.</li>
+        <li>A requested UX decision cannot be implemented without Participant APIs or selected-Participant state.</li>
+        <li>A just-created Event remains unavailable after the bounded retry while the backend integration tests pass; report the projection-readiness gap instead of adding unbounded polling.</li>
+        <li>The service-worker build captures <code>/api</code> despite the documented exclusion, or proving the exclusion requires a custom worker.</li>
+        <li>A verification command fails twice after a reasonable task-scoped correction, or baseline failures unrelated to the diff appear.</li>
+        <li>Completing a step requires modifying any explicitly out-of-scope file or adding a state/UI/retry dependency.</li>
+      </ul>
+    </section>
+
+    <section id="maintenance">
+      <h2>Maintenance and review notes</h2>
+      <ul>
+        <li>The next Participant slice should extend the Event entry feature after its API exists; it should not retroactively move Event HTTP access into a speculative global API layer.</li>
+        <li>When selected Participant identity arrives, scope its <code>localStorage</code> key by Event id and keep <code>X-Participant-Id</code> injection out of public Event create/lookup requests.</li>
+        <li>Reviewers should scrutinize three things: no component-level <code>HttpClient</code>, retry limited to Event GET <code>404</code>, and generated service-worker output with no API cache.</li>
+        <li>Keep primary landing pages eager. Revisit lazy loading when later Participant, Wishlist, or Purchase Coordination route bundles become large enough to materially reduce the initial bundle.</li>
+        <li>Signal Forms are stable in Angular 22. Avoid APIs explicitly marked experimental and keep the shared Zod schema authoritative at the transport boundary.</li>
+        <li>If API and web deploy to different origins later, make that a separate deployment/configuration decision. Do not embed environment-specific hostnames in this slice.</li>
+        <li>Browser end-to-end coverage is intentionally deferred until more of the core flow exists. Component/route tests plus the manual smoke prove this slice at proportionate cost.</li>
+      </ul>
+    </section>
+
+    <section id="prompt">
+      <h2>Copy-ready executor prompt</h2>
+      <pre><code class="language-text">Implement Plan 001 from plans/001-angular-event-pwa.html in /Users/vincent/dev/idkdo.
+
+Read the entire plan before editing. Start with its drift check. Follow its file scope, latest stable Angular 22 decision, Node 24.17 and TypeScript 6 toolchain, eager entry-route decision, Signal Forms decision, step order, verification gates, and STOP conditions exactly.
+
+Outcome: replace the placeholder web package with a mobile-first standalone Angular PWA that creates an Event through POST /api/events, navigates to /events/:eventId, loads that Event through GET /api/events/:eventId with bounded 404-only projection-lag retry, displays the Event name, and exposes the absolute deep link.
+
+Hard boundaries: add no Participant, Wish, Reservation, Contributor, identity, or local-storage frontend data access. Do not change server, database, projection, or shared-contract behavior. Do not add a third-party state library, component library, custom service worker, SSR, or browser E2E framework.
+
+Use tests first for the Event repository, creation page, Event entry route, and PWA no-API-cache policy. Run every focused and workspace command in the plan. Stop and report instead of improvising when a STOP condition occurs.</code></pre>
+    </section>
+  </main>
+</body>
+</html>
