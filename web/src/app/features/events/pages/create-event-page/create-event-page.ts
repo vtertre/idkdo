@@ -9,10 +9,8 @@ import {
 import { Router } from "@angular/router";
 import { createEventRequestBodySchema } from "@idkdo/shared";
 
-import {
-  EventRepository,
-  EventRepositoryError,
-} from "../../data-access/event-repository";
+import { EventRepositoryError } from "../../data-access/event-repository-error";
+import { EventRepository } from "../../data-access/event-repository";
 
 @Component({
   selector: "app-create-event-page",

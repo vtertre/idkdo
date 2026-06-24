@@ -1,7 +1,8 @@
 import { TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
 
-import { EventRepository, EventRepositoryError } from "../../data-access/event-repository";
+import { EventRepositoryError } from "../../data-access/event-repository-error";
+import { EventRepository } from "../../data-access/event-repository";
 import { CreateEventPage } from "./create-event-page";
 
 const eventId = "4d8f4cb5-6188-420f-b2ec-12059c972793";
@@ -34,7 +35,12 @@ describe("CreateEventPage", () => {
     fixture.detectChanges();
 
     expect(createEvent).not.toHaveBeenCalled();
-    expect(element.textContent).toContain("Event name");
+    const input = element.querySelector<HTMLInputElement>("input");
+    const error = element.querySelector<HTMLElement>("#event-name-error");
+    expect(error?.textContent?.trim()).toBe("Enter an Event name.");
+    expect(element.textContent).not.toContain("Too small");
+    expect(input?.getAttribute("aria-invalid")).toBe("true");
+    expect(input?.getAttribute("aria-describedby")).toBe("event-name-error");
   });
 
   it("creates once and navigates to the Event link", async () => {

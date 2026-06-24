@@ -4,7 +4,8 @@ import { provideRouter } from "@angular/router";
 import { RouterTestingHarness } from "@angular/router/testing";
 import type { GetEventEntryPageResponse } from "@idkdo/shared";
 
-import { EventRepository, EventRepositoryError } from "../../data-access/event-repository";
+import { EventRepositoryError } from "../../data-access/event-repository-error";
+import { EventRepository } from "../../data-access/event-repository";
 import { EventEntryPage } from "./event-entry-page";
 
 const eventId = "4d8f4cb5-6188-420f-b2ec-12059c972793";

@@ -3,10 +3,8 @@ import type { OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import type { GetEventEntryPageResponse } from "@idkdo/shared";
 
-import {
-  EventRepository,
-  EventRepositoryError,
-} from "../../data-access/event-repository";
+import { EventRepositoryError } from "../../data-access/event-repository-error";
+import { EventRepository } from "../../data-access/event-repository";
 
 const retryDelays = [50, 100, 200, 400] as const;
 

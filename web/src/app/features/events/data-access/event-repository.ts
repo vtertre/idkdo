@@ -9,16 +9,7 @@ import {
 } from "@idkdo/shared";
 import { firstValueFrom } from "rxjs";
 
-export class EventRepositoryError extends Error {
-  constructor(
-    message: string,
-    readonly status: number | undefined,
-    readonly code: string | undefined,
-  ) {
-    super(message);
-    this.name = "EventRepositoryError";
-  }
-}
+import { EventRepositoryError } from "./event-repository-error";
 
 @Injectable({ providedIn: "root" })
 export class EventRepository {

@@ -9,11 +9,19 @@
       type="text"
       autocomplete="off"
       [formField]="eventForm.name"
+      [attr.aria-describedby]="
+        eventForm.name().touched() && eventForm.name().invalid()
+          ? 'event-name-error'
+          : null
+      "
+      [attr.aria-invalid]="
+        eventForm.name().touched() && eventForm.name().invalid() ? 'true' : null
+      "
     />
 
     @if (eventForm.name().touched() && eventForm.name().invalid()) {
       <p class="field-error" id="event-name-error">
-        {{ eventForm.name().errors()[0]?.message }}
+        Enter an Event name.
       </p>
     }
 
