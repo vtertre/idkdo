@@ -1,0 +1,18 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --background: #f8faf7;
+  --surface: #ffffff;
+  --text: #162019;
+  --muted: #4c5d53;
+  --primary: #315c46;
+  --primary-hover: #244735;
+  --border: #c8d2cb;
+  --error: #a51d2d;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--background); color: var(--text); }
+button, input { font: inherit; }
+button, input, a { touch-action: manipulation; }
+:focus-visible { outline: 3px solid #286da8; outline-offset: 2px; }

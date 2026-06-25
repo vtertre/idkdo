@@ -1,0 +1,36 @@
+<section class="panel" aria-labelledby="create-event-title">
+  <h1 id="create-event-title">Créer un événement</h1>
+  <p>Créez un espace privé pour coordonner les cadeaux avec votre groupe.</p>
+
+  <form (submit)="onSubmit($event)" novalidate>
+    <label for="event-name">Nom de l’événement</label>
+    <input
+      id="event-name"
+      type="text"
+      autocomplete="off"
+      [formField]="eventForm.name"
+      [attr.aria-describedby]="
+        eventForm.name().touched() && eventForm.name().invalid()
+          ? 'event-name-error'
+          : null
+      "
+      [attr.aria-invalid]="
+        eventForm.name().touched() && eventForm.name().invalid() ? 'true' : null
+      "
+    />
+
+    @if (eventForm.name().touched() && eventForm.name().invalid()) {
+      <p class="field-error" id="event-name-error">
+        Saisissez un nom d’événement.
+      </p>
+    }
+
+    <button type="submit" [disabled]="eventForm().submitting()">
+      {{ eventForm().submitting() ? "Création…" : "Créer l’événement" }}
+    </button>
+
+    @if (submitError()) {
+      <p class="submit-error" aria-live="polite">{{ submitError() }}</p>
+    }
+  </form>
+</section>

@@ -5,7 +5,7 @@ Compose PostgreSQL.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 24.15 or newer in the Node.js 24 release line
 - pnpm 11.5.0
 - Docker
 
@@ -19,7 +19,9 @@ pnpm db:up
 pnpm dev
 ```
 
-This starts the API server in watch mode at `http://localhost:3000`.
+This starts the API server in watch mode at `http://localhost:3000` and the web
+app at `http://localhost:4200`. The web development server proxies relative
+`/api` requests to the API server.
 
 The server and Drizzle commands load the root `.env` file by default. In
 deployed environments, provide `DATABASE_URL` through the process environment or
