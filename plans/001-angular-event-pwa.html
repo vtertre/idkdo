@@ -188,6 +188,7 @@
       </div>
       <nav aria-label="Plan sections">
         <a href="#outcome">Outcome</a>
+        <a href="#execution-review">Execution review</a>
         <a href="#state">Current state</a>
         <a href="#decisions">Decisions</a>
         <a href="#scope">Scope</a>
@@ -207,8 +208,8 @@
       <p><strong>Planned at:</strong> commit <code>1790decb6bb9588cf0885357a3b7fffc48e55b2f</code>; revised on 2026-06-23 for Angular 22, Node 24.17, eager entry routes, and Signal Forms.</p>
       <p><strong>Run first:</strong></p>
       <pre><code>git diff --stat 1790decb6bb9588cf0885357a3b7fffc48e55b2f..HEAD -- \
-  web package.json pnpm-lock.yaml .github/workflows/ci.yml docs/DEVELOPING.md \
-  packages/shared/src server/src/presentation/http/routes/events-route.ts</code></pre>
+  web package.json pnpm-lock.yaml pnpm-workspace.yaml .github/workflows/ci.yml docs/DEVELOPING.md \
+  packages/shared/src server/package.json server/src/presentation/http/routes/events-route.ts</code></pre>
       <p class="muted">If an in-scope file or either Event contract changed, compare the live code with this plan before editing. A contract mismatch is a STOP condition.</p>
 
       <div class="grid two">
@@ -234,6 +235,17 @@
       </div>
     </section>
 
+    <section id="execution-review">
+      <h2>Execution review status: BLOCKED</h2>
+      <p><strong>Reviewed executor commit:</strong> <code>f7026d4</code> on <code>codex/execute-angular-event-pwa</code> in <code>/Users/vincent/dev/idkdo-execute-001</code>.</p>
+      <p>The implementation passes install, typecheck, lint, 56 server tests, 15 web tests, production build, the PWA cache-policy check, docs verification, and a real browser create/reload flow. Approval is blocked on two focused corrections:</p>
+      <ol>
+        <li><strong>Do not expose Zod internals:</strong> whitespace-only input currently renders <code>Too small: expected string to have &gt;=1 characters</code>. The page must render the stable product copy <code>Enter an Event name.</code>, set <code>aria-invalid</code>, and associate the input with the visible error through <code>aria-describedby</code>. The component test must assert the exact copy and attributes.</li>
+        <li><strong>Restore one-concept-per-file:</strong> <code>event-repository.ts</code> currently exports both <code>EventRepository</code> and <code>EventRepositoryError</code>. Move the error to <code>event-repository-error.ts</code> and update direct imports and tests.</li>
+      </ol>
+      <p class="muted">The two allowed executor revision rounds were consumed by the pnpm native-build approval scope and the Node 24 server watch-command scope. A new execution must make only the two corrections above, rerun every gate, and repeat the browser validation before approval.</p>
+    </section>
+
     <section id="state">
       <h2>Current state and evidence</h2>
       <p>The backend prerequisites are complete. The web package is still a TypeScript placeholder, so this task is both the Angular scaffold and the first useful UI slice.</p>
@@ -257,6 +269,11 @@
               <td>Adopt one TypeScript 6 workspace toolchain, document Node 24.15+ support, and pin CI to Node 24.17.</td>
             </tr>
             <tr>
+              <td>pnpm requires explicit native build approval.</td>
+              <td><code>pnpm-workspace.yaml</code> already uses <code>allowBuilds</code> for approved and denied transitive packages. Angular 22's build tooling introduces native scripts for <code>@parcel/watcher</code>, <code>lmdb</code>, and <code>msgpackr-extract</code>.</td>
+              <td>Approve exactly those three Angular build dependencies. Do not commit a global or per-command allow-all setting.</td>
+            </tr>
+            <tr>
               <td>The required Event endpoints exist.</td>
               <td><a href="https://github.com/vtertre/idkdo/blob/1790decb6bb9588cf0885357a3b7fffc48e55b2f/server/src/presentation/http/routes/events-route.ts">events-route.ts</a> registers <code>POST /events</code> and <code>GET /events/:eventId</code> under the app's <code>/api</code> prefix.</td>
               <td>No server feature work belongs in this plan.</td>
@@ -270,6 +287,11 @@
               <td>Event lookup is projection-backed and may lag creation.</td>
               <td><a href="https://github.com/vtertre/idkdo/blob/1790decb6bb9588cf0885357a3b7fffc48e55b2f/server/src/events.integration.test.ts#L118-L161">Event lookup integration test</a> waits for the read-side projection before GET.</td>
               <td>The deep-linked page needs a small bounded retry for transient post-create <code>404</code> responses.</td>
+            </tr>
+            <tr>
+              <td>The existing server watch command is ordered incorrectly for Node 24.</td>
+              <td><code>server/package.json</code> runs <code>tsx --conditions=development watch src/main.ts</code>, which Node 24 resolves as a request for <code>server/watch</code>.</td>
+              <td>Reorder the same arguments to <code>tsx watch --conditions=development src/main.ts</code>; no server runtime behavior changes are permitted.</td>
             </tr>
           </tbody>
         </table>
@@ -385,6 +407,7 @@ export const getEventEntryPageResponseSchema = z
         events/
           data-access/
             event-repository.ts
+            event-repository-error.ts
             event-repository.spec.ts
           pages/
             create-event-page/
@@ -433,15 +456,17 @@ export const getEventEntryPageResponseSchema = z
           <ul>
             <li>All replacement scaffold and feature files under <code>web/</code>.</li>
             <li><code>pnpm-lock.yaml</code> for the web dependencies.</li>
+            <li><code>pnpm-workspace.yaml</code> to approve native builds for exactly <code>@parcel/watcher</code>, <code>lmdb</code>, and <code>msgpackr-extract</code>, following the existing <code>allowBuilds</code> convention.</li>
             <li>Root <code>package.json</code> to declare Node <code>&gt;=24.15 &lt;25</code> and upgrade the single workspace TypeScript dependency to the Angular-supported 6.0 range.</li>
             <li><code>.github/workflows/ci.yml</code> to pin both jobs to Node 24.17 instead of moving <code>latest</code>.</li>
             <li><code>docs/DEVELOPING.md</code> to state Node 24.15+ and document web/API dev URLs.</li>
+            <li><code>server/package.json</code> only to reorder the existing <code>tsx watch</code> arguments for Node 24 compatibility.</li>
           </ul>
         </article>
         <article class="card">
           <h3 class="risk">Explicitly out of scope</h3>
           <ul>
-            <li>Any server, database schema, migration, projection, or shared-contract behavior change.</li>
+            <li>Any server source, database schema, migration, projection, or shared-contract behavior change. The only server-package exception is the exact dev-script argument reorder listed above.</li>
             <li>Participant selection or creation UI.</li>
             <li>Participant, Wish, Reservation, Contributor, identity, or local-storage frontend repositories/services.</li>
             <li>Accounts, authentication, <code>X-Participant-Id</code>, purchase coordination, or anti-spoil UI.</li>
@@ -463,6 +488,7 @@ export const getEventEntryPageResponseSchema = z
             <li>Replace the placeholder web package setup with a single-application Angular 22 workspace using standalone APIs, the application builder, Vitest, strict template checking, CSS, routing, zoneless change detection, and Angular's default <code>OnPush</code> behavior.</li>
             <li>Keep the package name <code>@idkdo/web</code> and workspace dependency <code>@idkdo/shared: workspace:*</code>.</li>
             <li>Add runtime packages only for Angular common/compiler/core/forms/platform-browser/router/service-worker, RxJS, and tslib. Add CLI/build/compiler/test DOM dependencies only as development dependencies. Do not add <code>zone.js</code>.</li>
+            <li>Extend the existing <code>allowBuilds</code> mapping in <code>pnpm-workspace.yaml</code> with <code>@parcel/watcher: true</code>, <code>lmdb: true</code>, and <code>msgpackr-extract: true</code>. These are the only new build-script approvals permitted; do not commit an allow-all flag.</li>
             <li>Upgrade the root TypeScript dependency to the latest compatible 6.0.x release and use it across all workspace packages. Do not install a second TypeScript version only under <code>web/</code>.</li>
             <li>Replace scripts with meaningful <code>dev</code>, <code>build</code>, <code>typecheck</code>, <code>lint</code>, and non-watch <code>test</code> commands. Preserve the root ESLint formatter and zero-warning policy.</li>
             <li>Declare Node <code>&gt;=24.15 &lt;25</code> in the root package, pin both CI jobs to 24.17, and document Node 24.15+ as the local prerequisite.</li>
@@ -490,7 +516,7 @@ export const getEventEntryPageResponseSchema = z
             <li>Test that lookup sends exactly <code>GET /api/events/:eventId</code> and returns a schema-validated Event entry DTO.</li>
             <li>Test malformed 2xx payload rejection so <code>HttpClient&lt;T&gt;</code> generics are not mistaken for runtime validation.</li>
             <li>Test API error normalization: use the shared API error schema when valid and a stable generic fallback when the body is absent or malformed.</li>
-            <li>Implement only <code>createEvent(name)</code> and <code>getEvent(eventId)</code>. Components must never inject <code>HttpClient</code>.</li>
+            <li>Implement only <code>createEvent(name)</code> and <code>getEvent(eventId)</code>. Components must never inject <code>HttpClient</code>. Keep <code>EventRepositoryError</code> in its own <code>event-repository-error.ts</code> file and import it directly where needed.</li>
           </ol>
           <p class="gate"><strong>Gate:</strong> <code>pnpm --filter @idkdo/web test -- event-repository</code> exits 0 with all repository cases passing.</p>
         </article>
@@ -500,6 +526,7 @@ export const getEventEntryPageResponseSchema = z
           <ol>
             <li>Create a model signal containing <code>{ name: "" }</code>, wrap it with <code>form()</code>, and bind the input with <code>FormField</code> from <code>@angular/forms/signals</code>. Do not use <code>ReactiveFormsModule</code>, <code>FormControl</code>, or <code>FormGroup</code>.</li>
             <li>Apply <code>required()</code> to the name field for field semantics and validate the root model with stable <code>validateStandardSchema()</code> against <code>createEventRequestBodySchema</code>, so whitespace-only values fail the same shared contract used at the API boundary.</li>
+            <li>Never render a raw Standard Schema or Zod message. When the name is invalid, render the exact user-facing copy <code>Enter an Event name.</code>, set <code>aria-invalid="true"</code>, and associate the input with that message using <code>aria-describedby</code>.</li>
             <li>Submit through stable Signal Forms <code>submit()</code>. Use the form's submitting state to disable the button and prevent concurrent requests; surface normalized repository failures as visible form-level submission errors.</li>
             <li>Test that a valid submit calls the Event repository once and navigates to <code>/events/&lt;returned-id&gt;</code>.</li>
             <li>Test double-submit prevention while the request is pending.</li>
@@ -536,6 +563,7 @@ export const getEventEntryPageResponseSchema = z
         <article class="step">
           <h3>7. Document the actual workflow and run the complete handoff gate</h3>
           <ol>
+            <li>In <code>server/package.json</code>, change only the dev command from <code>tsx --conditions=development watch src/main.ts</code> to <code>tsx watch --conditions=development src/main.ts</code>. Verify it reaches the server listening state on Node 24.17; do not change server source.</li>
             <li>Update <code>docs/DEVELOPING.md</code>: Node 24.15+ minimum with 24.17 used by CI; <code>pnpm dev</code> runs API at port 3000 and web at port 4200; browser users open the web URL; <code>/api</code> is proxied in development.</li>
             <li>Run the focused web commands first. Then run the required workspace typecheck, lint, tests, build, and docs/diff verification.</li>
             <li>Inspect <code>git status --short</code> and <code>git diff --check</code>. Confirm every modified file is in scope and no generated <code>dist/</code>, coverage, or dependency files are staged.</li>
@@ -558,7 +586,7 @@ export const getEventEntryPageResponseSchema = z
             </tr>
             <tr>
               <td><code>create-event-page.spec.ts</code></td>
-              <td>Blank validation; successful create and navigation; pending disabled state; no duplicate POST; visible error; input preserved after failure.</td>
+              <td>Blank validation with exact <code>Enter an Event name.</code> copy and ARIA association; successful create and navigation; pending disabled state; no duplicate POST; visible error; input preserved after failure.</td>
               <td>Signal Forms <code>form</code>/<code>FormField</code>/<code>submit</code>, repository test double, TestBed, accessible DOM queries, router test providers.</td>
             </tr>
             <tr>
@@ -586,11 +614,12 @@ export const getEventEntryPageResponseSchema = z
         <li><code>pnpm --filter @idkdo/web build</code> exits 0 and produces <code>ngsw.json</code>, a worker, manifest, icons, HTML, CSS, and JS bundles.</li>
         <li><code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build &amp;&amp; pnpm verify</code> exits 0.</li>
         <li><code>rg -n "HttpClient" web/src/app --glob '*.ts'</code> matches the Event repository and its test only, never a component/page.</li>
+        <li><code>event-repository.ts</code> exports only <code>EventRepository</code>; <code>EventRepositoryError</code> is the sole primary exported concept in <code>event-repository-error.ts</code>.</li>
         <li><code>rg -n "@angular/forms/signals" web/src/app</code> matches the creation page and its tests, while <code>rg -n "ReactiveFormsModule|FormControl|FormGroup" web/src/app</code> returns no matches.</li>
         <li><code>rg -ni "participant|wish|reservation|contributor" web/src/app</code> matches only the Event-page placeholder copy, never a repository, service, route, DTO, state object, or API request.</li>
         <li><code>rg -n 'dataGroups|/api' web/ngsw-config.json</code> shows no API data group and shows the explicit negative <code>/api/**</code> navigation rule.</li>
         <li><code>git status --short</code> contains only the in-scope files and no <code>web/dist</code>, coverage, or <code>node_modules</code> artifacts.</li>
-        <li>Manual smoke: with PostgreSQL running, <code>pnpm dev</code>, create “Christmas 2026” at <code>http://localhost:4200</code>; the browser navigates to <code>/events/&lt;uuid&gt;</code>, displays “Christmas 2026”, and shows that absolute URL as the shareable link.</li>
+        <li>Manual smoke: use a disposable PostgreSQL 17 container on an unused port rather than the repository's named development volume; migrate it, run <code>pnpm dev</code> with its <code>DATABASE_URL</code>, create “Christmas 2026” at <code>http://localhost:4200</code>, and confirm navigation to <code>/events/&lt;uuid&gt;</code>, the Event name, and the absolute share link. Remove the disposable container afterward.</li>
       </ul>
     </section>
 
@@ -602,7 +631,9 @@ export const getEventEntryPageResponseSchema = z
       <ul>
         <li>The live Event request, response, error, or route-param contracts no longer match the shared schemas cited here.</li>
         <li>The latest stable Angular 22 cannot install or build with Node 24.17 and a single workspace TypeScript 6.0.x version.</li>
+        <li>A clean <code>pnpm install --frozen-lockfile</code> requests a native build approval other than <code>@parcel/watcher</code>, <code>lmdb</code>, or <code>msgpackr-extract</code>.</li>
         <li>The implementation appears to require a server CORS change, server route change, shared-contract change, database change, or deployment decision.</li>
+        <li>Starting the Node 24-compatible dev command requires any server change beyond the exact <code>server/package.json</code> argument reorder.</li>
         <li>A requested UX decision cannot be implemented without Participant APIs or selected-Participant state.</li>
         <li>A just-created Event remains unavailable after the bounded retry while the backend integration tests pass; report the projection-readiness gap instead of adding unbounded polling.</li>
         <li>The service-worker build captures <code>/api</code> despite the documented exclusion, or proving the exclusion requires a custom worker.</li>
