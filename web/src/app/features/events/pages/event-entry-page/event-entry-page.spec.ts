@@ -2,12 +2,14 @@ import { TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { RouterTestingHarness } from "@angular/router/testing";
 import type { GetEventEntryPageResponse } from "@idkdo/shared";
+import type { WritableSignal } from "@angular/core";
 import { defer, of, throwError } from "rxjs";
 
-import { eventEntryState } from "../../data-access/event-entry-state";
+import { eventEntryRoute } from "../../data-access/event-entry-route";
 import { EventRepositoryError } from "../../data-access/event-repository-error";
 import { EventRepository } from "../../data-access/event-repository";
 import { EventEntryPage } from "./event-entry-page";
+import { EventUnavailablePage } from "../event-unavailable-page/event-unavailable-page";
 
 const eventId = "4d8f4cb5-6188-420f-b2ec-12059c972793";
 const loadedEvent: GetEventEntryPageResponse = {
@@ -25,7 +27,7 @@ describe("EventEntryPage rendering", () => {
     configureEventEntryPageTest();
   });
 
-  it("loads the route Event and renders its absolute share link", async () => {
+  it("resolves the route Event before rendering its absolute share link", async () => {
     getEvent.mockReturnValue(of(loadedEvent));
     const harness = await RouterTestingHarness.create();
     const page = await harness.navigateByUrl(
@@ -51,11 +53,7 @@ describe("EventEntryPage rendering", () => {
       `/events/${eventId}`,
       EventEntryPage,
     );
-    const eventSignal = (
-      page as unknown as {
-        event: { set: (event: GetEventEntryPageResponse) => void };
-      }
-    ).event;
+    const eventSignal = getEventSignal(page);
 
     eventSignal.set({ ...loadedEvent, name: "Anniversaire d’Alice" });
     harness.detectChanges();
@@ -90,7 +88,7 @@ describe("EventEntryPage resolver", () => {
       }),
     );
     const harness = await RouterTestingHarness.create();
-    const navigation = harness.navigateByUrl(`/events/${eventId}`, EventEntryPage);
+    const navigation = harness.navigateByUrl(`/events/${eventId}`);
 
     await vi.advanceTimersByTimeAsync(150);
     await navigation;
@@ -101,7 +99,7 @@ describe("EventEntryPage resolver", () => {
     expect(harness.routeNativeElement?.textContent).toContain("Noël 2026");
   });
 
-  it("stops after four not-found retries", async () => {
+  it("redirects to the unavailable page after four not-found retries", async () => {
     vi.useFakeTimers();
     let subscriptions = 0;
     getEvent.mockReturnValue(
@@ -113,7 +111,7 @@ describe("EventEntryPage resolver", () => {
       }),
     );
     const harness = await RouterTestingHarness.create();
-    const navigation = harness.navigateByUrl(`/events/${eventId}`, EventEntryPage);
+    const navigation = harness.navigateByUrl(`/events/${eventId}`);
 
     await vi.advanceTimersByTimeAsync(750);
     await navigation;
@@ -122,11 +120,11 @@ describe("EventEntryPage resolver", () => {
     expect(getEvent).toHaveBeenCalledOnce();
     expect(subscriptions).toBe(5);
     expect(harness.routeNativeElement?.textContent).toContain(
-      "Cet événement est introuvable.",
+      "Événement indisponible",
     );
   });
 
-  it("does not retry server failures", async () => {
+  it("does not retry server failures before redirecting to the unavailable page", async () => {
     let subscriptions = 0;
     getEvent.mockReturnValue(
       defer(() => {
@@ -137,13 +135,13 @@ describe("EventEntryPage resolver", () => {
       }),
     );
     const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl(`/events/${eventId}`, EventEntryPage);
+    await harness.navigateByUrl(`/events/${eventId}`);
     harness.detectChanges();
 
     expect(getEvent).toHaveBeenCalledOnce();
     expect(subscriptions).toBe(1);
     expect(harness.routeNativeElement?.textContent).toContain(
-      "L’événement n’a pas pu être chargé. Réessayez.",
+      "Événement indisponible",
     );
   });
 });
@@ -156,11 +154,25 @@ function configureEventEntryPageTest(): void {
           path: "events/:eventId",
           component: EventEntryPage,
           resolve: {
-            [eventEntryState.routeDataKey]: eventEntryState.resolve,
+            [eventEntryRoute.dataKey]: eventEntryRoute.resolve,
           },
+        },
+        {
+          path: "events/:eventId/unavailable",
+          component: EventUnavailablePage,
         },
       ]),
       { provide: EventRepository, useValue: { getEvent } },
     ],
   });
+}
+
+function getEventSignal(
+  page: EventEntryPage,
+): WritableSignal<GetEventEntryPageResponse> {
+  return (
+    page as unknown as {
+      event: WritableSignal<GetEventEntryPageResponse>;
+    }
+  ).event;
 }

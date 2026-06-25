@@ -1,18 +1,10 @@
 <section class="panel" aria-labelledby="event-title">
-  @if (event(); as loadedEvent) {
-    <p class="eyebrow">Votre événement</p>
-    <h1 id="event-title">{{ loadedEvent.name }}</h1>
-    <div class="share">
-      <h2>Partager cet événement</h2>
-      <p>Envoyez ce lien aux personnes avec qui vous voulez coordonner les cadeaux.</p>
-      <a [href]="shareUrl()">{{ shareUrl() }}</a>
-    </div>
-    <p class="next-step">L’entrée des participants est la prochaine étape et n’est pas encore disponible.</p>
-  } @else {
-    <h1 id="event-title">Événement indisponible</h1>
-    <p class="error" aria-live="polite">
-      {{ error() ?? "L’événement n’a pas pu être chargé. Réessayez." }}
-    </p>
-    <a class="back-link" href="/">Créer un autre événement</a>
-  }
+  <p class="eyebrow">Votre événement</p>
+  <h1 id="event-title">{{ event().name }}</h1>
+  <div class="share">
+    <h2>Partager cet événement</h2>
+    <p>Envoyez ce lien aux personnes avec qui vous voulez coordonner les cadeaux.</p>
+    <a [href]="shareUrl()">{{ shareUrl() }}</a>
+  </div>
+  <p class="next-step">L’entrée des participants est la prochaine étape et n’est pas encore disponible.</p>
 </section>
