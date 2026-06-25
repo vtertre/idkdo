@@ -7,7 +7,8 @@ import {
   type CreateEventResponse,
   type GetEventEntryPageResponse,
 } from "@idkdo/shared";
-import { firstValueFrom } from "rxjs";
+import { catchError, map, throwError } from "rxjs";
+import type { Observable } from "rxjs";
 
 import { EventRepositoryError } from "./event-repository-error";
 
@@ -15,26 +16,18 @@ import { EventRepositoryError } from "./event-repository-error";
 export class EventRepository {
   private readonly http = inject(HttpClient);
 
-  async createEvent(name: string): Promise<CreateEventResponse> {
-    try {
-      const response = await firstValueFrom(
-        this.http.post<unknown>("/api/events", { name }),
-      );
-      return createEventResponseSchema.parse(response);
-    } catch (error: unknown) {
-      throw normalizeError(error);
-    }
+  createEvent(name: string): Observable<CreateEventResponse> {
+    return this.http.post<unknown>("/api/events", { name }).pipe(
+      map((response) => createEventResponseSchema.parse(response)),
+      catchError((error: unknown) => throwError(() => normalizeError(error))),
+    );
   }
 
-  async getEvent(eventId: string): Promise<GetEventEntryPageResponse> {
-    try {
-      const response = await firstValueFrom(
-        this.http.get<unknown>(`/api/events/${eventId}`),
-      );
-      return getEventEntryPageResponseSchema.parse(response);
-    } catch (error: unknown) {
-      throw normalizeError(error);
-    }
+  getEvent(eventId: string): Observable<GetEventEntryPageResponse> {
+    return this.http.get<unknown>(`/api/events/${eventId}`).pipe(
+      map((response) => getEventEntryPageResponseSchema.parse(response)),
+      catchError((error: unknown) => throwError(() => normalizeError(error))),
+    );
   }
 }
 
@@ -54,14 +47,14 @@ function normalizeError(error: unknown): EventRepositoryError {
     }
 
     return new EventRepositoryError(
-      "The request failed. Please try again.",
+      "La requête a échoué. Réessayez.",
       error.status || undefined,
       undefined,
     );
   }
 
   return new EventRepositoryError(
-    "The server returned an unexpected response. Please try again.",
+    "Le serveur a renvoyé une réponse inattendue. Réessayez.",
     undefined,
     undefined,
   );

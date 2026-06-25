@@ -8,8 +8,8 @@ import {
 } from "@angular/forms/signals";
 import { Router } from "@angular/router";
 import { createEventRequestBodySchema } from "@idkdo/shared";
+import { firstValueFrom } from "rxjs";
 
-import { EventRepositoryError } from "../../data-access/event-repository-error";
 import { EventRepository } from "../../data-access/event-repository";
 
 @Component({
@@ -25,7 +25,7 @@ export class CreateEventPage {
 
   protected readonly model = signal({ name: "" });
   protected readonly eventForm = form(this.model, (event) => {
-    required(event.name, { message: "Enter an Event name." });
+    required(event.name, { message: "Saisissez un nom d’événement." });
     validateStandardSchema(event, createEventRequestBodySchema);
   });
   protected readonly submitError = signal<string | null>(null);
@@ -35,14 +35,13 @@ export class CreateEventPage {
     this.submitError.set(null);
     void submit(this.eventForm, async (form) => {
       try {
-        const created = await this.repository.createEvent(form().value().name);
+        const created = await firstValueFrom(
+          this.repository.createEvent(form().value().name),
+        );
         await this.router.navigate(["/events", created.id]);
         return undefined;
-      } catch (error: unknown) {
-        const message =
-          error instanceof EventRepositoryError
-            ? error.message
-            : "The Event could not be created. Please try again.";
+      } catch {
+        const message = "L’événement n’a pas pu être créé. Réessayez.";
         this.submitError.set(message);
         return { kind: "server", message };
       }

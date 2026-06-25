@@ -1,5 +1,6 @@
 import { TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
+import { Observable, Subject, of, throwError } from "rxjs";
 
 import { EventRepositoryError } from "../../data-access/event-repository-error";
 import { EventRepository } from "../../data-access/event-repository";
@@ -37,38 +38,34 @@ describe("CreateEventPage", () => {
     expect(createEvent).not.toHaveBeenCalled();
     const input = element.querySelector<HTMLInputElement>("input");
     const error = element.querySelector<HTMLElement>("#event-name-error");
-    expect(error?.textContent?.trim()).toBe("Enter an Event name.");
+    expect(error?.textContent?.trim()).toBe("Saisissez un nom d’événement.");
     expect(element.textContent).not.toContain("Too small");
     expect(input?.getAttribute("aria-invalid")).toBe("true");
     expect(input?.getAttribute("aria-describedby")).toBe("event-name-error");
   });
 
   it("creates once and navigates to the Event link", async () => {
-    createEvent.mockResolvedValue({ id: eventId });
+    createEvent.mockReturnValue(of({ id: eventId }));
     const fixture = TestBed.createComponent(CreateEventPage);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
-    setName(element, "Christmas 2026");
+    setName(element, "Noël 2026");
 
     submitForm(element);
     await fixture.whenStable();
 
     expect(createEvent).toHaveBeenCalledOnce();
-    expect(createEvent).toHaveBeenCalledWith("Christmas 2026");
+    expect(createEvent).toHaveBeenCalledWith("Noël 2026");
     expect(navigate).toHaveBeenCalledWith(["/events", eventId]);
   });
 
   it("prevents a duplicate submission while pending", async () => {
-    let resolveRequest!: (value: { id: string }) => void;
-    createEvent.mockReturnValue(
-      new Promise((resolve) => {
-        resolveRequest = resolve;
-      }),
-    );
+    const request = new Subject<{ id: string }>();
+    createEvent.mockReturnValue(request.asObservable());
     const fixture = TestBed.createComponent(CreateEventPage);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
-    setName(element, "Christmas 2026");
+    setName(element, "Noël 2026");
 
     submitForm(element);
     submitForm(element);
@@ -79,33 +76,42 @@ describe("CreateEventPage", () => {
       element.querySelector<HTMLButtonElement>("button")?.disabled,
     ).toBe(true);
 
-    resolveRequest({ id: eventId });
+    request.next({ id: eventId });
+    request.complete();
     await fixture.whenStable();
   });
 
   it("shows a failure, re-enables submission, and preserves input", async () => {
-    createEvent.mockRejectedValue(
-      new EventRepositoryError("Event creation failed.", 500, "FAILURE"),
+    createEvent.mockReturnValue(
+      throwError(
+        () => new EventRepositoryError("Event creation failed.", 500, "FAILURE"),
+      ),
     );
     const fixture = TestBed.createComponent(CreateEventPage);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
-    setName(element, "Christmas 2026");
+    setName(element, "Noël 2026");
 
     submitForm(element);
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(element.textContent).toContain("Event creation failed.");
+    expect(element.textContent).toContain(
+      "L’événement n’a pas pu être créé. Réessayez.",
+    );
     expect(
       element.querySelector<HTMLButtonElement>("button")?.disabled,
     ).toBe(false);
     expect(
       element.querySelector<HTMLInputElement>("input")?.value,
-    ).toBe("Christmas 2026");
+    ).toBe("Noël 2026");
     expect(element.querySelector("[aria-live='polite']")).not.toBeNull();
   });
 });
+
+type CreateEventObservable = ReturnType<EventRepository["createEvent"]>;
+
+expectTypeOf<Observable<{ id: string }>>().toMatchTypeOf<CreateEventObservable>();
 
 function setName(element: HTMLElement, name: string): void {
   const input = element.querySelector<HTMLInputElement>("input");

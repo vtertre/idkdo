@@ -1,9 +1,9 @@
 <section class="panel" aria-labelledby="create-event-title">
-  <h1 id="create-event-title">Create an Event</h1>
-  <p>Start a private place where your group can coordinate gifts.</p>
+  <h1 id="create-event-title">Créer un événement</h1>
+  <p>Créez un espace privé pour coordonner les cadeaux avec votre groupe.</p>
 
   <form (submit)="onSubmit($event)" novalidate>
-    <label for="event-name">Event name</label>
+    <label for="event-name">Nom de l’événement</label>
     <input
       id="event-name"
       type="text"
@@ -21,12 +21,12 @@
 
     @if (eventForm.name().touched() && eventForm.name().invalid()) {
       <p class="field-error" id="event-name-error">
-        Enter an Event name.
+        Saisissez un nom d’événement.
       </p>
     }
 
     <button type="submit" [disabled]="eventForm().submitting()">
-      {{ eventForm().submitting() ? "Creating…" : "Create Event" }}
+      {{ eventForm().submitting() ? "Création…" : "Créer l’événement" }}
     </button>
 
     @if (submitError()) {

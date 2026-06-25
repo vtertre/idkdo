@@ -7,6 +7,7 @@ import {
   provideHttpClientTesting,
 } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
+import { firstValueFrom } from "rxjs";
 
 import { EventRepository } from "./event-repository";
 
@@ -32,45 +33,45 @@ describe("EventRepository", () => {
   });
 
   it("creates an Event with the exact API request", async () => {
-    const result = repository.createEvent("Christmas 2026");
+    const result = firstValueFrom(repository.createEvent("Noël 2026"));
     const request = http.expectOne("/api/events");
 
     expect(request.request.method).toBe("POST");
-    expect(request.request.body).toEqual({ name: "Christmas 2026" });
+    expect(request.request.body).toEqual({ name: "Noël 2026" });
     request.flush({ id: eventId });
 
     await expect(result).resolves.toEqual({ id: eventId });
   });
 
   it("loads and validates an Event", async () => {
-    const result = repository.getEvent(eventId);
+    const result = firstValueFrom(repository.getEvent(eventId));
     const request = http.expectOne(`/api/events/${eventId}`);
 
     expect(request.request.method).toBe("GET");
     request.flush({
       createdAt: "2026-06-23T12:00:00.000Z",
       id: eventId,
-      name: "Christmas 2026",
+      name: "Noël 2026",
       updatedAt: "2026-06-23T12:00:00.000Z",
     });
 
     await expect(result).resolves.toMatchObject({
       id: eventId,
-      name: "Christmas 2026",
+      name: "Noël 2026",
     });
   });
 
   it("rejects a malformed successful response", async () => {
-    const result = repository.getEvent(eventId);
+    const result = firstValueFrom(repository.getEvent(eventId));
     http.expectOne(`/api/events/${eventId}`).flush({ id: "not-a-uuid" });
 
     await expect(result).rejects.toMatchObject({
-      message: "The server returned an unexpected response. Please try again.",
+      message: "Le serveur a renvoyé une réponse inattendue. Réessayez.",
     });
   });
 
   it("normalizes a shared API error", async () => {
-    const result = repository.getEvent(eventId);
+    const result = firstValueFrom(repository.getEvent(eventId));
     http.expectOne(`/api/events/${eventId}`).flush(
       { error: { code: "EVENT_NOT_FOUND", message: "Event not found." } },
       { status: 404, statusText: "Not Found" },
@@ -86,14 +87,14 @@ describe("EventRepository", () => {
   });
 
   it("uses a safe fallback for malformed API errors", async () => {
-    const result = repository.createEvent("Christmas 2026");
+    const result = firstValueFrom(repository.createEvent("Noël 2026"));
     http.expectOne("/api/events").flush(
       { message: "not the shared error contract" },
       { status: 500, statusText: "Server Error" },
     );
 
     await expect(result).rejects.toMatchObject({
-      message: "The request failed. Please try again.",
+      message: "La requête a échoué. Réessayez.",
       status: 500,
     });
   });
