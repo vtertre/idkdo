@@ -1163,9 +1163,9 @@ clearSelectedParticipantId(eventId)</code></pre>
                 <li>When the page loads, use Participants already present on the resolved Event entry read model.</li>
                 <li>Read the stored Participant id for the current Event id.</li>
                 <li>If the id exists in <code>event().participants</code>, enter selected state.</li>
-                <li>If the id is absent from the list, clear it and show create/select state.</li>
+                <li>If the id is absent from the current projection snapshot, show create/select state but do not clear the stored id solely from that snapshot; the projection may still be catching up after create.</li>
                 <li>When a user selects an existing Participant, store that id and enter selected state.</li>
-                <li>When a user creates a Participant, store the returned id and enter selected state immediately.</li>
+                <li>When a user creates a Participant, store the returned id and enter selected state immediately unless the user selected another Participant while create was pending.</li>
                 <li>Do not send <code>X-Participant-Id</code> for endpoints that do not require selected identity.</li>
               </ol>
             </div>
@@ -1179,7 +1179,8 @@ clearSelectedParticipantId(eventId)</code></pre>
                 need to wait for the Event entry projection before entering selected state. After create,
                 merge the returned Participant into the local Event entry state or re-query
                 <code>GET /api/events/:eventId</code> with a bounded retry consistent with the existing
-                Event route resolver.
+                Event route resolver. Do not delete a stored selected Participant id only because one
+                Event entry projection snapshot does not contain it.
               </p>
             </div>
           </article>
@@ -1219,7 +1220,8 @@ clearSelectedParticipantId(eventId)</code></pre>
           <li>Event entry page tests render the create form when there is no selected Participant.</li>
           <li>Event entry page tests render existing Participants and store the selected id after choosing one.</li>
           <li>Event entry page tests store the returned id after creating a Participant and avoid duplicate submissions while pending.</li>
-          <li>Event entry page tests restore a valid selected Participant after refresh and clear a stale stored id.</li>
+          <li>Event entry page tests restore a valid selected Participant after refresh, preserve a projection-missing stored id, and clear the stored id only through explicit change behavior.</li>
+          <li>Event entry page tests cover pending-create selection races and same-name retry after create failures.</li>
           <li>Event entry page tests show duplicate-name and generic failure messages without silently ignoring errors.</li>
         </ul>
 
@@ -1309,7 +1311,7 @@ pnpm verify</code></pre>
           <li><code>GET /api/events/:eventId/participants</code> is not implemented.</li>
           <li>No server-side <code>ParticipantRepository</code> or standalone Participant aggregate root exists; Participant write behavior is owned by <code>Event</code>.</li>
           <li>Invalid params/body, unknown Event, duplicate Participant name, and unexpected failures return the documented shared API error shape.</li>
-          <li>The Angular Event entry page creates, selects, remembers, restores, clears stale, and changes selected Participant identity per Event.</li>
+          <li>The Angular Event entry page creates, selects, remembers, restores, and changes selected Participant identity per Event without deleting projection-lagged stored ids.</li>
           <li>The frontend does not send <code>X-Participant-Id</code> for the new entry endpoints and does not treat <code>localStorage</code> as authorization.</li>
           <li>The service worker still does not cache REST API responses; <code>web/scripts/verify-pwa-cache-policy.mjs</code> passes through <code>@idkdo/web</code> tests.</li>
           <li>No Wishes, Reservations, Contributors, authentication, broad DI, transaction infrastructure, or unrelated contracts were added.</li>

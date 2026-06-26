@@ -12,26 +12,27 @@ import { firstValueFrom } from "rxjs";
 import { EventRepository } from "./event-repository";
 
 const eventId = "4d8f4cb5-6188-420f-b2ec-12059c972793";
+const participantId = "3b8dc5a0-9dbc-4e14-99a7-750df7c86fbb";
+
+let repository: EventRepository;
+let http: HttpTestingController;
+
+beforeEach(() => {
+  TestBed.configureTestingModule({
+    providers: [
+      provideHttpClient(withInterceptorsFromDi()),
+      provideHttpClientTesting(),
+    ],
+  });
+  repository = TestBed.inject(EventRepository);
+  http = TestBed.inject(HttpTestingController);
+});
+
+afterEach(() => {
+  http.verify();
+});
 
 describe("EventRepository", () => {
-  let repository: EventRepository;
-  let http: HttpTestingController;
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(withInterceptorsFromDi()),
-        provideHttpClientTesting(),
-      ],
-    });
-    repository = TestBed.inject(EventRepository);
-    http = TestBed.inject(HttpTestingController);
-  });
-
-  afterEach(() => {
-    http.verify();
-  });
-
   it("creates an Event with the exact API request", async () => {
     const result = firstValueFrom(repository.createEvent("Noël 2026"));
     const request = http.expectOne("/api/events");
@@ -59,6 +60,41 @@ describe("EventRepository", () => {
     await expect(result).resolves.toMatchObject({
       id: eventId,
       name: "Noël 2026",
+      participants: [],
+    });
+  });
+
+  it("creates a Participant with the exact API request", async () => {
+    const result = firstValueFrom(repository.createParticipant(eventId, "Alice"));
+    const request = http.expectOne(`/api/events/${eventId}/participants`);
+
+    expect(request.request.method).toBe("POST");
+    expect(request.request.body).toEqual({ name: "Alice" });
+    request.flush({
+      createdAt: "2026-06-23T12:30:00.000Z",
+      eventId,
+      id: participantId,
+      name: "Alice",
+      updatedAt: "2026-06-23T12:30:00.000Z",
+    });
+
+    await expect(result).resolves.toEqual({
+      createdAt: "2026-06-23T12:30:00.000Z",
+      eventId,
+      id: participantId,
+      name: "Alice",
+      updatedAt: "2026-06-23T12:30:00.000Z",
+    });
+  });
+
+  it("rejects a malformed Participant create response", async () => {
+    const result = firstValueFrom(repository.createParticipant(eventId, "Alice"));
+    http
+      .expectOne(`/api/events/${eventId}/participants`)
+      .flush({ id: "not-a-uuid" });
+
+    await expect(result).rejects.toMatchObject({
+      message: "Le serveur a renvoyé une réponse inattendue. Réessayez.",
     });
   });
 
