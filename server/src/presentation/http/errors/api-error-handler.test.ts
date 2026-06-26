@@ -2,6 +2,8 @@ import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 import { describe, expect, it, vi } from "vitest";
 
 import { BlankEventNameError } from "../../../domain/errors/blank-event-name-error.js";
+import { EventNotFoundError } from "../../../domain/errors/event-not-found-error.js";
+import { ParticipantNameAlreadyExistsError } from "../../../domain/errors/participant-name-already-exists-error.js";
 import { apiErrorHandler } from "./api-error-handler.js";
 
 describe("apiErrorHandler", () => {
@@ -19,6 +21,42 @@ describe("apiErrorHandler", () => {
       error: {
         code: "BLANK_EVENT_NAME",
         message: "Event name must not be blank.",
+      },
+    });
+  });
+
+  it("maps duplicate Participant names to 409", () => {
+    const reply = new RecordingReply();
+
+    apiErrorHandler(
+      new ParticipantNameAlreadyExistsError(),
+      fakeRequest(),
+      reply.asFastifyReply(),
+    );
+
+    expect(reply.statusCode).toBe(409);
+    expect(reply.body).toEqual({
+      error: {
+        code: "PARTICIPANT_NAME_ALREADY_EXISTS",
+        message: "A participant with that name already exists for this event.",
+      },
+    });
+  });
+
+  it("maps missing Events to 404", () => {
+    const reply = new RecordingReply();
+
+    apiErrorHandler(
+      new EventNotFoundError(),
+      fakeRequest(),
+      reply.asFastifyReply(),
+    );
+
+    expect(reply.statusCode).toBe(404);
+    expect(reply.body).toEqual({
+      error: {
+        code: "EVENT_NOT_FOUND",
+        message: "Event not found.",
       },
     });
   });

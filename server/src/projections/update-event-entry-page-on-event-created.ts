@@ -1,5 +1,6 @@
 import { eventEntryPageProjection, type Database } from "@idkdo/db";
 import type { DomainEventHandler } from "@idkdo/patterns";
+import { sql } from "drizzle-orm";
 
 import type { EventCreated } from "../domain/events/event-created.js";
 
@@ -17,12 +18,13 @@ export class UpdateEventEntryPageOnEventCreated
         createdAt: occurredAt,
         id: event.eventId.toString(),
         name: event.name.value,
+        participants: [],
         updatedAt: occurredAt,
       })
       .onConflictDoUpdate({
         set: {
           name: event.name.value,
-          updatedAt: occurredAt,
+          updatedAt: sql`greatest(${eventEntryPageProjection.updatedAt}, ${occurredAt}::timestamptz)`,
         },
         target: eventEntryPageProjection.id,
       });

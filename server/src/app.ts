@@ -3,6 +3,8 @@ import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastif
 
 import { CreateEventCommandHandler } from "./commands/events/create-event-command-handler.js";
 import { CreateEventCommand } from "./commands/events/create-event-command.js";
+import { CreateParticipantCommandHandler } from "./commands/participants/create-participant-command-handler.js";
+import { CreateParticipantCommand } from "./commands/participants/create-participant-command.js";
 import type { ServerEnvironment } from "./configuration/environment.js";
 import { AsyncCommandBus } from "./infrastructure/cqrs/async-command-bus.js";
 import { AsyncQueryBus } from "./infrastructure/cqrs/async-query-bus.js";
@@ -10,6 +12,7 @@ import { EventDispatcherMiddleware } from "./infrastructure/cqrs/event-dispatche
 import { StaticCommandHandlerRegistry } from "./infrastructure/cqrs/static-command-handler-registry.js";
 import { StaticQueryHandlerRegistry } from "./infrastructure/cqrs/static-query-handler-registry.js";
 import { EventCreated } from "./domain/events/event-created.js";
+import { ParticipantCreated } from "./domain/events/participant-created.js";
 import { AsyncEventBus } from "./infrastructure/event-bus/async-event-bus.js";
 import { StaticDomainEventHandlerRegistry } from "./infrastructure/event-bus/static-domain-event-handler-registry.js";
 import { DrizzleEventRepository } from "./infrastructure/repositories/drizzle-event-repository.js";
@@ -20,11 +23,12 @@ import { healthRoute } from "./presentation/http/routes/health-route.js";
 import { zodSerializerCompiler } from "./presentation/http/validation/zod-serializer-compiler.js";
 import { zodValidatorCompiler } from "./presentation/http/validation/zod-validator-compiler.js";
 import { UpdateEventEntryPageOnEventCreated } from "./projections/update-event-entry-page-on-event-created.js";
+import { UpdateEventEntryPageOnParticipantCreated } from "./projections/update-event-entry-page-on-participant-created.js";
 import { GetEventEntryPageQueryHandler } from "./queries/events/get-event-entry-page-query-handler.js";
 import { GetEventEntryPageQuery } from "./queries/events/get-event-entry-page-query.js";
 
 export type BuildAppOptions = {
-  databaseClient?: DatabaseClient;
+  databaseClient?: Pick<DatabaseClient, "close" | "db">;
   environment: ServerEnvironment;
 };
 
@@ -66,10 +70,17 @@ function buildCommandBus(
 ): AsyncCommandBus {
   const eventRepository = new DrizzleEventRepository(database);
   const createEventCommandHandler = new CreateEventCommandHandler(eventRepository);
+  const createParticipantCommandHandler = new CreateParticipantCommandHandler(
+    eventRepository,
+  );
   const commandHandlerRegistry = new StaticCommandHandlerRegistry([
     {
       commandClass: CreateEventCommand,
       handler: createEventCommandHandler,
+    },
+    {
+      commandClass: CreateParticipantCommand,
+      handler: createParticipantCommandHandler,
     },
   ]);
   const eventDispatcherMiddleware = new EventDispatcherMiddleware(eventBus);
@@ -96,10 +107,16 @@ function buildEventBus(database: Database): AsyncEventBus {
   const updateEventEntryPageOnEventCreated = new UpdateEventEntryPageOnEventCreated(
     database,
   );
+  const updateEventEntryPageOnParticipantCreated =
+    new UpdateEventEntryPageOnParticipantCreated(database);
   const domainEventHandlerRegistry = new StaticDomainEventHandlerRegistry([
     {
       eventClass: EventCreated,
       handler: updateEventEntryPageOnEventCreated,
+    },
+    {
+      eventClass: ParticipantCreated,
+      handler: updateEventEntryPageOnParticipantCreated,
     },
   ]);
 

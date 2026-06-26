@@ -57,8 +57,56 @@ describe("UpdateEventEntryPageOnEventCreated", () => {
       expect(row).toBeDefined();
       expect(row!.id).toBe(eventId.toString());
       expect(row!.name).toBe("Family Birthday");
+      expect(row!.participants).toEqual([]);
       expect(row!.createdAt.toISOString()).toBe("2026-06-19T10:00:00.000Z");
       expect(row!.updatedAt.toISOString()).toBe("2026-06-20T10:00:00.000Z");
+    } finally {
+      await database.close();
+    }
+  });
+
+  it("preserves Participants when EventCreated projects after ParticipantCreated", async () => {
+    const eventId = Uuid.random();
+    const eventCreatedAt = Temporal.Instant.from("2026-06-26T09:00:00Z");
+    const participantCreatedAt = new Date("2026-06-26T10:00:00.000Z");
+    const participant = {
+      createdAt: participantCreatedAt.toISOString(),
+      eventId: eventId.toString(),
+      id: Uuid.random().toString(),
+      name: "Alice",
+      updatedAt: participantCreatedAt.toISOString(),
+    };
+    const database = await template.clone();
+    const handler = new UpdateEventEntryPageOnEventCreated(
+      database.applicationDatabase,
+    );
+
+    try {
+      await database.db.insert(eventEntryPageProjection).values({
+        createdAt: new Date(eventCreatedAt.epochMilliseconds),
+        id: eventId.toString(),
+        name: "Christmas 2026",
+        participants: [participant],
+        updatedAt: participantCreatedAt,
+      });
+
+      await handler.handle(
+        EventCreated.create({
+          eventId,
+          name: EventName.create("Christmas 2026"),
+          occurredAt: eventCreatedAt,
+        }),
+      );
+
+      const rows = await database.db
+        .select()
+        .from(eventEntryPageProjection)
+        .where(eq(eventEntryPageProjection.id, eventId.toString()));
+      const row = rows[0];
+
+      expect(rows).toHaveLength(1);
+      expect(row?.participants).toEqual([participant]);
+      expect(row?.updatedAt.toISOString()).toBe(participantCreatedAt.toISOString());
     } finally {
       await database.close();
     }

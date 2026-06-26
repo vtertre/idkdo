@@ -1,4 +1,7 @@
 import type {
+  CreateParticipantRequestBody,
+  CreateParticipantResponse,
+  CreateParticipantRouteParams,
   CreateEventRequestBody,
   CreateEventResponse,
   GetEventEntryPageRouteParams,
@@ -8,6 +11,7 @@ import { Uuid } from "@idkdo/patterns";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
 import { CreateEventCommand } from "../../../commands/events/create-event-command.js";
+import { CreateParticipantCommand } from "../../../commands/participants/create-participant-command.js";
 import { GetEventEntryPageQuery } from "../../../queries/events/get-event-entry-page-query.js";
 
 export class EventResource {
@@ -48,5 +52,22 @@ export class EventResource {
     }
 
     reply.send(eventEntryPage);
+  }
+
+  async createParticipant(
+    request: FastifyRequest<{
+      Body: CreateParticipantRequestBody;
+      Params: CreateParticipantRouteParams;
+    }>,
+    reply: FastifyReply,
+  ): Promise<void> {
+    const response: CreateParticipantResponse = await this.commandBus.execute(
+      new CreateParticipantCommand(
+        Uuid.parse(request.params.eventId),
+        request.body.name,
+      ),
+    );
+
+    reply.status(201).send(response);
   }
 }

@@ -22,15 +22,29 @@ export function apiErrorHandler(
 }
 
 function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
+  const errorCode = getErrorCode(error);
+
   if (error instanceof BusinessRuleViolation) {
     return {
       body: {
         error: {
-          code: error.code,
+          code: errorCode,
           message: error.message,
         },
       },
-      statusCode: 422,
+      statusCode: errorCode === "PARTICIPANT_NAME_ALREADY_EXISTS" ? 409 : 422,
+    };
+  }
+
+  if (errorCode === "EVENT_NOT_FOUND") {
+    return {
+      body: {
+        error: {
+          code: errorCode,
+          message: getErrorMessage(error),
+        },
+      },
+      statusCode: 404,
     };
   }
 

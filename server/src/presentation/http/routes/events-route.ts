@@ -1,5 +1,10 @@
 import {
   apiErrorResponseSchema,
+  type CreateParticipantRequestBody,
+  createParticipantRequestBodySchema,
+  createParticipantResponseSchema,
+  createParticipantRouteParamsSchema,
+  type CreateParticipantRouteParams,
   type CreateEventRequestBody,
   createEventRequestBodySchema,
   createEventResponseSchema,
@@ -32,6 +37,27 @@ export async function eventsRoute(
       },
     },
     (request, reply) => options.eventResource.getEventEntryPage(request, reply),
+  );
+
+  app.post<{
+    Body: CreateParticipantRequestBody;
+    Params: CreateParticipantRouteParams;
+  }>(
+    "/events/:eventId/participants",
+    {
+      schema: {
+        body: createParticipantRequestBodySchema,
+        params: createParticipantRouteParamsSchema,
+        response: {
+          201: createParticipantResponseSchema,
+          400: apiErrorResponseSchema,
+          404: apiErrorResponseSchema,
+          409: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
+        },
+      },
+    },
+    (request, reply) => options.eventResource.createParticipant(request, reply),
   );
 
   app.post<{ Body: CreateEventRequestBody }>(
