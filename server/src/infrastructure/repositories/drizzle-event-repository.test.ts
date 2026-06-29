@@ -1,49 +1,57 @@
 import {
+  createDatabaseClient,
   events,
+  migrateDatabase,
   participants,
+  type DatabaseClient,
 } from "@idkdo/db";
 import { Uuid } from "@idkdo/patterns";
 import { Temporal } from "@js-temporal/polyfill";
+import {
+  PostgreSqlContainer,
+  type StartedPostgreSqlContainer,
+} from "@testcontainers/postgresql";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { Event } from "../../domain/entities/event.js";
 import { EventName } from "../../domain/value-objects/event-name.js";
 import { ParticipantName } from "../../domain/value-objects/participant-name.js";
-import {
-  createMigratedPgliteTemplate,
-  type PgliteTestDatabase,
-  type PgliteTestDatabaseTemplate,
-} from "../../test/database/pglite-test-database.js";
 import { DrizzleEventRepository } from "./drizzle-event-repository.js";
 
 describe("DrizzleEventRepository", () => {
-  let database: PgliteTestDatabase | undefined;
-  let template: PgliteTestDatabaseTemplate;
+  let databaseClient: DatabaseClient;
+  let postgresContainer: StartedPostgreSqlContainer;
 
   beforeAll(async () => {
-    template = await createMigratedPgliteTemplate();
-  });
+    postgresContainer = await new PostgreSqlContainer("postgres:17-alpine").start();
+    databaseClient = createDatabaseClient({
+      databaseUrl: postgresContainer.getConnectionUri(),
+      maxConnections: 1,
+    });
+
+    await migrateDatabase(databaseClient.db);
+  }, 120_000);
 
   beforeEach(async () => {
-    await database?.close();
-    database = await template.clone();
+    await databaseClient.db.delete(participants);
+    await databaseClient.db.delete(events);
   });
 
   afterAll(async () => {
-    await database?.close();
-    await template.close();
-  });
+    await databaseClient?.close();
+    await postgresContainer?.stop();
+  }, 120_000);
 
   it("adds and gets an Event", async () => {
-    const repository = new DrizzleEventRepository(database!.applicationDatabase);
+    const repository = new DrizzleEventRepository(databaseClient.db);
     const [event] = Event.create({
       name: EventName.create("Christmas 2026"),
     });
 
     await repository.add(event);
 
-    const persistedRows = await database!.db
+    const persistedRows = await databaseClient.db
       .select()
       .from(events)
       .where(eq(events.id, event.id.toString()));
@@ -67,13 +75,13 @@ describe("DrizzleEventRepository", () => {
   });
 
   it("returns null when an Event does not exist", async () => {
-    const repository = new DrizzleEventRepository(database!.applicationDatabase);
+    const repository = new DrizzleEventRepository(databaseClient.db);
 
     await expect(repository.get(Uuid.random())).resolves.toBeNull();
   });
 
   it("updates an Event", async () => {
-    const repository = new DrizzleEventRepository(database!.applicationDatabase);
+    const repository = new DrizzleEventRepository(databaseClient.db);
     const [event] = Event.create({
       name: EventName.create("Christmas 2026"),
     });
@@ -99,18 +107,18 @@ describe("DrizzleEventRepository", () => {
   });
 
   it("persists Event-owned Participants during update", async () => {
-    const repository = new DrizzleEventRepository(database!.applicationDatabase);
+    const repository = new DrizzleEventRepository(databaseClient.db);
     const [event] = Event.create({
       name: EventName.create("Christmas 2026"),
     });
 
     await repository.add(event);
-    const [eventWithParticipant] = event.addParticipant({
+    event.addParticipant({
       name: ParticipantName.create("Alice"),
     });
-    await repository.update(eventWithParticipant);
+    await repository.update(event);
 
-    const persistedParticipants = await database!.db
+    const persistedParticipants = await databaseClient.db
       .select()
       .from(participants)
       .where(eq(participants.eventId, event.id.toString()));
@@ -123,7 +131,7 @@ describe("DrizzleEventRepository", () => {
   });
 
   it("checks whether an Event exists", async () => {
-    const repository = new DrizzleEventRepository(database!.applicationDatabase);
+    const repository = new DrizzleEventRepository(databaseClient.db);
     const [event] = Event.create({
       name: EventName.create("Christmas 2026"),
     });

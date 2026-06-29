@@ -1,6 +1,6 @@
 import { eventEntryPageProjection, type Database } from "@idkdo/db";
 import type { DomainEventHandler } from "@idkdo/patterns";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import type { ParticipantCreated } from "../domain/events/participant-created.js";
 
@@ -10,7 +10,6 @@ export class UpdateEventEntryPageOnParticipantCreated
   constructor(private readonly database: Database) {}
 
   async handle(event: ParticipantCreated): Promise<void> {
-    const eventCreatedAt = new Date(event.eventCreatedAt.epochMilliseconds);
     const occurredAt = new Date(event.occurredAt.epochMilliseconds);
     const participant = {
       createdAt: occurredAt.toISOString(),
@@ -21,31 +20,21 @@ export class UpdateEventEntryPageOnParticipantCreated
     };
 
     await this.database
-      .insert(eventEntryPageProjection)
-      .values({
-        createdAt: eventCreatedAt,
-        id: event.eventId.toString(),
-        name: event.eventName.value,
-        participants: [participant],
+      .update(eventEntryPageProjection)
+      .set({
+        participants: sql`
+          ${eventEntryPageProjection.participants} || jsonb_build_array(
+            jsonb_build_object(
+              'createdAt', ${participant.createdAt}::text,
+              'eventId', ${participant.eventId}::text,
+              'id', ${participant.id}::text,
+              'name', ${participant.name}::text,
+              'updatedAt', ${participant.updatedAt}::text
+            )
+          )
+        `,
         updatedAt: occurredAt,
       })
-      .onConflictDoUpdate({
-        set: {
-          name: event.eventName.value,
-          participants: sql`
-            coalesce(${eventEntryPageProjection.participants}, '[]'::jsonb) || jsonb_build_array(
-              jsonb_build_object(
-                'createdAt', ${participant.createdAt}::text,
-                'eventId', ${participant.eventId}::text,
-                'id', ${participant.id}::text,
-                'name', ${participant.name}::text,
-                'updatedAt', ${participant.updatedAt}::text
-              )
-            )
-          `,
-          updatedAt: sql`greatest(${eventEntryPageProjection.updatedAt}, ${occurredAt}::timestamptz)`,
-        },
-        target: eventEntryPageProjection.id,
-      });
+      .where(eq(eventEntryPageProjection.id, event.eventId.toString()));
   }
 }

@@ -310,7 +310,7 @@ Write-side repository interfaces live in `server/src/domain/repositories`.
 Repository implementations live in `server/src/infrastructure/repositories` and use `packages/db`.
 
 Repositories reconstruct domain entities with rehydration methods.
-Repositories return `null` when data is missing. Command handlers translate missing data into typed domain `NotFound` errors.
+Repositories return `null` when data is missing. Command handlers translate missing aggregate roots into `MissingAggregateRootError`.
 
 Read-side query handlers do not use repositories.
 
@@ -330,7 +330,7 @@ Routes must not leak raw infrastructure errors, stack traces, SQL errors, or unv
 
 Examples:
 
-- `EventNotFoundError`
+- `MissingAggregateRootError`
 - `ParticipantNotFoundError`
 - `WishNotFoundError`
 - `ReservationNotFoundError`

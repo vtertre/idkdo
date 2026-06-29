@@ -28,7 +28,7 @@ import { GetEventEntryPageQueryHandler } from "./queries/events/get-event-entry-
 import { GetEventEntryPageQuery } from "./queries/events/get-event-entry-page-query.js";
 
 export type BuildAppOptions = {
-  databaseClient?: Pick<DatabaseClient, "close" | "db">;
+  databaseClient?: DatabaseClient;
   environment: ServerEnvironment;
 };
 

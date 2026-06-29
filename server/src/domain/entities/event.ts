@@ -17,7 +17,6 @@ export type AddParticipantInput = {
 };
 
 export type AddParticipantResult = readonly [
-  updatedEvent: Event,
   participant: Participant,
   domainEvents: [ParticipantCreated],
 ];
@@ -31,17 +30,17 @@ export type RehydrateEventInput = {
 };
 
 export class Event extends BaseAggregateRoot<Uuid> {
-  private readonly participantsInternal: Participant[];
+  readonly #participants: Participant[];
 
   private constructor(
     id: Uuid,
     readonly name: EventName,
     readonly createdAt: Temporal.Instant,
-    readonly updatedAt: Temporal.Instant,
+    public updatedAt: Temporal.Instant,
     participants: readonly Participant[],
   ) {
     super(id);
-    this.participantsInternal = [...participants];
+    this.#participants = [...participants];
   }
 
   static create(input: CreateEventInput): [Event, [EventCreated]] {
@@ -68,38 +67,32 @@ export class Event extends BaseAggregateRoot<Uuid> {
   }
 
   get participants(): readonly Participant[] {
-    return this.participantsInternal;
+    return this.#participants;
   }
 
   addParticipant(input: AddParticipantInput): AddParticipantResult {
     if (
-      this.participantsInternal.some(
+      this.#participants.some(
         (participant) => participant.name.value === input.name.value,
       )
     ) {
       throw new ParticipantNameAlreadyExistsError();
     }
 
-    const now = Temporal.Now.instant();
     const participant = Participant.create({
       eventId: this.id,
       name: input.name,
-      now,
     });
-    const updatedEvent = new Event(this.id, this.name, this.createdAt, now, [
-      ...this.participantsInternal,
-      participant,
-    ]);
+    this.#participants.push(participant);
+    this.updatedAt = participant.createdAt;
 
     const participantCreated = ParticipantCreated.create({
-      eventCreatedAt: this.createdAt,
       eventId: this.id,
-      eventName: this.name,
-      occurredAt: now,
+      occurredAt: participant.createdAt,
       participantId: participant.id,
       participantName: participant.name,
     });
 
-    return [updatedEvent, participant, [participantCreated]];
+    return [participant, [participantCreated]];
   }
 }

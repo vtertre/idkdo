@@ -1,8 +1,8 @@
+import { MissingAggregateRootError } from "@idkdo/patterns";
 import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 import { describe, expect, it, vi } from "vitest";
 
 import { BlankEventNameError } from "../../../domain/errors/blank-event-name-error.js";
-import { EventNotFoundError } from "../../../domain/errors/event-not-found-error.js";
 import { ParticipantNameAlreadyExistsError } from "../../../domain/errors/participant-name-already-exists-error.js";
 import { apiErrorHandler } from "./api-error-handler.js";
 
@@ -25,7 +25,7 @@ describe("apiErrorHandler", () => {
     });
   });
 
-  it("maps duplicate Participant names to 409", () => {
+  it("maps duplicate Participant names to 422", () => {
     const reply = new RecordingReply();
 
     apiErrorHandler(
@@ -34,7 +34,7 @@ describe("apiErrorHandler", () => {
       reply.asFastifyReply(),
     );
 
-    expect(reply.statusCode).toBe(409);
+    expect(reply.statusCode).toBe(422);
     expect(reply.body).toEqual({
       error: {
         code: "PARTICIPANT_NAME_ALREADY_EXISTS",
@@ -47,7 +47,7 @@ describe("apiErrorHandler", () => {
     const reply = new RecordingReply();
 
     apiErrorHandler(
-      new EventNotFoundError(),
+      new MissingAggregateRootError("event-id", "Event"),
       fakeRequest(),
       reply.asFastifyReply(),
     );

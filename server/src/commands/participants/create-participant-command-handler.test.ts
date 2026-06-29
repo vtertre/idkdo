@@ -1,7 +1,6 @@
-import { Uuid } from "@idkdo/patterns";
+import { MissingAggregateRootError, Uuid } from "@idkdo/patterns";
 import { describe, expect, it } from "vitest";
 
-import { EventNotFoundError } from "../../domain/errors/event-not-found-error.js";
 import { ParticipantNameAlreadyExistsError } from "../../domain/errors/participant-name-already-exists-error.js";
 import { ParticipantName } from "../../domain/value-objects/participant-name.js";
 import { EventName } from "../../domain/value-objects/event-name.js";
@@ -24,8 +23,8 @@ describe("CreateParticipantCommandHandler", () => {
     );
     const persistedEvent = await eventRepository.get(event.id);
 
-    expect(result.eventId).toBe(event.id.toString());
-    expect(result.name).toBe("Alice");
+    expect(result.eventId.equals(event.id)).toBe(true);
+    expect(result.name.value).toBe("Alice");
     expect(persistedEvent?.participants).toHaveLength(1);
     expect(persistedEvent?.participants[0]?.name.value).toBe("Alice");
     expect(domainEvents).toHaveLength(1);
@@ -37,7 +36,7 @@ describe("CreateParticipantCommandHandler", () => {
 
     await expect(
       handler.execute(new CreateParticipantCommand(Uuid.random(), "Alice")),
-    ).rejects.toThrow(EventNotFoundError);
+    ).rejects.toThrow(MissingAggregateRootError);
   });
 
   it("fails when the Participant name already exists in the Event", async () => {
@@ -46,10 +45,10 @@ describe("CreateParticipantCommandHandler", () => {
     const [event] = Event.create({
       name: EventName.create("Christmas 2026"),
     });
-    const [eventWithParticipant] = event.addParticipant({
+    event.addParticipant({
       name: ParticipantName.create("Alice"),
     });
-    await eventRepository.add(eventWithParticipant);
+    await eventRepository.add(event);
 
     await expect(
       handler.execute(new CreateParticipantCommand(event.id, "Alice")),

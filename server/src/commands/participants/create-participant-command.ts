@@ -1,8 +1,9 @@
 import type { Command, Uuid, commandResultType } from "@idkdo/patterns";
-import type { ParticipantSummary } from "@idkdo/shared";
 
-export class CreateParticipantCommand implements Command<ParticipantSummary> {
-  declare readonly [commandResultType]: ParticipantSummary;
+import type { Participant } from "../../domain/entities/participant.js";
+
+export class CreateParticipantCommand implements Command<Participant> {
+  declare readonly [commandResultType]: Participant;
 
   constructor(
     readonly eventId: Uuid,

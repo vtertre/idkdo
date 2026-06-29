@@ -44,18 +44,18 @@ describe("GetEventEntryPageQueryHandler", () => {
           name: "Christmas 2026",
           participants: [
             {
-              createdAt: "2026-06-19T10:30:00.000Z",
-              eventId: eventId.toString(),
-              id: secondParticipantId,
-              name: "Alice",
-              updatedAt: "2026-06-19T10:30:00.000Z",
-            },
-            {
               createdAt: "2026-06-19T10:15:00.000Z",
               eventId: eventId.toString(),
               id: firstParticipantId,
               name: "Bob",
               updatedAt: "2026-06-19T10:15:00.000Z",
+            },
+            {
+              createdAt: "2026-06-19T10:30:00.000Z",
+              eventId: eventId.toString(),
+              id: secondParticipantId,
+              name: "Alice",
+              updatedAt: "2026-06-19T10:30:00.000Z",
             },
           ],
           updatedAt: createdAt,

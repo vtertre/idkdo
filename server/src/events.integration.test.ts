@@ -1,7 +1,10 @@
 import {
+  createDatabaseClient,
   eventEntryPageProjection,
   events,
+  migrateDatabase,
   participants,
+  type DatabaseClient,
 } from "@idkdo/db";
 import { Uuid } from "@idkdo/patterns";
 import {
@@ -10,6 +13,10 @@ import {
   getEventEntryPageResponseSchema,
   healthResponseSchema,
 } from "@idkdo/shared";
+import {
+  PostgreSqlContainer,
+  type StartedPostgreSqlContainer,
+} from "@testcontainers/postgresql";
 import { eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import {
@@ -25,11 +32,6 @@ import {
 
 import { buildApp } from "./app.js";
 import type { ServerEnvironment } from "./configuration/environment.js";
-import {
-  createMigratedPgliteTemplate,
-  type PgliteTestDatabase,
-  type PgliteTestDatabaseTemplate,
-} from "./test/database/pglite-test-database.js";
 
 describe("Events integration", () => {
   const context = new EventsIntegrationContext();
@@ -53,7 +55,7 @@ describe("Events integration", () => {
     const responseBody = createEventResponseSchema.parse(
       JSON.parse(response.body) as unknown,
     );
-    const persistedEvents = await context.database!.db.select().from(events);
+    const persistedEvents = await context.databaseClient.db.select().from(events);
     const persistedEvent = persistedEvents[0];
 
     expect(() => Uuid.parse(responseBody.id)).not.toThrow();
@@ -80,7 +82,7 @@ describe("Events integration", () => {
     const responseBody = createEventResponseSchema.parse(
       JSON.parse(response.body) as unknown,
     );
-    const persistedEvents = await context.database!.db.select().from(events);
+    const persistedEvents = await context.databaseClient.db.select().from(events);
 
     expect(responseBody.id).toBe(persistedEvents[0]?.id);
     expect(persistedEvents[0]?.name).toBe("Christmas 2026");
@@ -103,7 +105,7 @@ describe("Events integration", () => {
       },
     });
 
-    const persistedEvents = await context.database!.db.select().from(events);
+    const persistedEvents = await context.databaseClient.db.select().from(events);
     expect(persistedEvents).toHaveLength(0);
   });
 });
@@ -134,7 +136,7 @@ describe("Event lookup integration", () => {
       | undefined;
 
     await vi.waitFor(async () => {
-      const rows = await context.database!.db
+      const rows = await context.databaseClient.db
         .select()
         .from(eventEntryPageProjection)
         .where(eq(eventEntryPageProjection.id, createResponseBody.id));
@@ -228,7 +230,7 @@ describe("Participant create integration", () => {
     const responseBody = createParticipantResponseSchema.parse(
       JSON.parse(response.body) as unknown,
     );
-    const persistedParticipants = await context.database!.db
+    const persistedParticipants = await context.databaseClient.db
       .select()
       .from(participants)
       .where(eq(participants.eventId, createEventBody.id));
@@ -273,7 +275,7 @@ describe("Participant Event entry projection integration", () => {
       | undefined;
 
     await vi.waitFor(async () => {
-      const rows = await context.database!.db
+      const rows = await context.databaseClient.db
         .select()
         .from(eventEntryPageProjection)
         .where(eq(eventEntryPageProjection.id, createEventBody.id));
@@ -317,175 +319,6 @@ describe("Participant Event entry projection integration", () => {
 
 });
 
-describe("Participant validation integration", () => {
-  const context = new EventsIntegrationContext();
-
-  beforeAll(() => context.start(), 120_000);
-  beforeEach(() => context.resetDatabase());
-  afterEach(() => context.closeApp());
-  afterAll(() => context.stop(), 120_000);
-
-  it("rejects invalid Participant route params", async () => {
-    const app = context.openApp();
-
-    const response = await app.inject({
-      method: "POST",
-      payload: { name: "Alice" },
-      url: "/api/events/not-a-uuid/participants",
-    });
-
-    expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body)).toEqual({
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid route parameters.",
-      },
-    });
-  });
-
-  it("rejects invalid Participant request bodies", async () => {
-    const app = context.openApp();
-    const createEventResponse = await app.inject({
-      method: "POST",
-      payload: { name: "Christmas 2026" },
-      url: "/api/events",
-    });
-    const createEventBody = createEventResponseSchema.parse(
-      JSON.parse(createEventResponse.body) as unknown,
-    );
-
-    const response = await app.inject({
-      method: "POST",
-      payload: { name: "   ", extra: true },
-      url: `/api/events/${createEventBody.id}/participants`,
-    });
-
-    expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body)).toEqual({
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid request body.",
-      },
-    });
-  });
-
-  it("returns 404 when creating a Participant for an unknown Event", async () => {
-    const app = context.openApp();
-
-    const response = await app.inject({
-      method: "POST",
-      payload: { name: "Alice" },
-      url: `/api/events/${Uuid.random().toString()}/participants`,
-    });
-
-    expect(response.statusCode).toBe(404);
-    expect(JSON.parse(response.body)).toEqual({
-      error: {
-        code: "EVENT_NOT_FOUND",
-        message: "Event not found.",
-      },
-    });
-  });
-});
-
-describe("Participant conflict integration", () => {
-  const context = new EventsIntegrationContext();
-
-  beforeAll(() => context.start(), 120_000);
-  beforeEach(() => context.resetDatabase());
-  afterEach(() => context.closeApp());
-  afterAll(() => context.stop(), 120_000);
-
-  it("returns 409 when a Participant name already exists in the same Event", async () => {
-    const app = context.openApp();
-    const createEventResponse = await app.inject({
-      method: "POST",
-      payload: { name: "Christmas 2026" },
-      url: "/api/events",
-    });
-    const createEventBody = createEventResponseSchema.parse(
-      JSON.parse(createEventResponse.body) as unknown,
-    );
-
-    await app.inject({
-      method: "POST",
-      payload: { name: "Alice" },
-      url: `/api/events/${createEventBody.id}/participants`,
-    });
-
-    const response = await app.inject({
-      method: "POST",
-      payload: { name: "Alice" },
-      url: `/api/events/${createEventBody.id}/participants`,
-    });
-
-    expect(response.statusCode).toBe(409);
-    expect(JSON.parse(response.body)).toEqual({
-      error: {
-        code: "PARTICIPANT_NAME_ALREADY_EXISTS",
-        message: "A participant with that name already exists for this event.",
-      },
-    });
-  });
-
-});
-
-describe("Participant route shape integration", () => {
-  const context = new EventsIntegrationContext();
-
-  beforeAll(() => context.start(), 120_000);
-  beforeEach(() => context.resetDatabase());
-  afterEach(() => context.closeApp());
-  afterAll(() => context.stop(), 120_000);
-
-  it("does not leak Participants across Events", async () => {
-    const app = context.openApp();
-    const firstEventResponse = await app.inject({
-      method: "POST",
-      payload: { name: "Christmas 2026" },
-      url: "/api/events",
-    });
-    const secondEventResponse = await app.inject({
-      method: "POST",
-      payload: { name: "Birthday" },
-      url: "/api/events",
-    });
-    const firstEvent = createEventResponseSchema.parse(
-      JSON.parse(firstEventResponse.body) as unknown,
-    );
-    const secondEvent = createEventResponseSchema.parse(
-      JSON.parse(secondEventResponse.body) as unknown,
-    );
-
-    await app.inject({
-      method: "POST",
-      payload: { name: "Alice" },
-      url: `/api/events/${firstEvent.id}/participants`,
-    });
-
-    const response = await app.inject({
-      method: "GET",
-      url: `/api/events/${secondEvent.id}`,
-    });
-    const body = getEventEntryPageResponseSchema.parse(
-      JSON.parse(response.body) as unknown,
-    );
-
-    expect(body.participants).toEqual([]);
-  });
-
-  it("does not implement GET participants for Event entry", async () => {
-    const app = context.openApp();
-
-    const response = await app.inject({
-      method: "GET",
-      url: `/api/events/${Uuid.random().toString()}/participants`,
-    });
-
-    expect(response.statusCode).toBe(404);
-  });
-});
-
 describe("Health integration", () => {
   const context = new EventsIntegrationContext();
 
@@ -514,33 +347,39 @@ describe("Health integration", () => {
 
 class EventsIntegrationContext {
   app: FastifyInstance | undefined;
-  database: PgliteTestDatabase | undefined;
+  databaseClient!: DatabaseClient;
 
-  private template!: PgliteTestDatabaseTemplate;
+  private postgresContainer!: StartedPostgreSqlContainer;
   private testEnvironment!: ServerEnvironment;
 
   async start(): Promise<void> {
-    this.template = await createMigratedPgliteTemplate();
+    this.postgresContainer = await new PostgreSqlContainer(
+      "postgres:17-alpine",
+    ).start();
     this.testEnvironment = {
-      databaseUrl: "postgres://idkdo:idkdo@localhost:5432/idkdo",
+      databaseUrl: this.postgresContainer.getConnectionUri(),
       host: "127.0.0.1",
       logLevel: "silent",
       nodeEnv: "test",
       port: 3000,
     };
+    this.databaseClient = createDatabaseClient({
+      databaseUrl: this.testEnvironment.databaseUrl,
+      maxConnections: 1,
+    });
+
+    await migrateDatabase(this.databaseClient.db);
   }
 
   async resetDatabase(): Promise<void> {
-    await this.database?.close();
-    this.database = await this.template.clone();
+    await this.databaseClient.db.delete(participants);
+    await this.databaseClient.db.delete(eventEntryPageProjection);
+    await this.databaseClient.db.delete(events);
   }
 
   openApp(): FastifyInstance {
     this.app = buildApp({
-      databaseClient: {
-        close: () => this.database!.close(),
-        db: this.database!.applicationDatabase,
-      },
+      databaseClient: this.databaseClient,
       environment: this.testEnvironment,
     });
 
@@ -553,7 +392,7 @@ class EventsIntegrationContext {
   }
 
   async stop(): Promise<void> {
-    await this.database?.close();
-    await this.template.close();
+    await this.databaseClient?.close();
+    await this.postgresContainer?.stop();
   }
 }

@@ -1,6 +1,6 @@
 import { events, participants, type Database } from "@idkdo/db";
 import { Uuid } from "@idkdo/patterns";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { Temporal } from "@js-temporal/polyfill";
 
 import { Event } from "../../domain/entities/event.js";
@@ -52,24 +52,28 @@ export class DrizzleEventRepository implements EventRepository {
         })
         .where(eq(events.id, event.id.toString()));
 
-      for (const participant of event.participants) {
-        await transaction
-          .insert(participants)
-          .values({
+      if (event.participants.length === 0) {
+        return;
+      }
+
+      await transaction
+        .insert(participants)
+        .values(
+          event.participants.map((participant) => ({
             createdAt: instantToDate(participant.createdAt),
             eventId: participant.eventId.toString(),
             id: participant.id.toString(),
             name: participant.name.value,
             updatedAt: instantToDate(participant.updatedAt),
-          })
-          .onConflictDoUpdate({
-            set: {
-              name: participant.name.value,
-              updatedAt: instantToDate(participant.updatedAt),
-            },
-            target: participants.id,
-          });
-      }
+          })),
+        )
+        .onConflictDoUpdate({
+          set: {
+            name: sql`excluded.name`,
+            updatedAt: sql`excluded.updated_at`,
+          },
+          target: participants.id,
+        });
     });
   }
 

@@ -8,17 +8,22 @@ import { Participant } from "./participant.js";
 describe("Participant", () => {
   it("creates a Participant scoped to an Event", () => {
     const eventId = Uuid.random();
-    const now = Temporal.Instant.from("2026-06-26T10:00:00Z");
+    const beforeCreate = Temporal.Now.instant();
     const participant = Participant.create({
       eventId,
       name: ParticipantName.create("Alice"),
-      now,
     });
+    const afterCreate = Temporal.Now.instant();
 
     expect(participant.eventId.equals(eventId)).toBe(true);
     expect(participant.name.value).toBe("Alice");
-    expect(participant.createdAt.equals(now)).toBe(true);
-    expect(participant.updatedAt.equals(now)).toBe(true);
+    expect(participant.createdAt.epochNanoseconds).toBeGreaterThanOrEqual(
+      beforeCreate.epochNanoseconds,
+    );
+    expect(participant.createdAt.epochNanoseconds).toBeLessThanOrEqual(
+      afterCreate.epochNanoseconds,
+    );
+    expect(participant.updatedAt.equals(participant.createdAt)).toBe(true);
   });
 
   it("rehydrates persisted Participant state", () => {

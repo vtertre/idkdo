@@ -52,7 +52,6 @@ export async function eventsRoute(
           201: createParticipantResponseSchema,
           400: apiErrorResponseSchema,
           404: apiErrorResponseSchema,
-          409: apiErrorResponseSchema,
           422: apiErrorResponseSchema,
         },
       },

@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm --filter @idkdo/shared build && ng build",
+    "build": "ng build",
     "dev": "ng serve --proxy-config proxy.conf.json",
     "typecheck": "ngc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0 --format ../scripts/eslint-agent-formatter.mjs",
-    "test": "pnpm --filter @idkdo/shared build && ng test --watch=false && pnpm run verify:pwa",
-    "verify:pwa": "pnpm --filter @idkdo/shared build && ng build && node scripts/verify-pwa-cache-policy.mjs"
+    "test": "ng test --watch=false && pnpm run verify:pwa",
+    "verify:pwa": "ng build && node scripts/verify-pwa-cache-policy.mjs"
   },
   "dependencies": {
     "@angular/common": "^22.0.2",

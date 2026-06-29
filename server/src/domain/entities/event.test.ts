@@ -54,17 +54,16 @@ describe("Event", () => {
       name: EventName.create("Christmas 2026"),
     });
 
-    const [updatedEvent, participant, domainEvents] = event.addParticipant({
+    const [participant, domainEvents] = event.addParticipant({
       name: ParticipantName.create("Alice"),
     });
 
     expect(participant.eventId.equals(event.id)).toBe(true);
     expect(participant.name.value).toBe("Alice");
-    expect(event.participants).toHaveLength(0);
-    expect(updatedEvent.participants).toHaveLength(1);
-    expect(updatedEvent.participants[0]?.equals(participant)).toBe(true);
-    expect(updatedEvent.updatedAt.epochNanoseconds).toBeGreaterThanOrEqual(
-      event.updatedAt.epochNanoseconds,
+    expect(event.participants).toHaveLength(1);
+    expect(event.participants[0]?.equals(participant)).toBe(true);
+    expect(event.updatedAt.epochNanoseconds).toBeGreaterThanOrEqual(
+      event.createdAt.epochNanoseconds,
     );
     expect(domainEvents).toHaveLength(1);
     expect(domainEvents[0]).toBeInstanceOf(ParticipantCreated);
@@ -76,12 +75,12 @@ describe("Event", () => {
       name: EventName.create("Christmas 2026"),
     });
 
-    const [updatedEvent] = event.addParticipant({
+    event.addParticipant({
       name: ParticipantName.create("Alice"),
     });
 
     expect(() =>
-      updatedEvent.addParticipant({
+      event.addParticipant({
         name: ParticipantName.create("Alice"),
       }),
     ).toThrow(ParticipantNameAlreadyExistsError);

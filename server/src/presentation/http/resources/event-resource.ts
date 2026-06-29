@@ -12,6 +12,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 
 import { CreateEventCommand } from "../../../commands/events/create-event-command.js";
 import { CreateParticipantCommand } from "../../../commands/participants/create-participant-command.js";
+import type { Participant } from "../../../domain/entities/participant.js";
 import { GetEventEntryPageQuery } from "../../../queries/events/get-event-entry-page-query.js";
 
 export class EventResource {
@@ -61,13 +62,28 @@ export class EventResource {
     }>,
     reply: FastifyReply,
   ): Promise<void> {
-    const response: CreateParticipantResponse = await this.commandBus.execute(
+    const participant = await this.commandBus.execute(
       new CreateParticipantCommand(
         Uuid.parse(request.params.eventId),
         request.body.name,
       ),
     );
+    const response: CreateParticipantResponse = participantToResponse(participant);
 
     reply.status(201).send(response);
   }
+}
+
+function participantToResponse(participant: Participant): CreateParticipantResponse {
+  return {
+    createdAt: instantToIsoString(participant.createdAt),
+    eventId: participant.eventId.toString(),
+    id: participant.id.toString(),
+    name: participant.name.value,
+    updatedAt: instantToIsoString(participant.updatedAt),
+  };
+}
+
+function instantToIsoString(instant: Participant["createdAt"]): string {
+  return new Date(instant.epochMilliseconds).toISOString();
 }

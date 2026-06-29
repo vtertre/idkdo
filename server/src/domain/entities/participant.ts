@@ -6,7 +6,6 @@ import type { ParticipantName } from "../value-objects/participant-name.js";
 export type CreateParticipantInput = {
   readonly eventId: Uuid;
   readonly name: ParticipantName;
-  readonly now?: Temporal.Instant;
 };
 
 export type RehydrateParticipantInput = {
@@ -29,7 +28,7 @@ export class Participant extends BaseEntity<Uuid> {
   }
 
   static create(input: CreateParticipantInput): Participant {
-    const now = input.now ?? Temporal.Now.instant();
+    const now = Temporal.Now.instant();
 
     return new Participant(
       Uuid.random(),

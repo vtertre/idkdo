@@ -1,4 +1,4 @@
-import { BusinessRuleViolation } from "@idkdo/patterns";
+import { BusinessRuleViolation, MissingAggregateRootError } from "@idkdo/patterns";
 import type { ApiErrorResponse } from "@idkdo/shared";
 import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 
@@ -32,16 +32,16 @@ function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
           message: error.message,
         },
       },
-      statusCode: errorCode === "PARTICIPANT_NAME_ALREADY_EXISTS" ? 409 : 422,
+      statusCode: 422,
     };
   }
 
-  if (errorCode === "EVENT_NOT_FOUND") {
+  if (error instanceof MissingAggregateRootError) {
     return {
       body: {
         error: {
-          code: errorCode,
-          message: getErrorMessage(error),
+          code: getMissingAggregateRootErrorCode(error),
+          message: getMissingAggregateRootErrorMessage(error),
         },
       },
       statusCode: 404,
@@ -85,6 +85,18 @@ function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
     },
     statusCode: 500,
   };
+}
+
+function getMissingAggregateRootErrorCode(
+  error: MissingAggregateRootError,
+): string {
+  return error.aggregateName === "Event" ? "EVENT_NOT_FOUND" : error.code;
+}
+
+function getMissingAggregateRootErrorMessage(
+  error: MissingAggregateRootError,
+): string {
+  return error.aggregateName === "Event" ? "Event not found." : error.message;
 }
 
 function getFastifyValidationMessage(error: unknown): string | undefined {

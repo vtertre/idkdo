@@ -219,7 +219,7 @@ Zod schemas validate request bodies, route parameters, query parameters, and sha
 ### Events
 
 - `POST /events`
-- `GET /events/:eventId` - returns the Event entry read model, including the Event's Participants for create/select identity flow.
+- `GET /events/:eventId`
 
 ### Participants
 
