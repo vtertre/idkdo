@@ -5,7 +5,7 @@ import type {
   CreateEventResponse,
   GetEventEntryPageRouteParams,
 } from "@idkdo/shared";
-import { buildParticipantSummary } from "@idkdo/shared";
+import { instantToIsoString } from "@idkdo/shared";
 import type { CommandBus, QueryBus } from "@idkdo/patterns";
 import { Uuid } from "@idkdo/patterns";
 import type { FastifyReply, FastifyRequest } from "fastify";
@@ -67,13 +67,13 @@ export class EventResource {
         request.body.name,
       ),
     );
-    const response = buildParticipantSummary({
-      createdAtEpochMilliseconds: participant.createdAt.epochMilliseconds,
+    const response = {
+      createdAt: instantToIsoString(participant.createdAt),
       eventId: participant.eventId.toString(),
       id: participant.id.toString(),
       name: participant.name.value,
-      updatedAtEpochMilliseconds: participant.updatedAt.epochMilliseconds,
-    });
+      updatedAt: instantToIsoString(participant.updatedAt),
+    };
 
     reply.status(201).send(response);
   }

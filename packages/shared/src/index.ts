@@ -3,9 +3,9 @@ export {
   type ApiErrorResponse,
 } from "./validators/api-error-response-schema.js";
 export {
-  buildParticipantSummary,
-  type BuildParticipantSummaryInput,
-} from "./builders/build-participant-summary.js";
+  instantToIsoString,
+  type InstantLike,
+} from "./time/instant-to-iso-string.js";
 export {
   createParticipantRequestBodySchema,
   type CreateParticipantRequestBody,
