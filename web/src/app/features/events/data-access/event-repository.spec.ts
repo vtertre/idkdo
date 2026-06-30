@@ -52,6 +52,7 @@ describe("EventRepository", () => {
       createdAt: "2026-06-23T12:00:00.000Z",
       id: eventId,
       name: "Noël 2026",
+      participants: [],
       updatedAt: "2026-06-23T12:00:00.000Z",
     });
 

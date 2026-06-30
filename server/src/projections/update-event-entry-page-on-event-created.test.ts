@@ -57,10 +57,12 @@ describe("UpdateEventEntryPageOnEventCreated", () => {
       expect(row).toBeDefined();
       expect(row!.id).toBe(eventId.toString());
       expect(row!.name).toBe("Family Birthday");
+      expect(row!.participants).toEqual([]);
       expect(row!.createdAt.toISOString()).toBe("2026-06-19T10:00:00.000Z");
       expect(row!.updatedAt.toISOString()).toBe("2026-06-20T10:00:00.000Z");
     } finally {
       await database.close();
     }
   });
+
 });

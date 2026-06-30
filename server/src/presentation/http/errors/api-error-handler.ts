@@ -1,4 +1,4 @@
-import { BusinessRuleViolation } from "@idkdo/patterns";
+import { BusinessRuleViolation, MissingAggregateRootError } from "@idkdo/patterns";
 import type { ApiErrorResponse } from "@idkdo/shared";
 import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 
@@ -22,15 +22,29 @@ export function apiErrorHandler(
 }
 
 function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
+  const errorCode = getErrorCode(error);
+
   if (error instanceof BusinessRuleViolation) {
     return {
       body: {
         error: {
-          code: error.code,
+          code: errorCode,
           message: error.message,
         },
       },
       statusCode: 422,
+    };
+  }
+
+  if (error instanceof MissingAggregateRootError) {
+    return {
+      body: {
+        error: {
+          code: "RESOURCE_NOT_FOUND",
+          message: "Resource not found.",
+        },
+      },
+      statusCode: 404,
     };
   }
 

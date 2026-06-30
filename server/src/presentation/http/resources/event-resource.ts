@@ -1,13 +1,17 @@
 import type {
+  CreateParticipantRequestBody,
+  CreateParticipantRouteParams,
   CreateEventRequestBody,
   CreateEventResponse,
   GetEventEntryPageRouteParams,
 } from "@idkdo/shared";
+import { instantToIsoString } from "@idkdo/shared";
 import type { CommandBus, QueryBus } from "@idkdo/patterns";
 import { Uuid } from "@idkdo/patterns";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
 import { CreateEventCommand } from "../../../commands/events/create-event-command.js";
+import { CreateParticipantCommand } from "../../../commands/participants/create-participant-command.js";
 import { GetEventEntryPageQuery } from "../../../queries/events/get-event-entry-page-query.js";
 
 export class EventResource {
@@ -48,5 +52,29 @@ export class EventResource {
     }
 
     reply.send(eventEntryPage);
+  }
+
+  async createParticipant(
+    request: FastifyRequest<{
+      Body: CreateParticipantRequestBody;
+      Params: CreateParticipantRouteParams;
+    }>,
+    reply: FastifyReply,
+  ): Promise<void> {
+    const participant = await this.commandBus.execute(
+      new CreateParticipantCommand(
+        Uuid.parse(request.params.eventId),
+        request.body.name,
+      ),
+    );
+    const response = {
+      createdAt: instantToIsoString(participant.createdAt),
+      eventId: participant.eventId.toString(),
+      id: participant.id.toString(),
+      name: participant.name.value,
+      updatedAt: instantToIsoString(participant.updatedAt),
+    };
+
+    reply.status(201).send(response);
   }
 }

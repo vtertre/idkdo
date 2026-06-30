@@ -1,7 +1,9 @@
+import { MissingAggregateRootError } from "@idkdo/patterns";
 import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 import { describe, expect, it, vi } from "vitest";
 
 import { BlankEventNameError } from "../../../domain/errors/blank-event-name-error.js";
+import { ParticipantNameAlreadyExistsError } from "../../../domain/errors/participant-name-already-exists-error.js";
 import { apiErrorHandler } from "./api-error-handler.js";
 
 describe("apiErrorHandler", () => {
@@ -19,6 +21,42 @@ describe("apiErrorHandler", () => {
       error: {
         code: "BLANK_EVENT_NAME",
         message: "Event name must not be blank.",
+      },
+    });
+  });
+
+  it("maps duplicate Participant names to 422", () => {
+    const reply = new RecordingReply();
+
+    apiErrorHandler(
+      new ParticipantNameAlreadyExistsError(),
+      fakeRequest(),
+      reply.asFastifyReply(),
+    );
+
+    expect(reply.statusCode).toBe(422);
+    expect(reply.body).toEqual({
+      error: {
+        code: "PARTICIPANT_NAME_ALREADY_EXISTS",
+        message: "A participant with that name already exists for this event.",
+      },
+    });
+  });
+
+  it("maps missing aggregate roots to a common 404 response", () => {
+    const reply = new RecordingReply();
+
+    apiErrorHandler(
+      new MissingAggregateRootError("event-id", "Event"),
+      fakeRequest(),
+      reply.asFastifyReply(),
+    );
+
+    expect(reply.statusCode).toBe(404);
+    expect(reply.body).toEqual({
+      error: {
+        code: "RESOURCE_NOT_FOUND",
+        message: "Resource not found.",
       },
     });
   });

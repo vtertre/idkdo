@@ -23,6 +23,8 @@ describe("GetEventEntryPageQueryHandler", () => {
   it("maps the requested Event entry page projection to the API response", async () => {
     const eventId = Uuid.random();
     const otherEventId = Uuid.random();
+    const firstParticipantId = Uuid.random().toString();
+    const secondParticipantId = Uuid.random().toString();
     const createdAt = new Date("2026-06-19T10:00:00.000Z");
     const database = await template.clone();
     const handler = new GetEventEntryPageQueryHandler(database.applicationDatabase);
@@ -33,22 +35,55 @@ describe("GetEventEntryPageQueryHandler", () => {
           createdAt,
           id: otherEventId.toString(),
           name: "Family Birthday",
+          participants: [],
           updatedAt: createdAt,
         },
         {
           createdAt,
           id: eventId.toString(),
           name: "Christmas 2026",
+          participants: [
+            {
+              createdAt: "2026-06-19T10:15:00.000Z",
+              eventId: eventId.toString(),
+              id: firstParticipantId,
+              name: "Bob",
+              updatedAt: "2026-06-19T10:15:00.000Z",
+            },
+            {
+              createdAt: "2026-06-19T10:30:00.000Z",
+              eventId: eventId.toString(),
+              id: secondParticipantId,
+              name: "Alice",
+              updatedAt: "2026-06-19T10:30:00.000Z",
+            },
+          ],
           updatedAt: createdAt,
         },
       ]);
 
-      await expect(
-        handler.execute(new GetEventEntryPageQuery(eventId)),
-      ).resolves.toEqual({
+      const result = await handler.execute(new GetEventEntryPageQuery(eventId));
+
+      expect(result).toEqual({
         createdAt: createdAt.toISOString(),
         id: eventId.toString(),
         name: "Christmas 2026",
+        participants: [
+          {
+            createdAt: "2026-06-19T10:15:00.000Z",
+            eventId: eventId.toString(),
+            id: firstParticipantId,
+            name: "Bob",
+            updatedAt: "2026-06-19T10:15:00.000Z",
+          },
+          {
+            createdAt: "2026-06-19T10:30:00.000Z",
+            eventId: eventId.toString(),
+            id: secondParticipantId,
+            name: "Alice",
+            updatedAt: "2026-06-19T10:30:00.000Z",
+          },
+        ],
         updatedAt: createdAt.toISOString(),
       });
     } finally {

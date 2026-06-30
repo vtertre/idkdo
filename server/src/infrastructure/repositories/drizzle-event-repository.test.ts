@@ -2,6 +2,7 @@ import {
   createDatabaseClient,
   events,
   migrateDatabase,
+  participants,
   type DatabaseClient,
 } from "@idkdo/db";
 import { Uuid } from "@idkdo/patterns";
@@ -15,6 +16,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { Event } from "../../domain/entities/event.js";
 import { EventName } from "../../domain/value-objects/event-name.js";
+import { ParticipantName } from "../../domain/value-objects/participant-name.js";
 import { DrizzleEventRepository } from "./drizzle-event-repository.js";
 
 describe("DrizzleEventRepository", () => {
@@ -32,12 +34,13 @@ describe("DrizzleEventRepository", () => {
   }, 120_000);
 
   beforeEach(async () => {
+    await databaseClient.db.delete(participants);
     await databaseClient.db.delete(events);
   });
 
   afterAll(async () => {
-    await databaseClient.close();
-    await postgresContainer.stop();
+    await databaseClient?.close();
+    await postgresContainer?.stop();
   }, 120_000);
 
   it("adds and gets an Event", async () => {
@@ -101,6 +104,30 @@ describe("DrizzleEventRepository", () => {
     expect(foundEvent).toBeDefined();
     expect(foundEvent!.name.value).toBe("Family Birthday");
     expect(foundEvent!.updatedAt.equals(updatedAt)).toBe(true);
+  });
+
+  it("persists Event-owned Participants during update", async () => {
+    const repository = new DrizzleEventRepository(databaseClient.db);
+    const [event] = Event.create({
+      name: EventName.create("Christmas 2026"),
+    });
+
+    await repository.add(event);
+    event.addParticipant({
+      name: ParticipantName.create("Alice"),
+    });
+    await repository.update(event);
+
+    const persistedParticipants = await databaseClient.db
+      .select()
+      .from(participants)
+      .where(eq(participants.eventId, event.id.toString()));
+    const foundEvent = await repository.get(event.id);
+
+    expect(persistedParticipants).toHaveLength(1);
+    expect(persistedParticipants[0]?.name).toBe("Alice");
+    expect(foundEvent?.getParticipants()).toHaveLength(1);
+    expect(foundEvent?.getParticipants()[0]?.name.value).toBe("Alice");
   });
 
   it("checks whether an Event exists", async () => {

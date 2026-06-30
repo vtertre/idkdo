@@ -169,6 +169,8 @@ A person can access an Event entry flow through the Event shareable link.
 
 A person must choose an existing Participant or create a new Participant before accessing Event content.
 
+The Event entry read model returned by `GET /events/:eventId` includes the Event's Participants for identity selection.
+
 ### Wishes
 
 A Participant can create Wishes only for themselves.
@@ -221,7 +223,6 @@ Zod schemas validate request bodies, route parameters, query parameters, and sha
 
 ### Participants
 
-- `GET /events/:eventId/participants`
 - `POST /events/:eventId/participants`
 
 ### Wishes

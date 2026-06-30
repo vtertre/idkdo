@@ -28,6 +28,7 @@ export class GetEventEntryPageQueryHandler
       createdAt: row.createdAt.toISOString(),
       id: row.id,
       name: row.name,
+      participants: row.participants,
       updatedAt: row.updatedAt.toISOString(),
     };
   }
