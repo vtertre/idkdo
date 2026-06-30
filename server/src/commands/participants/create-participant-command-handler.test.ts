@@ -25,8 +25,8 @@ describe("CreateParticipantCommandHandler", () => {
 
     expect(result.eventId.equals(event.id)).toBe(true);
     expect(result.name.value).toBe("Alice");
-    expect(persistedEvent?.participants).toHaveLength(1);
-    expect(persistedEvent?.participants[0]?.name.value).toBe("Alice");
+    expect(persistedEvent?.getParticipants()).toHaveLength(1);
+    expect(persistedEvent?.getParticipants()[0]?.name.value).toBe("Alice");
     expect(domainEvents).toHaveLength(1);
   });
 

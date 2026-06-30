@@ -40,8 +40,8 @@ function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
     return {
       body: {
         error: {
-          code: getMissingAggregateRootErrorCode(error),
-          message: getMissingAggregateRootErrorMessage(error),
+          code: "RESOURCE_NOT_FOUND",
+          message: "Resource not found.",
         },
       },
       statusCode: 404,
@@ -85,18 +85,6 @@ function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
     },
     statusCode: 500,
   };
-}
-
-function getMissingAggregateRootErrorCode(
-  error: MissingAggregateRootError,
-): string {
-  return error.aggregateName === "Event" ? "EVENT_NOT_FOUND" : error.code;
-}
-
-function getMissingAggregateRootErrorMessage(
-  error: MissingAggregateRootError,
-): string {
-  return error.aggregateName === "Event" ? "Event not found." : error.message;
 }
 
 function getFastifyValidationMessage(error: unknown): string | undefined {

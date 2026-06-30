@@ -43,7 +43,7 @@ describe("apiErrorHandler", () => {
     });
   });
 
-  it("maps missing Events to 404", () => {
+  it("maps missing aggregate roots to a common 404 response", () => {
     const reply = new RecordingReply();
 
     apiErrorHandler(
@@ -55,8 +55,8 @@ describe("apiErrorHandler", () => {
     expect(reply.statusCode).toBe(404);
     expect(reply.body).toEqual({
       error: {
-        code: "EVENT_NOT_FOUND",
-        message: "Event not found.",
+        code: "RESOURCE_NOT_FOUND",
+        message: "Resource not found.",
       },
     });
   });

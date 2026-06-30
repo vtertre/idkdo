@@ -42,12 +42,12 @@ describe("UpdateEventEntryPageOnParticipantCreated", () => {
       });
 
       await handler.handle(
-        ParticipantCreated.create({
+        new ParticipantCreated(
           eventId,
           occurredAt,
           participantId,
-          participantName: ParticipantName.create("Alice"),
-        }),
+          ParticipantName.create("Alice"),
+        ),
       );
 
       const rows = await database.db

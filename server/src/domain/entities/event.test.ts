@@ -60,8 +60,8 @@ describe("Event", () => {
 
     expect(participant.eventId.equals(event.id)).toBe(true);
     expect(participant.name.value).toBe("Alice");
-    expect(event.participants).toHaveLength(1);
-    expect(event.participants[0]?.equals(participant)).toBe(true);
+    expect(event.getParticipants()).toHaveLength(1);
+    expect(event.getParticipants()[0]?.equals(participant)).toBe(true);
     expect(event.updatedAt.epochNanoseconds).toBeGreaterThanOrEqual(
       event.createdAt.epochNanoseconds,
     );
@@ -105,7 +105,7 @@ describe("Event", () => {
       updatedAt,
     });
 
-    expect(event.participants).toHaveLength(1);
-    expect(event.participants[0]?.equals(participant)).toBe(true);
+    expect(event.getParticipants()).toHaveLength(1);
+    expect(event.getParticipants()[0]?.equals(participant)).toBe(true);
   });
 });

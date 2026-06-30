@@ -30,7 +30,7 @@ export type RehydrateEventInput = {
 };
 
 export class Event extends BaseAggregateRoot<Uuid> {
-  readonly #participants: Participant[];
+  private readonly participants: Participant[];
 
   private constructor(
     id: Uuid,
@@ -40,7 +40,7 @@ export class Event extends BaseAggregateRoot<Uuid> {
     participants: readonly Participant[],
   ) {
     super(id);
-    this.#participants = [...participants];
+    this.participants = [...participants];
   }
 
   static create(input: CreateEventInput): [Event, [EventCreated]] {
@@ -66,13 +66,13 @@ export class Event extends BaseAggregateRoot<Uuid> {
     );
   }
 
-  get participants(): readonly Participant[] {
-    return this.#participants;
+  getParticipants(): readonly Participant[] {
+    return this.participants;
   }
 
   addParticipant(input: AddParticipantInput): AddParticipantResult {
     if (
-      this.#participants.some(
+      this.participants.some(
         (participant) => participant.name.value === input.name.value,
       )
     ) {
@@ -83,15 +83,15 @@ export class Event extends BaseAggregateRoot<Uuid> {
       eventId: this.id,
       name: input.name,
     });
-    this.#participants.push(participant);
+    this.participants.push(participant);
     this.updatedAt = participant.createdAt;
 
-    const participantCreated = ParticipantCreated.create({
-      eventId: this.id,
-      occurredAt: participant.createdAt,
-      participantId: participant.id,
-      participantName: participant.name,
-    });
+    const participantCreated = new ParticipantCreated(
+      this.id,
+      participant.createdAt,
+      participant.id,
+      participant.name,
+    );
 
     return [participant, [participantCreated]];
   }

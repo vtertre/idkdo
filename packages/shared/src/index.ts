@@ -3,6 +3,10 @@ export {
   type ApiErrorResponse,
 } from "./validators/api-error-response-schema.js";
 export {
+  buildParticipantSummary,
+  type BuildParticipantSummaryInput,
+} from "./builders/build-participant-summary.js";
+export {
   createParticipantRequestBodySchema,
   type CreateParticipantRequestBody,
 } from "./validators/create-participant-request-body-schema.js";

@@ -1,18 +1,17 @@
 import type {
   CreateParticipantRequestBody,
-  CreateParticipantResponse,
   CreateParticipantRouteParams,
   CreateEventRequestBody,
   CreateEventResponse,
   GetEventEntryPageRouteParams,
 } from "@idkdo/shared";
+import { buildParticipantSummary } from "@idkdo/shared";
 import type { CommandBus, QueryBus } from "@idkdo/patterns";
 import { Uuid } from "@idkdo/patterns";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
 import { CreateEventCommand } from "../../../commands/events/create-event-command.js";
 import { CreateParticipantCommand } from "../../../commands/participants/create-participant-command.js";
-import type { Participant } from "../../../domain/entities/participant.js";
 import { GetEventEntryPageQuery } from "../../../queries/events/get-event-entry-page-query.js";
 
 export class EventResource {
@@ -68,22 +67,14 @@ export class EventResource {
         request.body.name,
       ),
     );
-    const response: CreateParticipantResponse = participantToResponse(participant);
+    const response = buildParticipantSummary({
+      createdAtEpochMilliseconds: participant.createdAt.epochMilliseconds,
+      eventId: participant.eventId.toString(),
+      id: participant.id.toString(),
+      name: participant.name.value,
+      updatedAtEpochMilliseconds: participant.updatedAt.epochMilliseconds,
+    });
 
     reply.status(201).send(response);
   }
-}
-
-function participantToResponse(participant: Participant): CreateParticipantResponse {
-  return {
-    createdAt: instantToIsoString(participant.createdAt),
-    eventId: participant.eventId.toString(),
-    id: participant.id.toString(),
-    name: participant.name.value,
-    updatedAt: instantToIsoString(participant.updatedAt),
-  };
-}
-
-function instantToIsoString(instant: Participant["createdAt"]): string {
-  return new Date(instant.epochMilliseconds).toISOString();
 }

@@ -52,14 +52,16 @@ export class DrizzleEventRepository implements EventRepository {
         })
         .where(eq(events.id, event.id.toString()));
 
-      if (event.participants.length === 0) {
+      const eventParticipants = event.getParticipants();
+
+      if (eventParticipants.length === 0) {
         return;
       }
 
       await transaction
         .insert(participants)
         .values(
-          event.participants.map((participant) => ({
+          eventParticipants.map((participant) => ({
             createdAt: instantToDate(participant.createdAt),
             eventId: participant.eventId.toString(),
             id: participant.id.toString(),

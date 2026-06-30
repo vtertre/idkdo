@@ -126,8 +126,8 @@ describe("DrizzleEventRepository", () => {
 
     expect(persistedParticipants).toHaveLength(1);
     expect(persistedParticipants[0]?.name).toBe("Alice");
-    expect(foundEvent?.participants).toHaveLength(1);
-    expect(foundEvent?.participants[0]?.name.value).toBe("Alice");
+    expect(foundEvent?.getParticipants()).toHaveLength(1);
+    expect(foundEvent?.getParticipants()[0]?.name.value).toBe("Alice");
   });
 
   it("checks whether an Event exists", async () => {
