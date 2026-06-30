@@ -4,7 +4,6 @@ export {
 } from "./validators/api-error-response-schema.js";
 export {
   instantToIsoString,
-  type InstantLike,
 } from "./time/instant-to-iso-string.js";
 export {
   createParticipantRequestBodySchema,
