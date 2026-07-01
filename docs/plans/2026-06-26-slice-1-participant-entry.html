@@ -1165,7 +1165,8 @@ clearSelectedParticipantId(eventId)</code></pre>
                 <li>If the id exists in <code>event().participants</code>, enter selected state.</li>
                 <li>If the id is absent from the current projection snapshot, show create/select state but do not clear the stored id solely from that snapshot; the projection may still be catching up after create.</li>
                 <li>When a user selects an existing Participant, store that id and enter selected state.</li>
-                <li>When a user creates a Participant, store the returned id and enter selected state immediately unless the user selected another Participant while create was pending.</li>
+                <li>While a Participant create is pending, disable existing Participant selection so the UI has only one in-flight identity action.</li>
+                <li>When a user creates a Participant, store the returned id and enter selected state immediately unless the selected identity changed before the create response settled.</li>
                 <li>Do not send <code>X-Participant-Id</code> for endpoints that do not require selected identity.</li>
               </ol>
             </div>

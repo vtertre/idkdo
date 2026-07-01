@@ -1,4 +1,4 @@
-import { Injectable, InjectionToken, inject } from "@angular/core";
+import { InjectionToken, Service, inject } from "@angular/core";
 
 export const selectedParticipantStorageBackend =
   new InjectionToken<Storage | null>("selectedParticipantStorageBackend", {
@@ -6,7 +6,7 @@ export const selectedParticipantStorageBackend =
     factory: () => getLocalStorage(),
   });
 
-@Injectable({ providedIn: "root" })
+@Service()
 export class SelectedParticipantStorage {
   private readonly storage = inject(selectedParticipantStorageBackend);
 

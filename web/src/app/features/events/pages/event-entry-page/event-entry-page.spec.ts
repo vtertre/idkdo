@@ -1,6 +1,7 @@
 import { TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { RouterTestingHarness } from "@angular/router/testing";
+import { By } from "@angular/platform-browser";
 import type {
   CreateParticipantResponse,
   GetEventEntryPageResponse,
@@ -13,6 +14,7 @@ import { eventEntryRoute } from "../../data-access/event-entry-route";
 import { EventRepositoryError } from "../../data-access/event-repository-error";
 import { EventRepository } from "../../data-access/event-repository";
 import { SelectedParticipantStorage } from "../../data-access/selected-participant-storage";
+import { EventParticipantEntry } from "./event-participant-entry";
 import { EventEntryPage } from "./event-entry-page";
 import { EventUnavailablePage } from "../event-unavailable-page/event-unavailable-page";
 
@@ -163,14 +165,14 @@ describe("EventEntryPage participant identity", () => {
   it("does not let a pending create overwrite a later Participant selection", async () => {
     const request = new Subject<CreateParticipantResponse>();
     createParticipant.mockReturnValue(request.asObservable());
-    const { element, harness, page } = await navigateToEvent(loadedEventWithParticipants);
+    const { element, harness } = await navigateToEvent(loadedEventWithParticipants);
 
     setParticipantName(element, "Charlie");
     submitParticipantForm(element);
     harness.detectChanges();
 
     expect(getParticipantButton(element, "Alice")?.disabled).toBe(true);
-    selectParticipantInComponent(page, bob);
+    selectParticipantInComponent(harness, bob);
     harness.detectChanges();
 
     request.next(charlie);
@@ -427,12 +429,18 @@ function getParticipantButton(
 }
 
 function selectParticipantInComponent(
-  page: EventEntryPage,
+  harness: RouterTestingHarness,
   participant: ParticipantSummary,
 ): void {
-  (
-    page as unknown as {
-      selectParticipant(participant: ParticipantSummary): void;
-    }
-  ).selectParticipant(participant);
+  const participantEntryDebug = harness.fixture.debugElement.query(
+    By.directive(EventParticipantEntry),
+  );
+  if (!participantEntryDebug) {
+    throw new Error("Expected the Event Participant entry component.");
+  }
+
+  const participantEntry = participantEntryDebug.componentInstance as unknown as {
+    selectParticipant(participant: ParticipantSummary): void;
+  };
+  participantEntry.selectParticipant(participant);
 }
