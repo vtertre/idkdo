@@ -1,10 +1,12 @@
 <section class="panel" aria-labelledby="event-title">
   <p class="eyebrow">Votre événement</p>
   <h1 id="event-title">{{ event().name }}</h1>
+
   <div class="share">
     <h2>Partager cet événement</h2>
     <p>Envoyez ce lien aux personnes avec qui vous voulez coordonner les cadeaux.</p>
     <a [href]="shareUrl()">{{ shareUrl() }}</a>
   </div>
-  <p class="next-step">L’entrée des participants est la prochaine étape et n’est pas encore disponible.</p>
+
+  <app-event-participant-entry [(eventEntry)]="event" />
 </section>

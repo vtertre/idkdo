@@ -3,8 +3,10 @@ import { Injectable, inject } from "@angular/core";
 import {
   apiErrorResponseSchema,
   createEventResponseSchema,
+  createParticipantResponseSchema,
   getEventEntryPageResponseSchema,
   type CreateEventResponse,
+  type CreateParticipantResponse,
   type GetEventEntryPageResponse,
 } from "@idkdo/shared";
 import { catchError, map, throwError } from "rxjs";
@@ -28,6 +30,18 @@ export class EventRepository {
       map((response) => getEventEntryPageResponseSchema.parse(response)),
       catchError((error: unknown) => throwError(() => normalizeError(error))),
     );
+  }
+
+  createParticipant(
+    eventId: string,
+    name: string,
+  ): Observable<CreateParticipantResponse> {
+    return this.http
+      .post<unknown>(`/api/events/${eventId}/participants`, { name })
+      .pipe(
+        map((response) => createParticipantResponseSchema.parse(response)),
+        catchError((error: unknown) => throwError(() => normalizeError(error))),
+      );
   }
 }
 

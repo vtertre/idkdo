@@ -1,0 +1,74 @@
+@if (selectedParticipant(); as participant) {
+  <section class="identity-summary" aria-labelledby="selected-participant-title">
+    <p class="eyebrow">Identité choisie</p>
+    <h2 id="selected-participant-title">{{ participant.name }}</h2>
+    <p>Vous entrez dans cet événement avec cette identité.</p>
+    <button class="secondary" type="button" (click)="changeParticipant()">
+      Changer de participant
+    </button>
+  </section>
+} @else {
+  <div class="entry-flow">
+    <form
+      class="create-participant"
+      (submit)="onCreateParticipant($event)"
+      aria-labelledby="create-participant-title"
+      novalidate
+    >
+      <h2 id="create-participant-title">Ajouter votre nom</h2>
+      <label for="participant-name">Nom du participant</label>
+      <input
+        id="participant-name"
+        type="text"
+        autocomplete="name"
+        [formField]="participantForm.name"
+        [attr.aria-describedby]="
+          participantForm.name().touched() && participantForm.name().invalid()
+            ? 'participant-name-error'
+            : null
+        "
+        [attr.aria-invalid]="
+          participantForm.name().touched() && participantForm.name().invalid()
+            ? 'true'
+            : null
+        "
+      />
+
+      @if (participantForm.name().touched() && participantForm.name().invalid()) {
+        <p class="field-error" id="participant-name-error">
+          Saisissez votre nom.
+        </p>
+      }
+
+      <button type="submit" [disabled]="createPending()">
+        {{ createPending() ? "Ajout..." : "Me joindre" }}
+      </button>
+
+      @if (submitError()) {
+        <p class="submit-error" aria-live="polite">{{ submitError() }}</p>
+      }
+    </form>
+
+    <section class="participant-list" aria-labelledby="participant-list-title">
+      <h2 id="participant-list-title">Participants déjà ajoutés</h2>
+
+      @if (eventEntry().participants.length > 0) {
+        <ul>
+          @for (participant of eventEntry().participants; track participant.id) {
+            <li>
+              <button
+                type="button"
+                [disabled]="createPending()"
+                (click)="selectParticipant(participant)"
+              >
+                {{ participant.name }}
+              </button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p>Aucun participant pour le moment.</p>
+      }
+    </section>
+  </div>
+}

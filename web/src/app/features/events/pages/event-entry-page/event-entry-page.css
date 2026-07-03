@@ -10,6 +10,10 @@ h2 { font-size: 1.15rem; margin: 0; }
 p { color: var(--muted); line-height: 1.55; }
 .eyebrow { color: var(--primary); font-weight: 750; margin: 0; }
 .share { border-top: 1px solid var(--border); padding-top: 1.25rem; }
-.share a, .back-link { color: #145da0; display: inline-block; min-height: 2.75rem; overflow-wrap: anywhere; padding: 0.65rem 0; }
-.next-step { border-top: 1px solid var(--border); margin-top: 1.5rem; padding-top: 1.25rem; }
-.error { color: var(--error); }
+.share a {
+  color: #145da0;
+  display: inline-block;
+  min-height: 2.75rem;
+  overflow-wrap: anywhere;
+  padding: 0.65rem 0;
+}
