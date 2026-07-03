@@ -1,12 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   inject,
   linkedSignal,
   model,
   signal,
 } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import {
   FormField,
   form,
@@ -19,7 +21,7 @@ import {
   type GetEventEntryPageResponse,
   type ParticipantSummary,
 } from "@idkdo/shared";
-import { firstValueFrom } from "rxjs";
+import { finalize } from "rxjs";
 
 import { EventRepositoryError } from "../../data-access/event-repository-error";
 import { EventRepository } from "../../data-access/event-repository";
@@ -33,6 +35,7 @@ import { SelectedParticipantStorage } from "../../data-access/selected-participa
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EventParticipantEntry {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly repository = inject(EventRepository);
   private readonly selectedParticipantStorage = inject(SelectedParticipantStorage);
 
@@ -61,6 +64,7 @@ export class EventParticipantEntry {
     required(participant.name, { message: "Saisissez votre nom." });
     validateStandardSchema(participant, createParticipantRequestBodySchema);
   });
+  protected readonly createPending = signal(false);
   protected readonly submitError = signal<string | null>(null);
 
   protected selectParticipant(participant: ParticipantSummary): void {
@@ -76,30 +80,48 @@ export class EventParticipantEntry {
 
   protected onCreateParticipant(event: SubmitEvent): void {
     event.preventDefault();
+
+    if (this.createPending()) {
+      return;
+    }
+
     this.submitError.set(null);
 
     void submit(this.participantForm, async (form) => {
-      try {
-        const participant = await firstValueFrom(
-          this.repository.createParticipant(
-            this.eventEntry().id,
-            form().value().name,
-          ),
-        );
-
-        this.mergeParticipant(participant);
-        if (this.selectedParticipantId() === null) {
-          this.storeSelectedParticipant(participant.id);
-        }
-        this.participantModel.set({ name: "" });
-
-        return undefined;
-      } catch (error) {
-        const message = createParticipantErrorMessage(error);
-        this.submitError.set(message);
-
+      if (this.createPending()) {
         return undefined;
       }
+
+      const eventId = this.eventEntry().id;
+      this.createPending.set(true);
+      this.repository
+        .createParticipant(eventId, form().value().name)
+        .pipe(
+          takeUntilDestroyed(this.destroyRef),
+          finalize(() => {
+            this.createPending.set(false);
+          }),
+        )
+        .subscribe({
+          next: (participant) => {
+            if (this.eventEntry().id !== eventId) {
+              return;
+            }
+
+            this.mergeParticipant(participant);
+            if (this.selectedParticipantId() === null) {
+              this.storeSelectedParticipant(participant.id);
+            }
+            this.participantModel.set({ name: "" });
+          },
+          error: (error: unknown) => {
+            const message = createParticipantErrorMessage(error);
+            this.submitError.set(message);
+          },
+        });
+
+      await Promise.resolve();
+      return undefined;
     });
   }
 

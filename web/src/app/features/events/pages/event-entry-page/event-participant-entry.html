@@ -40,8 +40,8 @@
         </p>
       }
 
-      <button type="submit" [disabled]="participantForm().submitting()">
-        {{ participantForm().submitting() ? "Ajout..." : "Me joindre" }}
+      <button type="submit" [disabled]="createPending()">
+        {{ createPending() ? "Ajout..." : "Me joindre" }}
       </button>
 
       @if (submitError()) {
@@ -58,7 +58,7 @@
             <li>
               <button
                 type="button"
-                [disabled]="participantForm().submitting()"
+                [disabled]="createPending()"
                 (click)="selectParticipant(participant)"
               >
                 {{ participant.name }}
