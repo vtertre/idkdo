@@ -87,9 +87,9 @@ export class EventParticipantEntry {
 
     this.submitError.set(null);
 
-    void submit(this.participantForm, async (form) => {
+    void submit(this.participantForm, (form) => {
       if (this.createPending()) {
-        return undefined;
+        return Promise.resolve(undefined);
       }
 
       const eventId = this.eventEntry().id;
@@ -120,8 +120,7 @@ export class EventParticipantEntry {
           },
         });
 
-      await Promise.resolve();
-      return undefined;
+      return Promise.resolve(undefined);
     });
   }
 
