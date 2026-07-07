@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>idkdo — Server Architecture Simplification &amp; Harness Reboot</title>
+<style>
+  :root {
+    --ink: #1a1f2e;
+    --muted: #5a6274;
+    --accent: #b34700;
+    --line: #d9dce3;
+    --bg: #fdfcfa;
+    --panel: #f4f2ee;
+    --code-bg: #23262f;
+    --code-ink: #e6e8ef;
+    --ok: #1d6b3a;
+    --warn: #8a5a00;
+    --danger: #a02828;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto;
+    max-width: 60rem;
+    padding: 2.5rem 1.5rem 6rem;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.02rem;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  h1, h2, h3, h4 { font-family: "Helvetica Neue", Arial, sans-serif; line-height: 1.25; }
+  h1 { font-size: 1.9rem; margin-bottom: 0.3rem; }
+  h2 { font-size: 1.4rem; margin-top: 3rem; border-bottom: 2px solid var(--ink); padding-bottom: 0.35rem; }
+  h3 { font-size: 1.12rem; margin-top: 2rem; color: var(--accent); }
+  h4 { font-size: 1rem; margin-top: 1.5rem; }
+  p.lede { font-size: 1.12rem; color: var(--muted); margin-top: 0; }
+  .meta { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.85rem; color: var(--muted); margin-bottom: 2rem; }
+  .meta span { margin-right: 1.5rem; }
+  code {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.86em;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.08em 0.35em;
+    white-space: nowrap;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    font-size: 0.83rem;
+    line-height: 1.5;
+  }
+  pre code { background: none; border: none; padding: 0; color: inherit; white-space: pre; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1rem 0;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.88rem;
+  }
+  th, td { border: 1px solid var(--line); padding: 0.5rem 0.7rem; text-align: left; vertical-align: top; }
+  th { background: var(--panel); }
+  .callout {
+    border-left: 4px solid var(--accent);
+    background: var(--panel);
+    padding: 0.8rem 1.1rem;
+    margin: 1.2rem 0;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.92rem;
+  }
+  .callout.ok { border-left-color: var(--ok); }
+  .callout.warn { border-left-color: var(--warn); }
+  .callout.danger { border-left-color: var(--danger); }
+  .callout strong:first-child { display: block; margin-bottom: 0.25rem; }
+  .tag {
+    display: inline-block;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    padding: 0.12em 0.5em;
+    margin-right: 0.4em;
+  }
+  .tag.delete { background: #f6dede; color: var(--danger); }
+  .tag.create { background: #ddeee3; color: var(--ok); }
+  .tag.modify { background: #f3e7cc; color: var(--warn); }
+  .tag.keep { background: #e2e6ee; color: #3a4664; }
+  ul.filelist { list-style: none; padding-left: 0; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.82rem; line-height: 1.9; }
+  ul.filelist code { white-space: normal; }
+  ol.steps > li { margin-bottom: 0.9rem; }
+  .toc { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9rem; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 1rem 1.4rem; }
+  .toc ol { margin: 0.4rem 0 0; padding-left: 1.3rem; }
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li { padding-left: 1.7rem; position: relative; margin-bottom: 0.4rem; }
+  .checklist li::before { content: "☐"; position: absolute; left: 0; color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>Server Architecture Simplification &amp; Harness Reboot</h1>
+<p class="lede">Migrate the idkdo server from layered DDD/CQRS to vertical slices with transaction scripts, and rewrite the documentation harness to match — so agents need far less feedforward guidance to work correctly.</p>
+<div class="meta">
+  <span><strong>Project:</strong> idkdo</span>
+  <span><strong>Date:</strong> 2026-07-07</span>
+  <span><strong>Status:</strong> Proposed</span>
+  <span><strong>Executor:</strong> any competent coding agent; every step includes verification</span>
+</div>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li>Context and decision</li>
+    <li>Hard invariants (do not break)</li>
+    <li>Target architecture</li>
+    <li>Phase 1 — Build the new server shape alongside the old</li>
+    <li>Phase 2 — Switch routes over and delete the old layers</li>
+    <li>Phase 3 — Remove the projection table and the patterns package</li>
+    <li>Phase 4 — Documentation harness reboot</li>
+    <li>Phase 5 — Final verification</li>
+    <li>Acceptance checklist</li>
+    <li>Explicitly out of scope</li>
+  </ol>
+</div>
+
+<h2>1. Context and decision</h2>
+<p>idkdo currently uses a layered DDD/CQRS backend: command/query/event buses with middleware chains and handler registries (in <code>packages/patterns</code>), aggregate roots emitting domain events, value objects, write-side repositories, and persisted projection tables updated by in-process event handlers. This served an experiment in harness engineering — heavy feedforward conventions governing agent work. That experiment is moving to another project. idkdo's remaining purpose is to <strong>ship a gift-coordination app the owner's family actually uses</strong>, with minimal agent-guidance overhead.</p>
+<p>The current architecture is oversized for that purpose and has one real defect: projections are updated <em>after</em> the command's database write, in a separate operation, so a crash between the two leaves the read model permanently stale (the entry page would not show a participant who successfully joined). The simplification removes that failure mode entirely: reads query the normalized tables directly, and each mutation runs in one database transaction.</p>
+<p><strong>Decision:</strong> the server becomes <em>vertical slices + transaction scripts</em>. A use case is one plain exported async function that receives the database handle and validated input, enforces the business rules, and returns the API-shaped result. Fastify routes validate with the shared Zod schemas and call use-case functions directly. The projection table, the buses, the registries, the domain-event machinery, the repositories, the value objects, and the <code>packages/patterns</code> package are all removed.</p>
+
+<h2>2. Hard invariants (do not break)</h2>
+<div class="callout danger">
+  <strong>The HTTP API contract is frozen.</strong>
+  The Angular app in <code>web/</code> is a live consumer and must not be modified by this migration. Every endpoint below must behave identically before and after — same paths, same status codes, same response bodies, same error codes. The shared Zod schemas in <code>packages/shared</code> already pin most of this and must not change.
+</div>
+<table>
+  <tr><th>Endpoint</th><th>Success</th><th>Errors that must be preserved</th></tr>
+  <tr>
+    <td><code>POST /api/events</code><br>body <code>{ name }</code></td>
+    <td><code>201</code> <code>{ id }</code> (UUID string); name is trimmed before persistence (Zod does this)</td>
+    <td><code>400 VALIDATION_ERROR</code> "Invalid request body." for blank/extra fields</td>
+  </tr>
+  <tr>
+    <td><code>GET /api/events/:eventId</code></td>
+    <td><code>200</code> <code>{ id, name, createdAt, updatedAt, participants: [{ id, eventId, name, createdAt, updatedAt }] }</code> — timestamps as ISO strings; participants ordered by <code>createdAt</code> asc, then <code>id</code> asc</td>
+    <td><code>400 VALIDATION_ERROR</code> "Invalid route parameters." for a non-UUID id; <code>404 EVENT_NOT_FOUND</code> "Event not found." for an unknown id</td>
+  </tr>
+  <tr>
+    <td><code>POST /api/events/:eventId/participants</code><br>body <code>{ name }</code></td>
+    <td><code>201</code> participant summary (same shape as in the entry page list)</td>
+    <td><code>400</code> validation; <code>404</code> unknown event (code <code>RESOURCE_NOT_FOUND</code>, message "Resource not found."); <code>422 PARTICIPANT_NAME_ALREADY_EXISTS</code> "A participant with that name already exists for this event." for a duplicate name within the event</td>
+  </tr>
+  <tr>
+    <td><code>GET /api/health</code></td>
+    <td>unchanged</td>
+    <td>unchanged</td>
+  </tr>
+</table>
+<div class="callout warn">
+  <strong>Other frozen elements.</strong>
+  <ul>
+    <li><code>packages/shared</code>: all Zod wire schemas, <code>instantToIsoString</code> — untouched (except: if nothing imports <code>instantToIsoString</code> after the migration, it may be deleted along with its test).</li>
+    <li><code>server/src/presentation/http/validation/</code> (Zod validator/serializer compilers) — keep, they are the boundary-validation mechanism (they move in Phase 1, see target layout).</li>
+    <li><code>server/src/configuration/environment.ts</code> and <code>server/src/main.ts</code> — unchanged.</li>
+    <li><code>server/src/test/database/pglite-test-database.ts</code> — keep; it is the test backbone.</li>
+    <li>The <code>events</code> and <code>participants</code> tables and their existing migrations — unchanged (Phase 3 only <em>adds</em> a migration dropping the projection table).</li>
+    <li><code>web/</code> — no changes at all.</li>
+    <li>CI workflow and root <code>package.json</code> scripts — unchanged.</li>
+  </ul>
+</div>
+
+<h2>3. Target architecture</h2>
+<p>Three rules replace the current dependency-direction catalog:</p>
+<ol>
+  <li><strong>Routes validate and delegate.</strong> A route declares shared Zod schemas, calls one use-case function, maps the result to a reply. Routes contain no SQL and no business rules.</li>
+  <li><strong>Use cases own behavior.</strong> One exported async function per use case, in one file, under the feature folder. It receives <code>db</code> plus validated input, enforces business rules with typed errors, uses <code>db.transaction()</code> when it writes more than one row or needs check-then-write consistency, and returns a plain result object.</li>
+  <li><strong>Reads query the real tables, with the viewer as a parameter.</strong> No projection tables, no read-model duplication. When wishes/reservations arrive, anti-spoil visibility is a <code>WHERE</code> clause / field omission driven by the viewer's participant id — enforced inside the query function, never in the frontend.</li>
+</ol>
+
+<h3>Target server layout</h3>
+<pre><code>server/src/
+  app.ts                          # Fastify wiring: compilers, error handler, db client, routes
+  main.ts                         # unchanged
+  configuration/
+    environment.ts                # unchanged
+  errors/
+    app-error.ts                  # AppError base (message + code)
+    not-found-error.ts            # NotFoundError extends AppError  -> 404
+    business-rule-error.ts        # BusinessRuleError extends AppError -> 422
+  features/
+    events/
+      create-event.ts             # createEvent(db, { name })
+      get-event-entry-page.ts     # getEventEntryPage(db, { eventId })
+      events-route.ts             # registers the 3 event endpoints
+    participants/
+      create-participant.ts       # createParticipant(db, { eventId, name })
+      errors/
+        participant-name-already-exists-error.ts
+        event-not-found-error.ts
+  http/
+    api-error-handler.ts          # moved from presentation/http/errors/
+    health-route.ts               # moved from presentation/http/routes/
+    zod-validator-compiler.ts     # moved from presentation/http/validation/
+    zod-serializer-compiler.ts    # moved from presentation/http/validation/
+  test/
+    database/pglite-test-database.ts   # unchanged
+</code></pre>
+<p>Conventions that carry over unchanged: one primary exported concept per file, kebab-case filenames, tests as <code>thing.test.ts</code> next to <code>thing.ts</code>, Zod only at boundaries, Conventional Commits.</p>
+
+<h3>Error model</h3>
+<p>Typed, transport-agnostic error classes remain — only the base moves from <code>@idkdo/patterns</code> into <code>server/src/errors/</code>:</p>
+<pre><code>// server/src/errors/app-error.ts
+export class AppError extends Error {
+  readonly code: string;
+  constructor(message: string, code: string, options?: { cause?: unknown }) {
+    super(message, options);
+    Object.setPrototypeOf(this, new.target.prototype);
+    this.name = new.target.name;
+    this.code = code;
+  }
+}
+
+// server/src/errors/not-found-error.ts   -> mapped to 404 by the error handler
+export class NotFoundError extends AppError {}
+
+// server/src/errors/business-rule-error.ts -> mapped to 422 by the error handler
+export class BusinessRuleError extends AppError {}
+</code></pre>
+<p>The existing <code>api-error-handler.ts</code> keeps its structure; replace the <code>BusinessRuleViolation</code> branch with <code>BusinessRuleError</code> and the <code>MissingAggregateRootError</code> branch with <code>NotFoundError</code> (keeping the exact <code>404</code> body: code <code>RESOURCE_NOT_FOUND</code>, message "Resource not found."). Everything else in the handler (validation mapping, 4xx passthrough, 500 fallback) stays as is.</p>
+<div class="callout warn">
+  <strong>Preserve the duplicate-participant contract exactly.</strong>
+  <code>ParticipantNameAlreadyExistsError extends BusinessRuleError</code> with code <code>PARTICIPANT_NAME_ALREADY_EXISTS</code> and message <em>"A participant with that name already exists for this event."</em> — the web app may match on these.
+</div>
+
+<h3>Use-case function sketches</h3>
+<pre><code>// server/src/features/events/create-event.ts
+import { events, type Database } from "@idkdo/db";
+
+export type CreateEventInput = { readonly name: string };
+export type CreateEventResult = { readonly id: string };
+
+export async function createEvent(
+  db: Database,
+  input: CreateEventInput,
+): Promise&lt;CreateEventResult&gt; {
+  const id = crypto.randomUUID();
+  await db.insert(events).values({ id, name: input.name });
+  return { id };
+}
+</code></pre>
+<p>Notes: <code>created_at</code>/<code>updated_at</code> have <code>defaultNow()</code> in the schema, so the insert may omit them. Name is already trimmed and non-blank thanks to the shared request schema; do not re-validate.</p>
+<pre><code>// server/src/features/participants/create-participant.ts
+import { events, participants, type Database } from "@idkdo/db";
+import { eq } from "drizzle-orm";
+import { EventNotFoundError } from "./errors/event-not-found-error.js";
+import { ParticipantNameAlreadyExistsError } from "./errors/participant-name-already-exists-error.js";
+
+export async function createParticipant(
+  db: Database,
+  input: { readonly eventId: string; readonly name: string },
+): Promise&lt;ParticipantSummary&gt; {
+  return db.transaction(async (tx) =&gt; {
+    const event = await tx.select({ id: events.id }).from(events)
+      .where(eq(events.id, input.eventId)).limit(1);
+    if (event.length === 0) throw new EventNotFoundError(input.eventId);
+
+    const id = crypto.randomUUID();
+    try {
+      const rows = await tx.insert(participants)
+        .values({ id, eventId: input.eventId, name: input.name })
+        .returning();
+      return toParticipantSummary(rows[0]!);
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new ParticipantNameAlreadyExistsError();
+      throw error;
+    }
+  });
+}
+</code></pre>
+<p>Notes: the <code>unique(event_id, name)</code> constraint already exists in the database and is the source of truth for duplicates; catching the unique violation (postgres error code <code>23505</code> — check how the <code>postgres</code> driver surfaces it, typically <code>error.code</code>) is race-free, unlike the current in-memory check. <code>isUniqueViolation</code> is a small local helper in the same file. <code>toParticipantSummary</code> converts <code>Date</code> columns to ISO strings via <code>.toISOString()</code>. Also update the events table <code>updated_at</code> inside the same transaction if you want parity with current behavior (the old code bumped the event's <code>updatedAt</code> when a participant joined — preserve this: <code>tx.update(events).set({ updatedAt: new Date() })...</code>).</p>
+<pre><code>// server/src/features/events/get-event-entry-page.ts
+export async function getEventEntryPage(
+  db: Database,
+  input: { readonly eventId: string },
+): Promise&lt;GetEventEntryPageResponse | null&gt; {
+  // select the event row; return null if absent (route maps to 404 EVENT_NOT_FOUND)
+  // select participants where event_id = :eventId order by created_at asc, id asc
+  // shape both into GetEventEntryPageResponse (ISO strings for all timestamps)
+}
+</code></pre>
+<p>Two sequential selects are fine; no join gymnastics needed. The response type comes from <code>@idkdo/shared</code> as today.</p>
+
+<h3>Route sketch</h3>
+<pre><code>// server/src/features/events/events-route.ts — same schema declarations as today,
+// but handlers call use-case functions instead of a Resource + buses:
+export type EventsRouteOptions = { readonly db: Database };
+
+app.post("/events", { schema: { ... } }, async (request, reply) =&gt; {
+  const result = await createEvent(options.db, request.body);
+  await reply.status(201).send(result);
+});
+</code></pre>
+<p>The <code>GET /events/:eventId</code> handler sends the 404 body itself when the use case returns <code>null</code>, exactly as <code>EventResource.getEventEntryPage</code> does today (code <code>EVENT_NOT_FOUND</code>, message "Event not found.").</p>
+<p><code>app.ts</code> shrinks to: build Fastify options, set compilers and error handler, create/adopt the database client (keep the existing <code>databaseClient</code> option and <code>onClose</code> ownership logic — tests rely on injecting a PGlite-backed client), register <code>healthRoute</code> and <code>eventsRoute</code> under <code>/api</code> passing <code>{ db: databaseClient.db }</code>.</p>
+
+<h2>4. Phase 1 — Build the new server shape alongside the old</h2>
+<p>Work on a branch, e.g. <code>refactor/server-vertical-slices</code>. Build new files first so the tree never passes through a broken state longer than one commit.</p>
+<ol class="steps">
+  <li>Create <code>server/src/errors/</code> with <code>app-error.ts</code>, <code>not-found-error.ts</code>, <code>business-rule-error.ts</code> plus colocated unit tests (construction, <code>instanceof</code> across the chain, default code).</li>
+  <li>Create <code>server/src/features/events/create-event.ts</code>, <code>get-event-entry-page.ts</code>, and <code>server/src/features/participants/create-participant.ts</code> with the participant error classes, per the sketches above.</li>
+  <li>Write use-case tests against PGlite using the existing template helper (<code>createMigratedPgliteTemplate</code>), replacing the old command-handler and query-handler tests:
+    <ul>
+      <li><code>create-event.test.ts</code>: persists a row, returns a UUID id.</li>
+      <li><code>create-participant.test.ts</code>: creates and returns the summary; throws <code>EventNotFoundError</code> for an unknown event; throws <code>ParticipantNameAlreadyExistsError</code> on duplicate name in the same event; allows the same name in different events; bumps the event's <code>updated_at</code>.</li>
+      <li><code>get-event-entry-page.test.ts</code>: returns the shaped read model with participants ordered by <code>createdAt</code> then <code>id</code>; returns <code>null</code> for an unknown event.</li>
+    </ul>
+  </li>
+  <li>Create <code>server/src/features/events/events-route.ts</code> (new route module calling use cases) and move <code>health-route.ts</code>, <code>api-error-handler.ts</code>, and the two Zod compilers into <code>server/src/http/</code>, updating the error handler's imports to the new error classes.</li>
+  <li>Run <code>pnpm --filter @idkdo/server typecheck</code> and the new tests. The old code still compiles and runs; nothing is wired yet.</li>
+</ol>
+
+<h2>5. Phase 2 — Switch routes over and delete the old layers</h2>
+<ol class="steps">
+  <li>Rewrite <code>server/src/app.ts</code> to the slim form described above (no buses, no registries, no projections).</li>
+  <li>Update the two integration test files. Behavior assertions stay identical, with these mechanical changes:
+    <ul>
+      <li><code>events.integration.test.ts</code>: drop <code>eventEntryPageProjection</code> and <code>Uuid</code> imports (assert UUID format with a regex or <code>z.string().uuid()</code>); the "Participant Event entry projection integration" describe block becomes a plain read-after-write test — <em>remove any eventual-consistency waiting</em>; reads are now synchronous with the write. Any direct asserts against the projection table are replaced by asserts on the <code>GET /api/events/:eventId</code> response.</li>
+      <li><code>app.integration.test.ts</code>: should need no changes beyond imports, verify.</li>
+    </ul>
+  </li>
+  <li>Delete the old server layers and their tests:
+    <ul class="filelist">
+      <li><span class="tag delete">delete</span><code>server/src/commands/</code> (all)</li>
+      <li><span class="tag delete">delete</span><code>server/src/queries/</code> (all)</li>
+      <li><span class="tag delete">delete</span><code>server/src/projections/</code> (all)</li>
+      <li><span class="tag delete">delete</span><code>server/src/domain/</code> (all: entities, value objects, domain events, domain errors, repository interfaces)</li>
+      <li><span class="tag delete">delete</span><code>server/src/infrastructure/</code> (all: cqrs, event-bus, repositories incl. memory fakes)</li>
+      <li><span class="tag delete">delete</span><code>server/src/presentation/</code> (all — its four keepers were moved to <code>http/</code> in Phase 1)</li>
+    </ul>
+  </li>
+  <li>Business-rule coverage that lived in deleted domain tests must survive in the new use-case tests (duplicate name rule, event-not-found). Value-object blank-check tests do not carry over: blank input is rejected at the boundary by the shared Zod schemas, which the integration tests already pin.</li>
+  <li>Run the full server suite: <code>pnpm --filter @idkdo/server typecheck &amp;&amp; pnpm --filter @idkdo/server lint &amp;&amp; pnpm --filter @idkdo/server test</code>. The integration suite uses Testcontainers — Docker must be running.</li>
+  <li>Commit. Suggested message: <code>refactor(server): replace CQRS layers with vertical-slice use cases</code>.</li>
+</ol>
+
+<h2>6. Phase 3 — Remove the projection table and the patterns package</h2>
+<ol class="steps">
+  <li>In <code>packages/db/src/schema.ts</code>: delete <code>eventEntryPageProjection</code>, <code>ParticipantSummaryRecord</code>, and the projection entry in the exported <code>schema</code> object. Remove any re-exports from <code>packages/db/src/index.ts</code>.</li>
+  <li>Generate the drop migration: <code>pnpm db:generate</code>. Inspect the new file under <code>packages/db/migrations/</code> — it must contain only <code>DROP TABLE "event_entry_page_projection";</code> (plus meta updates). Nothing else may change.</li>
+  <li>Remove <code>@idkdo/patterns</code> from <code>server/package.json</code> dependencies, then delete <code>packages/patterns/</code> entirely. Run <code>pnpm install</code> to update the lockfile. Search for stragglers: <code>grep -rn "idkdo/patterns" --include="*.ts" --include="*.json" .</code> (excluding <code>node_modules</code>) must return nothing.</li>
+  <li>Check whether <code>@js-temporal/polyfill</code> is still imported anywhere in <code>server/</code>; if not, remove it from <code>server/package.json</code> too. Same check for <code>instantToIsoString</code> in <code>packages/shared</code> (delete the helper and its test if now unused, keep the rest of shared untouched).</li>
+  <li>Apply the migration locally (<code>pnpm db:up &amp;&amp; pnpm db:migrate</code>) and run the full workspace: <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build</code>.</li>
+  <li>Commit. Suggested message: <code>refactor(db): drop event entry projection table and patterns package</code>.</li>
+</ol>
+
+<h2>7. Phase 4 — Documentation harness reboot</h2>
+<div class="callout warn">
+  <strong><code>scripts/verify-docs.mjs</code> is a real gate — read it before editing docs.</strong>
+  It enforces: a required-files list (includes <code>docs/design-docs/index.md</code>); every design doc listed in the index and vice versa; every design doc carrying <code>Status:</code>, <code>Applies To:</code>, <code>Verification:</code> metadata plus <code>## Decision</code> and <code>## Details</code> headings; no markdown link or inline <code>`*.md`</code> reference (outside fenced code blocks) pointing to a missing file; AGENTS.md containing the literal strings <code>pnpm typecheck</code>, <code>pnpm lint</code>, <code>pnpm test</code>, <code>pnpm build</code>, and <code>Docs/diff verification is a CI job</code>. After every doc change, run <code>pnpm verify</code>.
+</div>
+<h3>Deletions</h3>
+<ul class="filelist">
+  <li><span class="tag delete">delete</span><code>docs/design-docs/backend-ddd-cqrs.md</code> — describes the removed architecture</li>
+  <li><span class="tag delete">delete</span><code>docs/design-docs/projections-and-event-bus.md</code> — describes the removed architecture</li>
+  <li><span class="tag delete">delete</span><code>docs/plans/2026-07-05-slice-2-wishlist-create-and-view.html</code> through <code>2026-07-06-slice-7-release-gate.html</code> (six files) — written against the old architecture; keeping them would actively mislead agents. Git history preserves them. Regenerate each slice plan against the new architecture when its slice starts. Keep <code>001-angular-event-pwa.html</code>, the pglite and shared-api-contract plans, and <code>2026-06-26-slice-1-participant-entry.html</code> (implemented history).</li>
+</ul>
+<h3>Rewrites and updates</h3>
+<ul class="filelist">
+  <li><span class="tag create">create</span><code>docs/design-docs/backend-architecture.md</code> — the new single backend design doc (content below)</li>
+  <li><span class="tag modify">modify</span><code>docs/design-docs/index.md</code> — table lists: core-beliefs, code-organization, workspace-packages, backend-architecture, frontend-architecture. Drop the "keep superseded docs" requirement sentence; replace with: "When a decision is superseded, update or delete the doc; git history is the archive."</li>
+  <li><span class="tag modify">modify</span><code>docs/design-docs/workspace-packages.md</code> — remove every mention of <code>packages/patterns</code> and of projection tables; <code>packages/db</code> now owns "schema, migrations, and database client helpers" only.</li>
+  <li><span class="tag modify">modify</span><code>ARCHITECTURE.md</code> — rewrite the Runtime Components list (no patterns package), replace the whole "Server Layering" section with the three rules from §3 of this plan and the target layout tree, remove projection language from the component responsibilities ("The server owns persistence, domain rules, permission enforcement, and visibility filtering in queries"), update the Design Docs link list. Keep the Frontend Layering and Cross-Cutting Invariants sections, minus the projection sentence in invariants.</li>
+  <li><span class="tag modify">modify</span><code>AGENTS.md</code> — Repo Map: remove the <code>packages/patterns</code> line. Section 9 (API expectations) stays. Keep all strings the verify script requires. Add one line to Core Engineering Rules: "Server changes follow the vertical-slice shape in <code>ARCHITECTURE.md</code>: route validates and delegates; use-case function owns behavior; queries read the real tables with the viewer as a parameter."</li>
+  <li><span class="tag keep">keep</span><code>docs/design-docs/core-beliefs.md</code> — already states "prefer the least architecture that protects the current behavior"; it now finally matches reality. No change needed.</li>
+  <li><span class="tag keep">keep</span><code>docs/design-docs/code-organization.md</code>, <code>frontend-architecture.md</code>, <code>docs/GOAL.md</code>, <code>docs/PRODUCT.md</code>, <code>docs/SPEC.md</code>, <code>docs/SPEC-implementation.md</code> — unchanged, except: scan SPEC-implementation.md for sentences that mandate projections/CQRS mechanics (as opposed to product behavior) and neutralize only those sentences; product acceptance criteria stay untouched.</li>
+</ul>
+<h3>Content for <code>docs/design-docs/backend-architecture.md</code></h3>
+<pre><code># Backend Architecture
+
+Status: Accepted
+Applies To: `server/`
+Verification: Integration tests pin the API contract. Use-case tests run
+against PGlite with real migrations. `pnpm verify` checks doc consistency.
+
+## Decision
+
+The server uses vertical slices with transaction scripts. No buses, no
+repositories, no projections, no domain-event machinery.
+
+## Details
+
+Three rules:
+
+1. Routes validate and delegate. A route declares shared Zod schemas from
+   `packages/shared`, calls one use-case function, and maps the result to a
+   reply. Routes contain no SQL and no business rules.
+2. Use cases own behavior. One exported async function per use case under
+   `server/src/features/&lt;feature&gt;/`. It receives the Drizzle `Database` plus
+   validated input, enforces business rules with typed errors from
+   `server/src/errors/`, wraps multi-step writes in `db.transaction()`, and
+   returns a plain API-shaped result.
+3. Reads query the real tables with the viewer as a parameter. Anti-spoil
+   visibility (the Wisher must not see Purchase Coordination on their own
+   Wishes) is enforced inside query functions via predicates and field
+   omission, never in the frontend.
+
+Error mapping: `NotFoundError` -&gt; 404, `BusinessRuleError` -&gt; 422, Fastify
+validation -&gt; 400, everything else -&gt; 500. The handler lives in
+`server/src/http/api-error-handler.ts`.
+
+Identity: `X-Participant-Id` is untrusted selected-Participant identity.
+Routes pass it into use cases explicitly; Event-scoped use cases verify
+membership before acting. Uniqueness and referential rules are backed by
+database constraints; use cases translate constraint violations into typed
+errors.
+
+Testing: use-case tests run against PGlite (`server/src/test/database/`),
+integration tests pin the HTTP contract with Testcontainers PostgreSQL.
+</code></pre>
+<ol class="steps">
+  <li>Apply deletions and edits above.</li>
+  <li>Sweep for dangling references: <code>grep -rn "backend-ddd-cqrs\|projections-and-event-bus\|packages/patterns\|patterns/\|projection" --include="*.md" .</code> (excluding <code>node_modules</code>) and fix every hit in prose (fenced code blocks are exempt from the verifier, but fix them anyway where they describe the old architecture).</li>
+  <li>Run <code>pnpm verify</code> until clean.</li>
+  <li>Commit. Suggested message: <code>docs: reboot architecture docs for vertical-slice server</code>.</li>
+</ol>
+
+<h2>8. Phase 5 — Final verification</h2>
+<ol class="steps">
+  <li><code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build &amp;&amp; pnpm verify</code> — all green.</li>
+  <li>Manual smoke against real infrastructure: <code>pnpm db:up &amp;&amp; pnpm db:migrate &amp;&amp; pnpm dev</code>, then:
+    <ul>
+      <li><code>POST /api/events</code> with <code>{"name":"Smoke Test"}</code> → 201 with UUID.</li>
+      <li><code>GET /api/events/&lt;id&gt;</code> → 200 with empty participants.</li>
+      <li><code>POST /api/events/&lt;id&gt;/participants</code> with <code>{"name":"Vincent"}</code> → 201.</li>
+      <li>Repeat the same participant POST → 422 <code>PARTICIPANT_NAME_ALREADY_EXISTS</code>.</li>
+      <li><code>GET /api/events/&lt;id&gt;</code> → 200 with one participant.</li>
+      <li>Open the Angular app against the running server and click through the event-creation and join flows once.</li>
+    </ul>
+  </li>
+  <li>Open a PR following <code>.github/PULL_REQUEST_TEMPLATE.md</code> (all sections). List anything not run under Verification with the reason.</li>
+</ol>
+
+<h2>9. Acceptance checklist</h2>
+<ul class="checklist">
+  <li>All five workspace commands pass: typecheck, lint, test, build, verify.</li>
+  <li>The four API endpoints behave per the table in §2, verified by the (updated) integration suite and the manual smoke.</li>
+  <li><code>web/</code> has zero changes in the diff.</li>
+  <li><code>packages/shared</code> Zod schemas have zero changes (helper deletion allowed only if unused).</li>
+  <li><code>packages/patterns/</code> no longer exists; no source file references <code>@idkdo/patterns</code>.</li>
+  <li><code>event_entry_page_projection</code> is dropped by a new migration; existing migrations untouched.</li>
+  <li>No file under <code>server/src</code> matches <code>*bus*</code>, <code>*registry*</code>, <code>*middleware*</code> (except node_modules), <code>*projection*</code>, <code>*repository*</code>, or <code>*aggregate*</code>.</li>
+  <li>Every mutation use case that performs check-then-write runs inside <code>db.transaction()</code>.</li>
+  <li>Business rules (duplicate participant name, unknown event) are covered by use-case tests against PGlite.</li>
+  <li>Docs: <code>backend-ddd-cqrs.md</code> and <code>projections-and-event-bus.md</code> are gone, <code>backend-architecture.md</code> exists, the index matches, <code>pnpm verify</code> passes, and no markdown prose references the removed architecture.</li>
+  <li>Stale slice plans (2–7) are removed from <code>docs/plans/</code>.</li>
+</ul>
+
+<h2>10. Explicitly out of scope</h2>
+<ul>
+  <li>Any change to <code>web/</code>, the API contract, or the shared schemas.</li>
+  <li>New product features (wishes, reservations, contributors) — those are re-planned per slice against the new architecture after this lands.</li>
+  <li>New harness tooling (dependency-boundary linters, structural tests, mutation testing). The simplified architecture is the harness reduction; add sensors later only if a recurring agent mistake justifies one.</li>
+  <li>Authentication, durability upgrades, event sourcing, background jobs.</li>
+  <li>Renaming the <code>events</code> table or any other schema churn beyond dropping the projection table.</li>
+</ul>
+
+<div class="callout ok">
+  <strong>Why this is safe.</strong>
+  The API contract is pinned three ways before any deletion happens: shared Zod schemas (unchanged), integration tests (updated mechanically, assertions preserved), and the untouched Angular consumer. The migration builds the new shape first, switches wiring in one commit, and deletes afterwards — the tree is verifiable at every phase boundary.
+</div>
+
+</body>
+</html>
