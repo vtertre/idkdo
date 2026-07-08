@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>idkdo — Slice 6 Implementation Plan: Contributor management (2026-07-08)</title>
+<style>
+  :root {
+    --ink: #e2e6f0;
+    --muted: #9aa3b8;
+    --line: #2b3245;
+    --bg: #12151d;
+    --card: #1a1f2b;
+    --accent: #6ea8ff;
+    --accent-soft: #1d2a44;
+    --done: #52c98a;
+    --done-soft: #16301f;
+    --warn: #e5a34a;
+    --warn-soft: #33260f;
+    --danger: #ef7070;
+    --danger-soft: #351a1a;
+    --code-bg: #232a3a;
+    --pre-bg: #0d1017;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 1.9rem; margin: 0 0 4px; }
+  h2 { font-size: 1.35rem; margin: 44px 0 12px; border-bottom: 2px solid var(--line); padding-bottom: 8px; }
+  h3 { font-size: 1.08rem; margin: 26px 0 8px; }
+  h4 { font-size: 0.98rem; margin: 20px 0 6px; }
+  p { margin: 8px 0; }
+  .subtitle { color: var(--muted); margin-bottom: 24px; }
+  code {
+    font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.86em;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #d7e3ff;
+  }
+  pre {
+    background: var(--pre-bg);
+    border: 1px solid var(--line);
+    color: #cdd6ea;
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; background: var(--card); font-size: 0.92rem; }
+  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  ul, ol { margin: 8px 0; padding-left: 24px; }
+  li { margin: 4px 0; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .step-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .step-num {
+    background: var(--accent);
+    color: #0d1017;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .step-title { font-size: 1.12rem; font-weight: 700; margin: 0; }
+  .layer-tag {
+    color: var(--muted);
+    font-size: 0.82rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 10px;
+    white-space: nowrap;
+  }
+  .label { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-top: 16px; }
+  .story {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin-top: 12px;
+    font-size: 0.95rem;
+    font-style: italic;
+  }
+  .exit {
+    background: var(--done-soft);
+    border-left: 4px solid var(--done);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 14px 0;
+    font-size: 0.93rem;
+  }
+  .note {
+    background: var(--warn-soft);
+    border-left: 4px solid var(--warn);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 0.93rem;
+  }
+  .danger {
+    background: var(--danger-soft);
+    border-left: 4px solid var(--danger);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 0.93rem;
+  }
+  .file-new::before { content: "➕ "; }
+  .file-mod::before { content: "✏️ "; }
+  .toc { columns: 2; column-gap: 32px; }
+  .toc li { break-inside: avoid; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 16px; }
+  @media (max-width: 640px) { .toc { columns: 1; } main { padding: 24px 14px 60px; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Slice 6 — Contributor management</h1>
+<p class="subtitle">
+  Implementation plan &middot; 2026-07-08 &middot; Status: ready for implementation<br>
+  Source of truth: <code>docs/SPEC-implementation.md</code> (completes M5; §7 "Reservations"; §8; §11.1/§11.2) &middot; <code>ARCHITECTURE.md</code> &middot; <code>docs/design-docs/*</code><br>
+  Rewrite of the 2026-07-06 Slice 6 plan (deleted in <code>ff262ef</code>), adapted to the vertical-slice server architecture &middot;
+  Requires Slice 5 shipped
+</p>
+
+<h2 id="toc">Contents</h2>
+<ol class="toc">
+  <li><a href="#goal">Goal &amp; preconditions</a></li>
+  <li><a href="#reading">Required reading &amp; precedents</a></li>
+  <li><a href="#decisions">Decisions locked for this slice</a></li>
+  <li><a href="#contract">Wire contract added by this slice</a></li>
+  <li><a href="#steps">Implementation steps 1–4</a></li>
+  <li><a href="#tests">Tests</a></li>
+  <li><a href="#verification">Verification &amp; hand-off</a></li>
+  <li><a href="#out-of-scope">Explicitly out of scope</a></li>
+</ol>
+
+<h2 id="goal">1. Goal &amp; preconditions</h2>
+
+<div class="story">We can chip in on a gift together, add someone who's offline, back out, and the reservation cleans up after itself.</div>
+
+<p>This slice completes Milestone 5 and the spec §8 API surface: join an existing Reservation, add another Participant as Contributor, remove any Contributor — with the last removal deleting the Reservation inside the same transaction, not as caller bookkeeping.</p>
+
+<div class="note"><strong>Preconditions — verify before starting.</strong> Requires Slice 5 shipped: the <code>reservations</code>/<code>reservation_contributors</code> tables with their unique constraints and cascades, <code>StateConflictError</code>→409 mapping, <code>reservationSummarySchema</code>, <code>toReservationSummary</code>, <code>create-reservation.ts</code>, <code>reservations-route.ts</code>, <code>reservations.integration.test.ts</code>, <code>canViewPurchaseCoordination</code> (Slice 4), and the web reserved-state UI in <code>event-wishes-panel</code>. If shipped names differ, follow the shipped code.</div>
+
+<div class="exit"><strong>Exit criteria (verify with three browsers at the end):</strong> spec §13 criteria 1–8 all achievable by hand. Bob reserves Alice's wish; Carol joins; Carol adds Dave (offline); contributors read «Bob, Carol, Dave» for every non-wisher; Carol removes Dave; Bob and Carol each leave; the wish shows «Réserver» again for Carol; the <code>reservations</code> table is empty; Alice saw none of it (network-verified). <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test</code> green.</div>
+
+<h2 id="reading">2. Required reading before coding</h2>
+
+<p>In order: <code>docs/SPEC-implementation.md</code> §7 "Reservations" (the six rules — read them as the test list), §8, §11.1/§11.2; <code>docs/design-docs/backend-architecture.md</code>; <code>docs/design-docs/code-organization.md</code>; the Slice 5 plan (decision cards: check order, transaction shape, query-time join) and the Slice 4 plan (visibility predicate).</p>
+
+<h3>Code precedents to imitate (Slice 5 unless noted)</h3>
+
+<table>
+  <tr><th>Concern</th><th>Precedent file</th></tr>
+  <tr><td>Reservation mutation use case (transaction, check order, 23505 backstop)</td><td><code>server/src/features/reservations/create-reservation.ts</code></td></tr>
+  <tr><td>Reservation summary mapping</td><td><code>server/src/features/reservations/to-reservation-summary.ts</code></td></tr>
+  <tr><td>409 conflict error</td><td><code>server/src/features/reservations/errors/reservation-already-exists-error.ts</code> + <code>server/src/errors/state-conflict-error.ts</code></td></tr>
+  <tr><td>Visibility predicate</td><td><code>server/src/features/wishes/can-view-purchase-coordination.ts</code> (Slice 4)</td></tr>
+  <tr><td>Reserved-state web UI</td><td><code>web/src/app/features/wishes/components/event-wishes-panel/*</code></td></tr>
+</table>
+
+<h2 id="decisions">3. Decisions locked for this slice</h2>
+
+<div class="card">
+  <h3>The Wisher-as-actor gets 404, the Wisher-as-target gets 422 — and the difference matters</h3>
+  <p>Spoiler safety: the Wisher must never learn that a Reservation on their own Wish exists. Reservation ids are only ever serialized to non-wishers, but a Wisher could still probe <code>/api/reservations/&lt;guessed id&gt;/…</code>. So in both use cases, after loading the Reservation and its Wish, the script checks <code>canViewPurchaseCoordination(actorId, wish.wisherId)</code> (the Slice 4 predicate — reuse it, do not re-derive) and on <code>false</code> throws <code>NotFoundError</code> → the generic 404, indistinguishable from "no such reservation".</p>
+  <p>By contrast, a non-wisher actor naming the Wisher as the participant to add gets a straightforward 422 <code>CANNOT_ADD_WISHER_AS_CONTRIBUTOR</code> — the actor there is entitled to know the reservation exists; only the wisher-exclusion rule fired.</p>
+</div>
+
+<div class="card">
+  <h3>Last-leaves-deletes is one transaction script, returning <code>null</code></h3>
+  <p>"Removing the last Contributor deletes the Reservation in the same operation" (spec §7) is owned by <code>removeContributor</code> itself, inside its <code>db.transaction()</code>: delete the contributor row, count the remaining contributors, and when zero, delete the reservation row and return <code>null</code>. The caller never orchestrates the cleanup, and the transaction guarantees no observer ever sees a zero-contributor reservation. Return type: <code>ReservationSummary | null</code> — <code>null</code> is the "reservation is gone, wish is reservable again" signal.</p>
+</div>
+
+<div class="card">
+  <h3>Duplicate contributor is a pre-check (409) with the DB unique constraint as race backstop; unknown contributor is a 404</h3>
+  <ul>
+    <li>Adding a participant who is already a Contributor → <code>ContributorAlreadyExistsError extends StateConflictError</code> (code <code>CONTRIBUTOR_ALREADY_EXISTS</code>) from a pre-check inside the transaction; the DB unique on <code>(reservation_id, participant_id)</code> remains the race backstop — catch 23505 on the insert and rethrow the same error (mirror of Slice 5's create).</li>
+    <li>Removing a participant who is not a Contributor is a not-found, per Slice 2's D1: the delete affects zero rows → <code>throw new NotFoundError()</code> (generic 404). No new 404-mapped error classes; <code>api-error-handler.ts</code> is untouched in this slice.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3>Both mutations return the full state the client needs; no re-fetch required</h3>
+  <p>Add (and join, which is the same endpoint with your own id) returns 200 with the updated reservation summary. Remove returns 200 with <code>{ "reservation": &lt;summary&gt; | null }</code> — <code>null</code> is the "wish is reservable again" signal the UI needs. Serving the new state from the mutation response saves the client a round trip (reads are strongly consistent, so a re-fetch would also be correct — but a 204 would force one for no benefit).</p>
+</div>
+
+<div class="card">
+  <h3>Adder need not be a Contributor; any viewer may remove any Contributor (spec §7, verbatim)</h3>
+  <p>No "only contributors may…" checks anywhere. Membership in the Event + not-the-Wisher is the entire permission model for both endpoints. Join is not a separate concept: the UI's «Participer» posts the actor's own <code>participantId</code> to the add endpoint.</p>
+</div>
+
+<h2 id="contract">4. Wire contract added by this slice</h2>
+
+<h3><code>POST /api/reservations/:reservationId/contributors</code></h3>
+<ul>
+  <li>Headers: <code>X-Participant-Id: &lt;uuid&gt;</code> (required).</li>
+  <li>Body: <code>{ "participantId": "&lt;uuid&gt;" }</code> — the Participant to add (your own id = join).</li>
+  <li><code>200</code> response: the updated reservation summary (<code>addContributorResponseSchema = reservationSummarySchema</code>), contributors ordered <code>createdAt</code> asc, <code>participantId</code> asc.</li>
+</ul>
+
+<h3><code>DELETE /api/reservations/:reservationId/contributors/:participantId</code></h3>
+<ul>
+  <li>Headers: <code>X-Participant-Id: &lt;uuid&gt;</code> (required).</li>
+  <li><code>200</code> response: <code>{ "reservation": &lt;summary&gt; | null }</code> — <code>null</code> when removing the last Contributor deleted the Reservation.</li>
+</ul>
+
+<h3>Error matrix (both endpoints unless noted)</h3>
+
+<table>
+  <tr><th>Case</th><th>Status</th><th>code</th></tr>
+  <tr><td>Header/params/body malformed</td><td>400</td><td><code>VALIDATION_ERROR</code></td></tr>
+  <tr><td>Reservation unknown</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code></td></tr>
+  <tr><td>Actor unknown / foreign Event</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code></td></tr>
+  <tr><td><strong>Actor is the Wisher of the reserved Wish</strong></td><td>404</td><td><code>RESOURCE_NOT_FOUND</code> — byte-identical to "reservation unknown"</td></tr>
+  <tr><td>POST: target Participant unknown / foreign Event</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code></td></tr>
+  <tr><td>POST: target is the Wisher</td><td>422</td><td><code>CANNOT_ADD_WISHER_AS_CONTRIBUTOR</code></td></tr>
+  <tr><td>POST: target already a Contributor</td><td>409</td><td><code>CONTRIBUTOR_ALREADY_EXISTS</code></td></tr>
+  <tr><td>DELETE: <code>:participantId</code> is not a Contributor</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code></td></tr>
+</table>
+
+<div class="danger">Every 404 body in this table must be byte-identical: <code>{ "error": { "code": "RESOURCE_NOT_FOUND", "message": "Resource not found." } }</code> — guaranteed by throwing <code>NotFoundError</code> everywhere. The wisher-as-actor row is the anti-spoil load-bearing one — integration tests compare it against a genuinely-unknown-reservation response.</div>
+
+<h2 id="steps">5. Implementation steps</h2>
+
+<p>No database schema change (tables and constraints shipped in Slice 5).</p>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 1</span>
+    <span class="step-title"><code>packages/shared</code>: contracts</span>
+    <span class="layer-tag">shared</span>
+  </div>
+
+  <p>New validators (each + <code>.test.ts</code> + barrel export):</p>
+
+  <p class="file-new"><code>add-contributor-request-body-schema.ts</code> — <code>z.object({ participantId: z.string().uuid() }).strict()</code> + type.</p>
+
+  <p class="file-new"><code>reservation-route-params-schema.ts</code> — <code>z.object({ reservationId: z.string().uuid() }).strict()</code> + type (POST).</p>
+
+  <p class="file-new"><code>reservation-contributor-route-params-schema.ts</code> — <code>z.object({ participantId: z.string().uuid(), reservationId: z.string().uuid() }).strict()</code> + type (DELETE).</p>
+
+  <p class="file-new"><code>add-contributor-response-schema.ts</code> — <code>export const addContributorResponseSchema = reservationSummarySchema;</code> + type.</p>
+
+  <p class="file-new"><code>remove-contributor-response-schema.ts</code>:</p>
+
+<pre><code>export const removeContributorResponseSchema = z
+  .object({ reservation: reservationSummarySchema.nullable() })
+  .strict();</code></pre>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 2</span>
+    <span class="step-title">Server: add &amp; remove contributor use cases</span>
+    <span class="layer-tag">server · features</span>
+  </div>
+
+  <p class="file-new"><code>server/src/features/reservations/errors/cannot-add-wisher-as-contributor-error.ts</code> — <code>CannotAddWisherAsContributorError extends BusinessRuleError</code>, code <code>"CANNOT_ADD_WISHER_AS_CONTRIBUTOR"</code>, message <code>"The wisher cannot contribute to their own wish."</code>.</p>
+
+  <p class="file-new"><code>server/src/features/reservations/errors/contributor-already-exists-error.ts</code> — <code>ContributorAlreadyExistsError extends StateConflictError</code>, code <code>"CONTRIBUTOR_ALREADY_EXISTS"</code>, message <code>"This participant already contributes to the reservation."</code>.</p>
+
+  <p class="file-new"><code>server/src/features/reservations/load-reservation-for-actor.ts</code> — the shared front half of both mutations (one concept: "resolve a reservation an actor is allowed to act on"). Inside the caller's transaction:</p>
+  <ol>
+    <li>Select the reservation row by <code>id</code>, joined with its wish (need <code>wish.eventId</code>, <code>wish.wisherId</code>); none → <code>throw new NotFoundError()</code> (404).</li>
+    <li><code>actorEventId = await getParticipantEventId(tx, actorParticipantId)</code>; <code>null</code> or <code>!== wish.eventId</code> → <code>throw new NotFoundError()</code> (404).</li>
+    <li><strong>Anti-spoil:</strong> <code>!canViewPurchaseCoordination(actorParticipantId, wish.wisherId)</code> → <code>throw new NotFoundError()</code> (404 — the Wisher must not learn the reservation exists).</li>
+    <li>Return <code>{ reservation, wish }</code>.</li>
+  </ol>
+
+  <p class="file-new"><code>server/src/features/reservations/add-contributor.ts</code>:</p>
+
+<pre><code>export type AddContributorInput = {
+  readonly actorParticipantId: string;
+  readonly participantId: string;
+  readonly reservationId: string;
+};
+
+export async function addContributor(
+  db: Database,
+  input: AddContributorInput,
+): Promise&lt;ReservationSummary&gt;</code></pre>
+
+  <p>Inside one <code>db.transaction()</code> — this exact order:</p>
+  <ol>
+    <li><code>loadReservationForActor(tx, …)</code> (steps 1–3 above, incl. the anti-spoil 404).</li>
+    <li><code>targetEventId = await getParticipantEventId(tx, input.participantId)</code>; <code>null</code> or <code>!== wish.eventId</code> → <code>throw new NotFoundError()</code> (404).</li>
+    <li><code>input.participantId === wish.wisherId</code> → <code>throw new CannotAddWisherAsContributorError()</code> (422).</li>
+    <li>Select existing contributor rows; target already present → <code>throw new ContributorAlreadyExistsError()</code> (409).</li>
+    <li>Insert the contributor row (catch 23505 on <code>(reservation_id, participant_id)</code> → rethrow <code>ContributorAlreadyExistsError</code>, race backstop), bump the reservation's <code>updated_at</code>, and return the fresh state via <code>toReservationSummary</code>.</li>
+  </ol>
+
+  <p class="file-new"><code>server/src/features/reservations/remove-contributor.ts</code>:</p>
+
+<pre><code>export type RemoveContributorInput = {
+  readonly actorParticipantId: string;
+  readonly participantId: string;
+  readonly reservationId: string;
+};
+
+export async function removeContributor(
+  db: Database,
+  input: RemoveContributorInput,
+): Promise&lt;ReservationSummary | null&gt;</code></pre>
+
+  <p>Inside one <code>db.transaction()</code>:</p>
+  <ol>
+    <li><code>loadReservationForActor(tx, …)</code> (incl. the anti-spoil 404).</li>
+    <li><code>DELETE FROM reservation_contributors WHERE reservation_id = … AND participant_id = …</code>; zero rows affected → <code>throw new NotFoundError()</code> (404 — not a Contributor).</li>
+    <li>Count remaining contributors. Zero → delete the reservation row, return <code>null</code>. Otherwise bump <code>updated_at</code> and return the remaining state via <code>toReservationSummary</code>.</li>
+  </ol>
+
+  <p>(No target-membership or wisher-as-target check on remove: any Event member who can view the Reservation may remove any listed Contributor, and step 2 already bounds the target to actual contributors.)</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 3</span>
+    <span class="step-title">Server: routes</span>
+    <span class="layer-tag">server · http</span>
+  </div>
+
+  <p class="file-mod"><code>server/src/features/reservations/reservations-route.ts</code> — register both, full schemas:</p>
+
+<pre><code>app.post&lt;{ Body: AddContributorRequestBody; Headers: ParticipantIdHeader; Params: ReservationRouteParams }&gt;(
+  "/reservations/:reservationId/contributors",
+  { schema: { body: addContributorRequestBodySchema, headers: participantIdHeaderSchema,
+      params: reservationRouteParamsSchema,
+      response: { 200: addContributorResponseSchema, 400: apiErrorResponseSchema,
+        404: apiErrorResponseSchema, 409: apiErrorResponseSchema, 422: apiErrorResponseSchema } } },
+  async (request, reply) =&gt; {
+    const reservation = await addContributor(options.db, {
+      actorParticipantId: request.headers[participantIdHeaderName],
+      participantId: request.body.participantId,
+      reservationId: request.params.reservationId,
+    });
+
+    await reply.send(reservation);
+  },
+);
+
+app.delete&lt;{ Headers: ParticipantIdHeader; Params: ReservationContributorRouteParams }&gt;(
+  "/reservations/:reservationId/contributors/:participantId",
+  { schema: { headers: participantIdHeaderSchema,
+      params: reservationContributorRouteParamsSchema,
+      response: { 200: removeContributorResponseSchema, 400: apiErrorResponseSchema,
+        404: apiErrorResponseSchema } } },
+  async (request, reply) =&gt; {
+    const reservation = await removeContributor(options.db, {
+      actorParticipantId: request.headers[participantIdHeaderName],
+      participantId: request.params.participantId,
+      reservationId: request.params.reservationId,
+    });
+
+    await reply.send({ reservation });
+  },
+);</code></pre>
+
+  <p>No <code>app.ts</code> change: <code>reservationsRoute</code> is already registered.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 4</span>
+    <span class="step-title">Web</span>
+    <span class="layer-tag">web</span>
+  </div>
+
+  <p class="file-mod"><code>web/src/app/features/wishes/data-access/reservation-repository.ts</code> — add:</p>
+  <ul>
+    <li><code>addContributor(reservationId: string, participantId: string): Observable&lt;AddContributorResponse&gt;</code>;</li>
+    <li><code>removeContributor(reservationId: string, participantId: string): Observable&lt;RemoveContributorResponse&gt;</code>.</li>
+  </ul>
+
+  <p class="file-mod"><code>web/src/app/features/wishes/components/event-wishes-panel/*</code> — extend the reserved state (the visible + non-null branch only). Recommended: extract the coordination area into a child component <code>reservation-coordination.ts</code> (+ <code>.html</code>, <code>.spec.ts</code>) with inputs <code>reservation</code>, <code>viewerParticipantId</code>, <code>participants</code>, <code>wisherId</code>, <code>busy</code> and outputs <code>joinRequested</code>, <code>addRequested(participantId)</code>, <code>removeRequested(participantId)</code>; the panel keeps the repository calls and patches its list signal from responses:</p>
+  <ul>
+    <li>Contributor list: one row per contributor (name resolved from <code>participants</code>, unknown → «Quelqu'un»), each with a «Retirer» action; the viewer's own row says «Ne plus participer» instead.</li>
+    <li>«Participer» button when the viewer is not yet a contributor → <code>addContributor(reservationId, viewerParticipantId)</code>.</li>
+    <li>«Ajouter quelqu'un» opens an inline picker (a <code>&lt;select&gt;</code> is fine): options = Event participants minus the Wisher minus existing contributors; confirm calls <code>addContributor</code>.</li>
+    <li>On add/join 200 → patch the wish's <code>reservation</code> from the response. On remove 200 → patch with <code>response.reservation</code>; when it is <code>null</code> the wish renders «Réserver» again (unreserved state — reuse Slice 5's branch). On 409 (someone added the same person concurrently or the picker was stale) → «Cette personne participe déjà.» + <code>refresh()</code>; on 404 after a concurrent teardown → «Cette réservation n'existe plus.» + <code>refresh()</code>.</li>
+    <li>Own wishes: still zero coordination UI — untouched code path, re-asserted by tests.</li>
+  </ul>
+</div>
+
+<h2 id="tests">6. Tests</h2>
+
+<h3>Shared</h3>
+<ul>
+  <li>Each new schema: valid parses; non-UUID and extra keys rejected; <code>removeContributorResponseSchema</code> accepts <code>reservation: null</code> and a populated summary.</li>
+</ul>
+
+<h3>Server use cases (PGlite via <code>createMigratedPgliteTemplate</code>) — the full §11.1 reservation/contributor rule set</h3>
+<ul>
+  <li><code>add-contributor.test.ts</code>: happy path (non-contributor adder adds a third member — proves "adder need not be a Contributor"); join path (adder adds self); unknown reservation → <code>NotFoundError</code>; unknown/foreign actor → <code>NotFoundError</code>; <strong>wisher as actor → <code>NotFoundError</code> (anti-spoil)</strong>; unknown/foreign target → <code>NotFoundError</code>; wisher as target → <code>CannotAddWisherAsContributorError</code>; duplicate target → <code>ContributorAlreadyExistsError</code>, rows unchanged; <code>updated_at</code> bumped on success.</li>
+  <li><code>remove-contributor.test.ts</code>: removing one of two persists the smaller set and returns the summary; removing the last deletes the reservation row (assert both tables) and returns <code>null</code>; self-removal works; removing a non-contributor → <code>NotFoundError</code>, state unchanged; wisher as actor → <code>NotFoundError</code>; unknown reservation / unknown actor / foreign actor → <code>NotFoundError</code>; a zero-contributor reservation is never observable (the delete + count run in one transaction).</li>
+  <li>Constraint backstop: concurrentish duplicate insert path — raw insert of a duplicate <code>(reservation_id, participant_id)</code> throws; the use-case catch maps it to <code>ContributorAlreadyExistsError</code>.</li>
+</ul>
+
+<h3>Reservation lifecycle over HTTP with real persistence (spec §11.2 — extend <code>reservations.integration.test.ts</code>)</h3>
+<p>The named regression, as one scenario: Alice (wisher) + Bob + Carol + Dave in one Event; Mallory foreign.</p>
+<ul>
+  <li>Bob reserves Alice's wish → 201.</li>
+  <li>Carol joins (POST contributors with her own id) → 200, contributors = Bob, Carol.</li>
+  <li>Carol adds Dave → 200, contributors = Bob, Carol, Dave (Carol was a contributor here; a separate assertion covers a non-contributor adder).</li>
+  <li>Duplicate: Bob adds Carol again → 409 <code>CONTRIBUTOR_ALREADY_EXISTS</code>.</li>
+  <li>Wisher as target: Bob adds Alice → 422 <code>CANNOT_ADD_WISHER_AS_CONTRIBUTOR</code>.</li>
+  <li><strong>Anti-spoil:</strong> Alice POSTs to the reservation (join attempt) → 404; Alice DELETEs Bob from it → 404; both bodies byte-identical to a request against a random unknown reservation id. Meanwhile Alice's event-wishes view stays hidden (assert a positive control on Bob's view first).</li>
+  <li>Remove: Bob removes Dave → 200 with 2 contributors; Carol removes herself → 200 with 1; Bob removes himself → 200 with <code>reservation: null</code>; <code>reservations</code> and <code>reservation_contributors</code> tables empty; Carol's event view shows the wish unreserved; Carol re-reserves the wish → 201 (reservable again). All reads assert immediately — no retry helpers.</li>
+  <li>Removing from the now-deleted reservation → 404; Mallory on any endpoint → 404; missing header → 400.</li>
+</ul>
+
+<h3>Web (component tests)</h3>
+<ul>
+  <li><code>reservation-coordination.spec.ts</code> (or panel tests if not extracted): picker excludes the Wisher and existing contributors and disappears when empty; «Participer» hidden when the viewer already contributes; own row shows «Ne plus participer»; outputs fire with the right ids.</li>
+  <li><code>event-wishes-panel.spec.ts</code> (extend): join/add/remove flows patch state from responses; remove-to-null flips the wish back to «Réserver»; 409 shows the French message and refreshes; own wishes still render no coordination UI (regression pin).</li>
+</ul>
+
+<h2 id="verification">7. Verification &amp; hand-off</h2>
+
+<ul>
+  <li>Cheap default while iterating: <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test</code>.</li>
+  <li>Manual exit-criteria walk — the three-browser scenario from the exit box, plus: Alice's devtools network check (no coordination bytes), and the spec §13 criteria 1–8 walked by hand end to end.</li>
+  <li>PR-ready: <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build</code>.</li>
+  <li>Docs: no <code>ARCHITECTURE.md</code> change. M5 complete — note it in the PR body.</li>
+  <li>Conventional Commits, backend then web: <code>feat: add reservation contributor management backend</code>, then <code>feat(web): add contributor join, add, and remove to reserved wishes</code>.</li>
+  <li>PR body per template; list the §11.1 reservation rules with their named tests, and call out the wisher-as-actor 404 decision explicitly for review.</li>
+</ul>
+
+<h2 id="out-of-scope">8. Explicitly out of scope (do not build now)</h2>
+
+<ul>
+  <li>Purchase-coordination notes, quantities, or price splitting (V1 out of scope).</li>
+  <li>Notifications of any kind when someone joins/leaves.</li>
+  <li>Restricting who may remove contributors (spec §7 says any viewer; do not "harden" it).</li>
+  <li>Domain events, projections, aggregates — removed architecture; do not reintroduce.</li>
+  <li>E2E automation (Slice 7 — the lifecycle integration test above is its server-side twin).</li>
+  <li>Optimistic UI beyond response-driven patching; offline mutation queues.</li>
+</ul>
+
+<footer>idkdo Slice 6 implementation plan &middot; 2026-07-08 rewrite for the vertical-slice architecture &middot; contract: <code>docs/SPEC-implementation.md</code> &middot; predecessors: Slice 2–5 plans (2026-07-08) &middot; original: 2026-07-06 plan (git history, <code>ff262ef^</code>)</footer>
+
+</main>
+</body>
+</html>

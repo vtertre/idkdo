@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>idkdo — Slice 2 Implementation Plan: Wishlist create &amp; view own Wishes (2026-07-08)</title>
+<style>
+  :root {
+    --ink: #e2e6f0;
+    --muted: #9aa3b8;
+    --line: #2b3245;
+    --bg: #12151d;
+    --card: #1a1f2b;
+    --accent: #6ea8ff;
+    --accent-soft: #1d2a44;
+    --done: #52c98a;
+    --done-soft: #16301f;
+    --warn: #e5a34a;
+    --warn-soft: #33260f;
+    --danger: #ef7070;
+    --danger-soft: #351a1a;
+    --code-bg: #232a3a;
+    --pre-bg: #0d1017;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 1.9rem; margin: 0 0 4px; }
+  h2 { font-size: 1.35rem; margin: 44px 0 12px; border-bottom: 2px solid var(--line); padding-bottom: 8px; }
+  h3 { font-size: 1.08rem; margin: 26px 0 8px; }
+  h4 { font-size: 0.98rem; margin: 20px 0 6px; }
+  p { margin: 8px 0; }
+  .subtitle { color: var(--muted); margin-bottom: 24px; }
+  code {
+    font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.86em;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #d7e3ff;
+  }
+  pre {
+    background: var(--pre-bg);
+    border: 1px solid var(--line);
+    color: #cdd6ea;
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; background: var(--card); font-size: 0.92rem; }
+  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  ul, ol { margin: 8px 0; padding-left: 24px; }
+  li { margin: 4px 0; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .step-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .step-num {
+    background: var(--accent);
+    color: #0d1017;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .step-title { font-size: 1.12rem; font-weight: 700; margin: 0; }
+  .layer-tag {
+    color: var(--muted);
+    font-size: 0.82rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 10px;
+    white-space: nowrap;
+  }
+  .label { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-top: 16px; }
+  .story {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin-top: 12px;
+    font-size: 0.95rem;
+    font-style: italic;
+  }
+  .exit {
+    background: var(--done-soft);
+    border-left: 4px solid var(--done);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 14px 0;
+    font-size: 0.93rem;
+  }
+  .note {
+    background: var(--warn-soft);
+    border-left: 4px solid var(--warn);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 0.93rem;
+  }
+  .danger {
+    background: var(--danger-soft);
+    border-left: 4px solid var(--danger);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 0.93rem;
+  }
+  .file-new::before { content: "➕ "; }
+  .file-mod::before { content: "✏️ "; }
+  .toc { columns: 2; column-gap: 32px; }
+  .toc li { break-inside: avoid; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 16px; }
+  @media (max-width: 640px) { .toc { columns: 1; } main { padding: 24px 14px 60px; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Slice 2 — Wishlist: create &amp; view own Wishes</h1>
+<p class="subtitle">
+  Implementation plan &middot; 2026-07-08 &middot; Status: ready for implementation<br>
+  Source of truth: <code>docs/SPEC-implementation.md</code> (M3 partial) &middot; <code>ARCHITECTURE.md</code> &middot; <code>docs/design-docs/*</code><br>
+  Rewrite of the 2026-07-05 Slice 2 plan (deleted in <code>ff262ef</code>), adapted to the vertical-slice server architecture
+  shipped by the 2026-07-07 simplification plan &middot;
+  Precedent: Slice 1 participant entry, shipped in <code>bcf3adc</code> (backend, since rebooted) and <code>a6d6bc6</code> (web)
+</p>
+
+<h2 id="toc">Contents</h2>
+<ol class="toc">
+  <li><a href="#goal">Goal</a></li>
+  <li><a href="#reading">Required reading &amp; precedents</a></li>
+  <li><a href="#decisions">Decisions locked for this slice</a></li>
+  <li><a href="#contract">Wire contract added by this slice</a></li>
+  <li><a href="#steps">Implementation steps 1–7</a></li>
+  <li><a href="#tests">Tests</a></li>
+  <li><a href="#verification">Verification &amp; hand-off</a></li>
+  <li><a href="#out-of-scope">Explicitly out of scope</a></li>
+</ol>
+
+<h2 id="goal">1. Goal</h2>
+
+<div class="story">After entering an Event and selecting a Participant, I land on the main Event experience, add Wishes to my own list, and still see them after a reload.</div>
+
+<p>This slice closes two cross-cutting gaps that every later slice reuses:</p>
+<ol>
+  <li><strong><code>X-Participant-Id</code> plumbing</strong> — the server validates the header and enforces membership; the web app injects the header automatically.</li>
+  <li><strong>Post-entry navigation</strong> — the "Event selected with Participant selected" navigation state (spec §9) gets a real route and page.</li>
+</ol>
+
+<div class="exit"><strong>Exit criteria (verify in a browser at the end):</strong> create an Event, enter it, select a Participant, get navigated to the main Event experience, add a multi-line Wish containing a URL, reload the page, and the Wish is still there with line breaks preserved and the URL rendered as a working link. <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test</code> green.</div>
+
+<h2 id="reading">2. Required reading before coding</h2>
+
+<p>In order: <code>docs/GOAL.md</code>, <code>docs/PRODUCT.md</code>, <code>docs/SPEC-implementation.md</code> (§3, §6.3, §7, §8, §11), <code>docs/DEVELOPING.md</code>, <code>docs/DATABASE.md</code>, <code>ARCHITECTURE.md</code>, <code>docs/design-docs/backend-architecture.md</code>, <code>docs/design-docs/frontend-architecture.md</code>, <code>docs/design-docs/code-organization.md</code>.</p>
+
+<h3>Code precedents to imitate (read them; do not reinvent conventions)</h3>
+
+<table>
+  <tr><th>Concern</th><th>Precedent file</th></tr>
+  <tr><td>Drizzle table + schema export</td><td><code>packages/db/src/schema.ts</code></td></tr>
+  <tr><td>Shared Zod schema + test + barrel export</td><td><code>packages/shared/src/validators/create-participant-request-body-schema.ts</code> and <code>packages/shared/src/index.ts</code></td></tr>
+  <tr><td>Mutation use case (transaction, constraint → typed error, row → summary mapping)</td><td><code>server/src/features/participants/create-participant.ts</code></td></tr>
+  <tr><td>Read use case (shaped read model over the real tables)</td><td><code>server/src/features/events/get-event-entry-page.ts</code></td></tr>
+  <tr><td>Feature error class (422)</td><td><code>server/src/features/participants/errors/participant-name-already-exists-error.ts</code></td></tr>
+  <tr><td>Error bases (404 / 422)</td><td><code>server/src/errors/not-found-error.ts</code>, <code>server/src/errors/business-rule-error.ts</code></td></tr>
+  <tr><td>Route module with shared schemas</td><td><code>server/src/features/events/events-route.ts</code></td></tr>
+  <tr><td>Error mapping</td><td><code>server/src/http/api-error-handler.ts</code></td></tr>
+  <tr><td>Wiring</td><td><code>server/src/app.ts</code></td></tr>
+  <tr><td>HTTP integration test (testcontainers + <code>app.inject</code>)</td><td><code>server/src/events.integration.test.ts</code></td></tr>
+  <tr><td>Use-case test on PGlite</td><td><code>server/src/features/participants/create-participant.test.ts</code>, <code>server/src/test/database/pglite-test-database.ts</code></td></tr>
+  <tr><td>Web repository + error normalization</td><td><code>web/src/app/features/events/data-access/event-repository.ts</code>, <code>event-repository-error.ts</code></td></tr>
+  <tr><td>Signal-forms page component</td><td><code>web/src/app/features/events/pages/event-entry-page/event-participant-entry.ts</code> + <code>.html</code></td></tr>
+  <tr><td>Route resolver conventions</td><td><code>web/src/app/features/events/data-access/event-entry-route.ts</code>, <code>web/src/app/core/router/*</code></td></tr>
+  <tr><td>localStorage storage service</td><td><code>web/src/app/features/events/data-access/selected-participant-storage.ts</code></td></tr>
+</table>
+
+<div class="note">
+  <strong>Codebase facts that save you surprises:</strong>
+  <ul>
+    <li>Node 24, pnpm 11.5, TypeScript ~6.0, Zod v4 (written in v3-compatible style: <code>z.string().uuid()</code>, <code>.strict()</code>), Fastify 5, Drizzle 0.45, Angular <strong>22</strong> with signal forms (<code>@angular/forms/signals</code>) and <code>@signality/core</code>.</li>
+    <li>Server files use ESM with explicit <code>.js</code> import suffixes.</li>
+    <li>The server has <strong>no</strong> repositories, buses, aggregates, value objects, or projections. A use case is one exported async function receiving the Drizzle <code>Database</code> plus validated input (see <code>docs/design-docs/backend-architecture.md</code>). Do not reintroduce any of the removed machinery.</li>
+    <li><code>packages/shared</code> schemas are consumed by both server (Fastify validator/serializer compilers) and web (response parsing). Routes reference shared schemas directly.</li>
+    <li>Ids are plain <code>string</code> UUIDs (<code>crypto.randomUUID()</code>); timestamps are <code>Date</code> columns serialized with <code>.toISOString()</code>. There is no <code>Uuid</code> class and no Temporal.</li>
+    <li>The web UI copy is <strong>French</strong>. Keep new user-facing strings in French.</li>
+  </ul>
+</div>
+
+<h2 id="decisions">3. Decisions locked for this slice</h2>
+
+<p>These carry over the still-valid rulings from the original Slice 2 plan and re-settle the ones the architecture reboot invalidated. Apply them uniformly; later slices inherit them.</p>
+
+<div class="card">
+  <h3>D1 — Membership failure status: 404</h3>
+  <p>When <code>X-Participant-Id</code> is well-formed but the Participant does not exist, or does not belong to the relevant Event, the use case throws <code>NotFoundError</code> (from <code>server/src/errors/</code>), which <code>api-error-handler.ts</code> already maps to <code>404</code> with the generic body <code>{ "error": { "code": "RESOURCE_NOT_FOUND", "message": "Resource not found." } }</code>. Rationale: leaks nothing about resource existence. A missing or malformed header is <code>400</code> (Fastify headers validation). A same-Event actor violating a business rule (e.g. creating a wish for someone else) is <code>422</code>. Throwing (rather than returning <code>null</code> and mapping in the route) keeps every 404 body byte-identical for free; reserve the <code>null</code>-return pattern for public "does this resource exist" reads like <code>get-event-entry-page.ts</code>.</p>
+</div>
+
+<div class="card">
+  <h3>D2 — URL linkification: pure segment rendering</h3>
+  <p>Wish content is hostile input from other Participants. Split content into typed segments (text / link / line-break) with a pure function and render them as Angular template elements. Never <code>innerHTML</code>, never <code>bypassSecurityTrust*</code>. Only <code>http://</code> and <code>https://</code> URLs become links.</p>
+</div>
+
+<div class="card">
+  <h3>D3 — Wish reads query the <code>wishes</code> table directly; reads are strongly consistent</h3>
+  <p>Per <code>docs/design-docs/backend-architecture.md</code>, reads query the real tables with the viewer as a parameter. There is <strong>no projection table and no event bus</strong> — the original plan's <code>event_wishes_projection</code> and its maintenance handlers do not exist in this architecture and must not be built. <code>get-participant-wishes</code> selects from <code>wishes</code> filtered by <code>wisherId</code>.</p>
+  <p><strong>Consequence:</strong> read-your-writes holds. A GET issued after a <code>201</code> always includes the new Wish; tests assert reads directly with no retry helpers (<code>vi.waitFor</code> is never needed), and the web app may either append from the <code>201</code> response or re-fetch — both are correct. Prefer appending (fewer round trips), but it is a UX choice, not a consistency requirement.</p>
+  <p>Purchase-coordination data (Slices 5–6) will be shaped out per viewer at query time inside the query function — never serialized to the Wisher. Slice 4 locks that contract.</p>
+</div>
+
+<div class="card">
+  <h3>Identity enforcement lives in use-case functions, not in a Fastify preHandler</h3>
+  <p>The route only does header <em>shape</em> validation (via the shared header schema declared in each route's <code>schema.headers</code>, giving automatic <code>400</code>) and passes the actor's participant id into the use case explicitly. The use case does the DB-backed existence/membership checks (yielding <code>404</code>/<code>422</code> per D1) — a use-case function taking an explicit <code>actorParticipantId</code> is safe to call no matter which transport invoked it. This is the cross-cutting invariant in <code>ARCHITECTURE.md</code>: selected-Participant identity is untrusted input, verified against the <code>participants</code> table before anything else.</p>
+  <p>The lookup is factored into one reusable helper, <code>getParticipantEventId(db, participantId)</code> in <code>server/src/features/participants/</code>, imported by the wishes use cases (Slices 3–6 reuse it; cross-feature imports of use-case-level functions follow the <code>events-route.ts → createParticipant</code> precedent).</p>
+</div>
+
+<div class="card">
+  <h3>No wish domain model — the schema and the use case are the whole rule set</h3>
+  <p>Content validity ("trimmed, non-blank, interior line breaks preserved") is enforced once at the boundary by the shared Zod body schema; the use case receives already-valid input and does not re-validate (the <code>create-event.ts</code> precedent). Ownership ("only for yourself") is an <code>if</code> in the use case throwing a typed error. <code>wishes.event_id</code> is denormalized (spec §6.3) and must always equal the Event of <code>wisher_id</code> — the create use case guarantees this by deriving <code>eventId</code> from the wisher row, never from client input.</p>
+</div>
+
+<div class="card">
+  <h3>Route structure (web)</h3>
+  <p><code>/events/:eventId</code> becomes the guarded main Event experience; the entry page moves to <code>/events/:eventId/entry</code>. The shareable link stays <code>/events/:eventId</code> (spec: link uses the Event id; deep-linking preserved): a visitor without a stored Participant selection is redirected to <code>…/entry</code>; a returning visitor lands straight in the app.</p>
+</div>
+
+<h2 id="contract">4. Wire contract added by this slice</h2>
+
+<h3><code>POST /api/participants/:participantId/wishes</code></h3>
+<ul>
+  <li>Headers: <code>X-Participant-Id: &lt;uuid&gt;</code> (required).</li>
+  <li>Body: <code>{ "content": string }</code> — trimmed, must be non-blank after trim; interior line breaks preserved.</li>
+  <li><code>201</code> response (the created Wish):</li>
+</ul>
+
+<pre><code>{
+  "id": "&lt;uuid&gt;",
+  "eventId": "&lt;uuid&gt;",
+  "wisherId": "&lt;uuid&gt;",
+  "content": "Nintendo Switch\nhttps://example.com/item",
+  "createdAt": "2026-07-08T10:00:00.000Z",
+  "updatedAt": "2026-07-08T10:00:00.000Z"
+}</code></pre>
+
+<h3><code>GET /api/participants/:participantId/wishes</code></h3>
+<ul>
+  <li>Headers: <code>X-Participant-Id: &lt;uuid&gt;</code> (required). Viewer must belong to the same Event as <code>:participantId</code> (any member may view any member's list, per spec §7).</li>
+  <li><code>200</code> response: <code>{ "wishes": [ &lt;wish&gt;, … ] }</code> ordered by <code>createdAt</code> asc, <code>id</code> asc.</li>
+  <li>Reads are served from the <code>wishes</code> table — a GET after a successful POST always includes the new Wish (Decision D3).</li>
+</ul>
+
+<h3>Error matrix (both endpoints unless noted)</h3>
+
+<table>
+  <tr><th>Case</th><th>Status</th><th>code</th></tr>
+  <tr><td>Header missing or not a UUID</td><td>400</td><td><code>VALIDATION_ERROR</code> ("Invalid request headers.")</td></tr>
+  <tr><td><code>:participantId</code> not a UUID</td><td>400</td><td><code>VALIDATION_ERROR</code> ("Invalid route parameters.")</td></tr>
+  <tr><td>Body invalid / blank content (POST)</td><td>400</td><td><code>VALIDATION_ERROR</code> ("Invalid request body.")</td></tr>
+  <tr><td>Target Participant unknown</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code></td></tr>
+  <tr><td>Actor/viewer Participant unknown</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code></td></tr>
+  <tr><td>Actor/viewer belongs to a different Event</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code></td></tr>
+  <tr><td>POST: actor is a same-Event member but ≠ <code>:participantId</code></td><td>422</td><td><code>CANNOT_CREATE_WISH_FOR_ANOTHER_PARTICIPANT</code></td></tr>
+</table>
+
+<div class="danger"><strong>Check order in the create use case matters for D1:</strong> (1) resolve target participant's Event — unknown target → 404; (2) actor membership in that Event — non-member → 404; (3) actor ≠ target → 422. All three 404 cases must be byte-identical (they are, automatically, because all three throw <code>NotFoundError</code>).</div>
+
+<h2 id="steps">5. Implementation steps</h2>
+
+<p>Work bottom-up. Each step lists every file to create (➕) or modify (✏️). Every new concept gets its own file named after it, with a sibling <code>.test.ts</code>/<code>.spec.ts</code> (see <code>docs/design-docs/code-organization.md</code>).</p>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 1</span>
+    <span class="step-title"><code>packages/db</code>: <code>wishes</code> table + migration</span>
+    <span class="layer-tag">db</span>
+  </div>
+
+  <p class="file-mod"><code>packages/db/src/schema.ts</code></p>
+
+<pre><code>export const wishes = pgTable(
+  "wishes",
+  {
+    id: uuid("id").primaryKey(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() =&gt; events.id),
+    wisherId: uuid("wisher_id")
+      .notNull()
+      .references(() =&gt; participants.id),
+    content: text("content").notNull(),
+    ...timestamps(),
+  },
+  (table) =&gt; [index().on(table.eventId), index().on(table.wisherId)],
+);</code></pre>
+
+  <ul>
+    <li>Import <code>index</code> from <code>drizzle-orm/pg-core</code>. Add <code>wishes</code> to the <code>schema</code> export object.</li>
+    <li><code>event_id</code> is intentionally denormalized (spec §6.3); it must always equal the Event of <code>wisher_id</code> — the create use case guarantees this.</li>
+    <li>No <code>ON DELETE CASCADE</code> yet; the cascade arrives with <code>reservations</code> in Slice 5.</li>
+    <li><strong>No projection table.</strong> The old plan's <code>event_wishes_projection</code> belongs to the removed architecture.</li>
+  </ul>
+
+  <p>Generate the migration (auto-named by drizzle-kit, journal updates itself), then commit the generated <code>packages/db/migrations/00XX_*.sql</code> and <code>meta/</code> updates as-is:</p>
+
+<pre><code>DATABASE_URL=postgres://idkdo:idkdo@localhost:5432/idkdo pnpm db:generate
+DATABASE_URL=postgres://idkdo:idkdo@localhost:5432/idkdo pnpm db:migrate</code></pre>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 2</span>
+    <span class="step-title"><code>packages/shared</code>: wire contracts</span>
+    <span class="layer-tag">shared</span>
+  </div>
+
+  <p>New files under <code>packages/shared/src/validators/</code>, each with a <code>.test.ts</code> sibling and exports (schema + inferred type) appended to <code>packages/shared/src/index.ts</code>.</p>
+
+  <p class="file-new"><code>participant-id-header-schema.ts</code> — the single definition of the header contract:</p>
+
+<pre><code>export const participantIdHeaderName = "x-participant-id";
+
+export const participantIdHeaderSchema = z.looseObject({
+  [participantIdHeaderName]: z.string().uuid(),
+});
+
+export type ParticipantIdHeader = z.infer&lt;typeof participantIdHeaderSchema&gt;;</code></pre>
+
+  <div class="note">
+    <strong>Two constraints that are easy to get wrong:</strong>
+    <ul>
+      <li>The key must be <strong>lowercase</strong> (<code>x-participant-id</code>): Node lowercases incoming header names.</li>
+      <li>It must be a <strong>loose</strong> object (Zod v4 <code>z.looseObject</code>), not <code>.strict()</code> and not the default stripping object: <code>zodValidatorCompiler</code> returns <code>result.data</code> and Fastify replaces <code>request.headers</code> with it, so a stripping schema would delete every other header (<code>content-type</code>, <code>host</code>, …).</li>
+    </ul>
+    Export <code>participantIdHeaderName</code> so web/server never hardcode the string.
+  </div>
+
+  <p class="file-new"><code>wish-summary-schema.ts</code> (follows <code>participant-summary-schema.ts</code>):</p>
+
+<pre><code>export const wishSummarySchema = z
+  .object({
+    content: z.string().min(1),
+    createdAt: z.string().datetime(),
+    eventId: z.string().uuid(),
+    id: z.string().uuid(),
+    updatedAt: z.string().datetime(),
+    wisherId: z.string().uuid(),
+  })
+  .strict();</code></pre>
+
+  <p>(No <code>.trim()</code> here — response schemas must not transform payloads.)</p>
+
+  <p class="file-new"><code>create-wish-request-body-schema.ts</code>:</p>
+
+<pre><code>export const createWishRequestBodySchema = z
+  .object({ content: z.string().trim().min(1) })
+  .strict();</code></pre>
+
+  <p><code>.trim()</code> only strips edges; interior <code>\n</code> are preserved — add a test asserting a multi-line content survives parsing verbatim (modulo edge trim) and <code>"  \n  "</code> is rejected.</p>
+
+  <p class="file-new"><code>create-wish-response-schema.ts</code> — reuse: <code>export const createWishResponseSchema = wishSummarySchema;</code> + type.</p>
+
+  <p class="file-new"><code>get-participant-wishes-response-schema.ts</code>:</p>
+
+<pre><code>export const getParticipantWishesResponseSchema = z
+  .object({ wishes: z.array(wishSummarySchema) })
+  .strict();</code></pre>
+
+  <p class="file-new"><code>participant-wishes-route-params-schema.ts</code> (shared by POST and GET):</p>
+
+<pre><code>export const participantWishesRouteParamsSchema = z
+  .object({ participantId: z.string().uuid() })
+  .strict();</code></pre>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 3</span>
+    <span class="step-title">Server: the wishes feature slice</span>
+    <span class="layer-tag">server · features</span>
+  </div>
+
+  <p class="file-new"><code>server/src/features/participants/get-participant-event-id.ts</code> — the shared membership lookup (reads the authoritative <code>participants</code> table; reused by Slices 3–6):</p>
+
+<pre><code>import { participants, type Database } from "@idkdo/db";
+import { eq } from "drizzle-orm";
+
+export async function getParticipantEventId(
+  db: Database,
+  participantId: string,
+): Promise&lt;string | null&gt; {
+  const rows = await db
+    .select({ eventId: participants.eventId })
+    .from(participants)
+    .where(eq(participants.id, participantId))
+    .limit(1);
+
+  return rows[0]?.eventId ?? null;
+}</code></pre>
+
+  <p class="file-new"><code>server/src/features/wishes/errors/cannot-create-wish-for-another-participant-error.ts</code> — <code>CannotCreateWishForAnotherParticipantError extends BusinessRuleError</code>, code <code>"CANNOT_CREATE_WISH_FOR_ANOTHER_PARTICIPANT"</code>, message like <code>"A participant can only create wishes for themselves."</code> (maps to 422 automatically). Mirror <code>participant-name-already-exists-error.ts</code>.</p>
+
+  <p class="file-new"><code>server/src/features/wishes/create-wish.ts</code> — the mutation use case:</p>
+
+<pre><code>export type CreateWishInput = {
+  readonly actorParticipantId: string;
+  readonly content: string;
+  readonly wisherId: string;
+};
+
+export async function createWish(
+  db: Database,
+  input: CreateWishInput,
+): Promise&lt;WishSummary&gt;</code></pre>
+
+  <p>Inside one <code>db.transaction()</code> (check-then-write consistency, the <code>create-participant.ts</code> precedent):</p>
+  <ol>
+    <li><code>wisherEventId = await getParticipantEventId(tx, input.wisherId)</code>; <code>null</code> → <code>throw new NotFoundError()</code> (→ 404, D1).</li>
+    <li><code>actorEventId = await getParticipantEventId(tx, input.actorParticipantId)</code>; <code>null</code> or <code>!== wisherEventId</code> → <code>throw new NotFoundError()</code> (→ 404, D1).</li>
+    <li><code>input.actorParticipantId !== input.wisherId</code> → <code>throw new CannotCreateWishForAnotherParticipantError()</code> (→ 422).</li>
+    <li>Insert the wish (<code>id: crypto.randomUUID()</code>, <code>eventId: wisherEventId</code>, <code>wisherId</code>, <code>content</code>; timestamps default) with <code>.returning()</code>, map the row through a local <code>toWishSummary</code> helper (<code>.toISOString()</code> on timestamps) and return it.</li>
+  </ol>
+  <p>Content is already trimmed and non-blank thanks to the shared request schema — do not re-validate (boundary owns shape; the use case owns rules).</p>
+
+  <p class="file-new"><code>server/src/features/wishes/get-participant-wishes.ts</code> — the read use case:</p>
+
+<pre><code>export type GetParticipantWishesInput = {
+  readonly participantId: string;
+  readonly viewerParticipantId: string;
+};
+
+export async function getParticipantWishes(
+  db: Database,
+  input: GetParticipantWishesInput,
+): Promise&lt;GetParticipantWishesResponse&gt;</code></pre>
+
+  <ol>
+    <li>Resolve both event ids via <code>getParticipantEventId</code> (target, then viewer); either <code>null</code> or a mismatch → <code>throw new NotFoundError()</code> (all cases indistinguishable, D1).</li>
+    <li>Select from <code>wishes</code> where <code>wisherId = input.participantId</code>, ordered <code>asc(createdAt), asc(id)</code>; map rows through <code>toWishSummary</code>.</li>
+    <li>When viewer === target this naturally degenerates to "own wishes". No transaction needed — it is a plain read.</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 4</span>
+    <span class="step-title">Server: route + wiring</span>
+    <span class="layer-tag">server · http</span>
+  </div>
+
+  <p class="file-new"><code>server/src/features/wishes/wishes-route.ts</code> — mirrors <code>events-route.ts</code> (<code>WishesRouteOptions = { readonly db: Database }</code>); register both routes with full schema declarations so validation and strict response serialization run through the shared contracts:</p>
+
+<pre><code>app.post&lt;{ Body: CreateWishRequestBody; Headers: ParticipantIdHeader; Params: ParticipantWishesRouteParams }&gt;(
+  "/participants/:participantId/wishes",
+  {
+    schema: {
+      body: createWishRequestBodySchema,
+      headers: participantIdHeaderSchema,
+      params: participantWishesRouteParamsSchema,
+      response: {
+        201: createWishResponseSchema,
+        400: apiErrorResponseSchema,
+        404: apiErrorResponseSchema,
+        422: apiErrorResponseSchema,
+      },
+    },
+  },
+  async (request, reply) =&gt; {
+    const wish = await createWish(options.db, {
+      actorParticipantId: request.headers[participantIdHeaderName],
+      content: request.body.content,
+      wisherId: request.params.participantId,
+    });
+
+    await reply.status(201).send(wish);
+  },
+);</code></pre>
+
+  <p>…and the analogous <code>app.get</code> with <code>response: { 200: getParticipantWishesResponseSchema, 400, 404 }</code> calling <code>getParticipantWishes</code>. The route reads the header via the shared <code>participantIdHeaderName</code> constant, calls one use-case function, and maps the result — no SQL, no business rules, no 404 mapping (the error handler owns it).</p>
+
+  <p class="file-mod"><code>server/src/app.ts</code> — register <code>wishesRoute</code> next to <code>eventsRoute</code> under the <code>/api</code> prefix, passing <code>{ db: databaseClient.db }</code>.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 5</span>
+    <span class="step-title">Web: identity plumbing (context + interceptor + guard)</span>
+    <span class="layer-tag">web</span>
+  </div>
+
+  <p class="file-new"><code>web/src/app/core/identity/selected-participant-context.ts</code> — app-wide signal service (root-provided, follow the style of the neighboring services): holds <code>{ eventId: string; participantId: string } | null</code> with <code>selection</code> (readonly signal), <code>set(selection)</code>, <code>clear()</code>. It exists because <code>SelectedParticipantStorage</code> is keyed by <code>eventId</code> and an interceptor has no route context.</p>
+
+  <p class="file-new"><code>web/src/app/core/http/participant-id-interceptor.ts</code> — functional <code>HttpInterceptorFn</code>: when the request URL starts with <code>/api</code> and the context has a selection, clone the request with <code>setHeaders: { "X-Participant-Id": participantId }</code> (import the canonical name from <code>@idkdo/shared</code>; header case is irrelevant on the wire but use the shared constant). Otherwise pass through untouched. This is convenience plumbing only — the server revalidates everything.</p>
+
+  <p class="file-mod"><code>web/src/app/app.config.ts</code> — <code>provideHttpClient(withInterceptors([participantIdInterceptor]))</code>.</p>
+
+  <p class="file-new"><code>web/src/app/features/events/data-access/selected-participant-guard.ts</code> — <code>CanActivateFn</code> for the main route: read <code>eventId</code> from the route params, look up <code>SelectedParticipantStorage.getSelectedParticipantId(eventId)</code>; if <code>null</code>, return a <code>UrlTree</code>/<code>RedirectCommand</code> to <code>/events/:eventId/entry</code>; otherwise <code>SelectedParticipantContext.set({ eventId, participantId })</code> and return <code>true</code>. The guard runs before resolvers, so the context is set before any resolver-issued API call.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 6</span>
+    <span class="step-title">Web: routes + entry flow navigation</span>
+    <span class="layer-tag">web</span>
+  </div>
+
+  <p class="file-mod"><code>web/src/app/app.routes.ts</code>:</p>
+
+<pre><code>{ path: "", component: CreateEventPage },
+{ path: "events/:eventId/entry", component: EventEntryPage, resolve: { [eventEntryRoute.dataKey]: eventEntryRoute.resolve } },
+{ path: "events/:eventId/unavailable", component: EventUnavailablePage },
+{ path: "events/:eventId", component: EventHomePage, canActivate: [selectedParticipantGuard], resolve: { [eventEntryRoute.dataKey]: eventEntryRoute.resolve } },
+{ path: "**", redirectTo: "" },</code></pre>
+
+  <p>Keep <code>events/:eventId/entry</code> declared before <code>events/:eventId</code>. Reusing <code>eventEntryRoute.resolve</code> on the home route gives the page the Event name and Participant list (to resolve the selected Participant's name) with the existing retry/unavailable behavior.</p>
+
+  <p class="file-mod"><code>web/src/app/features/events/pages/event-entry-page/event-participant-entry.ts</code> (+ <code>.html</code>) — after a successful selection (<code>selectParticipant</code>) or a successful create-and-select, navigate to <code>/events/:eventId</code> (inject <code>Router</code>). In the "identity already chosen" summary state, add a primary "Continuer" button navigating to the main route next to the existing "Changer de participant" button. <code>changeParticipant</code> should also call <code>SelectedParticipantContext.clear()</code>.</p>
+
+  <p><code>web/src/app/features/events/pages/create-event-page/*</code> — no change; the share URL <code>/events/:id</code> now lands returning visitors in the app directly, first-time visitors get redirected to <code>…/entry</code> by the guard.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 7</span>
+    <span class="step-title">Web: wishes feature + home page</span>
+    <span class="layer-tag">web</span>
+  </div>
+
+  <p class="file-new"><code>web/src/app/features/wishes/data-access/wish-repository-error.ts</code> — clone the <code>EventRepositoryError</code> shape (message, status, code).</p>
+
+  <p class="file-new"><code>web/src/app/features/wishes/data-access/wish-repository.ts</code> — root-provided, <code>HttpClient</code>-based, mirrors <code>event-repository.ts</code> including the <code>normalizeError</code> pattern and Zod parsing of responses:</p>
+  <ul>
+    <li><code>createWish(participantId: string, content: string): Observable&lt;CreateWishResponse&gt;</code> — <code>POST /api/participants/${participantId}/wishes</code>.</li>
+    <li><code>getParticipantWishes(participantId: string): Observable&lt;GetParticipantWishesResponse&gt;</code> — <code>GET /api/participants/${participantId}/wishes</code>.</li>
+  </ul>
+  <p>(No manual header handling here — the interceptor adds it.)</p>
+
+  <p class="file-new"><code>web/src/app/features/wishes/components/wish-content/segment-wish-content.ts</code> — pure function implementing D2:</p>
+
+<pre><code>export type WishContentSegment =
+  | { kind: "line-break" }
+  | { kind: "link"; url: string }
+  | { kind: "text"; text: string };
+
+export function segmentWishContent(content: string): WishContentSegment[]</code></pre>
+
+  <p>Split on <code>\r\n|\r|\n</code> for line breaks; within each line, detect URLs with a conservative pattern anchored on <code>https?://</code> (e.g. <code>/https?:\/\/[^\s]+/g</code>), trimming common trailing punctuation (<code>.,;:!?)</code>) from the matched URL back into the text segment. Everything else is plain text. No HTML parsing of any kind.</p>
+
+  <p class="file-new"><code>web/src/app/features/wishes/components/wish-content/wish-content.ts</code> (+ <code>.html</code>) — standalone OnPush component with a <code>content</code> input; computes segments via <code>segmentWishContent</code>; template renders <code>@for</code> over segments: text → interpolation, line-break → <code>&lt;br /&gt;</code>, link → <code>&lt;a [href]="segment.url" target="_blank" rel="noopener noreferrer"&gt;{{ segment.url }}&lt;/a&gt;</code>. Anchors are real elements from the template; Angular property binding on <code>href</code> plus the http(s)-only regex keeps hostile schemes out.</p>
+
+  <p class="file-new"><code>web/src/app/features/wishes/components/wishlist-panel/wishlist-panel.ts</code> (+ <code>.html</code>, <code>.css</code>) — standalone OnPush component, <code>input.required&lt;string&gt;()</code> for the selected <code>participantId</code>:</p>
+  <ul>
+    <li>On init, load own wishes via <code>WishRepository.getParticipantWishes</code> into a signal; expose loading and load-error states (with a retry button — never silently ignore API errors, per AGENTS.md §10).</li>
+    <li>Add-wish form: signal forms per the <code>event-participant-entry.ts</code> precedent — <code>form(model, …)</code> with required + <code>validateStandardSchema(…, createWishRequestBodySchema)</code>; a <code>&lt;textarea&gt;</code> bound with <code>[formField]</code> (multi-line input is the point of this slice).</li>
+    <li>On successful create, append the Wish returned by the POST to the list (server list order is <code>createdAt</code> asc, so appending matches) and reset the form. Appending saves a round trip; a re-fetch would also be correct now that reads are strongly consistent (D3).</li>
+    <li>Surface submit errors via an error signal (French copy, e.g. «Le souhait n'a pas pu être ajouté. Réessayez.»).</li>
+    <li>Render each wish's content with the <code>wish-content</code> component.</li>
+  </ul>
+
+  <p class="file-new"><code>web/src/app/features/events/pages/event-home-page/event-home-page.ts</code> (+ <code>.html</code>, <code>.css</code>) — the main Event experience page:</p>
+  <ul>
+    <li><code>providers: [eventEntryRoute.provideEvent()]</code>, inject the resolved event like <code>event-entry-page.ts</code> does.</li>
+    <li>Read the selected participant id from <code>SelectedParticipantContext</code>; resolve the Participant's name from the resolved event's participants. If the stored id is not in the list (deleted elsewhere / stale storage), clear storage + context and redirect to <code>…/entry</code>.</li>
+    <li>Header: Event name, selected Participant name, a "Changer de participant" action (clear storage via <code>SelectedParticipantStorage.clearSelectedParticipantId</code>, clear context, navigate to <code>…/entry</code>).</li>
+    <li>Body: «Ma liste» section hosting <code>&lt;app-wishlist-panel [participantId]="…" /&gt;</code>. Mobile-first single-column layout consistent with existing pages; Slice 4 will add the Event Wishes browsing surface beside/behind it.</li>
+  </ul>
+
+  <p><strong>PWA check:</strong> <code>web/ngsw-config.json</code> already has <code>dataGroups: []</code> and excludes <code>/api/**</code> from <code>navigationUrls</code>, and <code>pnpm --filter @idkdo/web test</code> runs <code>verify-pwa-cache-policy.mjs</code>. Do not add any dataGroup for API responses.</p>
+</div>
+
+<h2 id="tests">6. Tests</h2>
+
+<p>Every new file gets its mirrored test; the list below is the required behavior coverage (names indicative). Server behavior tests are use-case tests against PGlite (<code>createMigratedPgliteTemplate</code>) — there are no memory fakes in this architecture.</p>
+
+<h3>Shared (<code>packages/shared</code>, vitest)</h3>
+<ul>
+  <li>header schema: accepts a valid lowercase header among other headers and keeps them (loose), rejects missing/non-uuid values;</li>
+  <li>create-wish body: trims edges, preserves interior line breaks, rejects blank/whitespace-only and unknown keys;</li>
+  <li>response schemas: valid payload round-trips, extra keys rejected.</li>
+</ul>
+
+<h3>Server use cases (PGlite)</h3>
+<ul>
+  <li><code>get-participant-event-id.test.ts</code>: known participant → its <code>eventId</code>; unknown id → <code>null</code>.</li>
+  <li><code>create-wish.test.ts</code>: seed an Event with Alice and Bob plus a second Event with Mallory. Happy path persists the row with <code>eventId</code> taken from the wisher and returns the summary (ISO timestamps, content byte-identical incl. line breaks); unknown target → <code>NotFoundError</code>; unknown actor → <code>NotFoundError</code>; actor from another Event (Mallory) → <code>NotFoundError</code>; same-Event actor ≠ target (Bob for Alice) → <code>CannotCreateWishForAnotherParticipantError</code> and nothing persisted.</li>
+  <li><code>get-participant-wishes.test.ts</code>: own wishes returned ordered (<code>createdAt</code> asc, <code>id</code> asc); same-Event other viewer gets the list; viewer from a different Event → <code>NotFoundError</code>; unknown target → <code>NotFoundError</code>; unknown viewer → <code>NotFoundError</code>; a wish created via <code>createWish</code> is immediately readable (read-your-writes).</li>
+</ul>
+
+<h3>Server HTTP integration (testcontainers, new <code>wishes.integration.test.ts</code> following the context-class pattern in <code>events.integration.test.ts</code>)</h3>
+<ul>
+  <li>Setup helper: create Event + two Participants via the API (Alice, Bob), plus a second Event with one Participant (Mallory).</li>
+  <li>POST without header → 400 <code>VALIDATION_ERROR</code> "Invalid request headers."; malformed header → 400.</li>
+  <li>POST as Mallory targeting Alice → 404 <code>RESOURCE_NOT_FOUND</code>; unknown target uuid → 404; unknown actor uuid → 404 — assert all three bodies are identical.</li>
+  <li>POST as Bob targeting Alice → 422 <code>CANNOT_CREATE_WISH_FOR_ANOTHER_PARTICIPANT</code>.</li>
+  <li>POST as Alice for Alice with <code>"Chocolat\nhttps://example.com/x"</code> → 201; response parses with <code>createWishResponseSchema</code>; row persisted in <code>wishes</code> with the Event's id and content byte-identical (line break intact).</li>
+  <li>POST blank content → 400, nothing persisted.</li>
+  <li>GET as Alice immediately after the POST → 200 including the new wish (no retry helper — reads are synchronous with writes); GET as Bob (same Event) → 200; GET as Mallory → 404; reload semantics: a later GET still returns the wish.</li>
+  <li>Update the context's <code>resetDatabase</code> to also delete <code>wishes</code> (before <code>participants</code> and <code>events</code> — FK order).</li>
+</ul>
+
+<h3>Web (vitest / component tests, mirroring existing <code>.spec.ts</code> conventions)</h3>
+<ul>
+  <li><code>participant-id-interceptor.spec.ts</code>: header attached to <code>/api/**</code> when context set; absent when context empty; non-<code>/api</code> requests untouched.</li>
+  <li><code>selected-participant-guard.spec.ts</code>: no stored selection → redirect to <code>/events/:eventId/entry</code>; stored selection → allows activation and sets context.</li>
+  <li><code>segment-wish-content.spec.ts</code>: plain text; multi-line; URL inside text; URL with trailing punctuation; hostile input <code>&lt;b&gt;bold&lt;/b&gt;</code> / <code>&lt;script&gt;</code> stays a text segment; <code>javascript:alert(1)</code> is not a link segment.</li>
+  <li><code>wish-content.spec.ts</code>: renders <code>&lt;a&gt;</code> elements for http(s) URLs with <code>rel="noopener noreferrer"</code>; renders HTML-looking content as inert text (assert <code>textContent</code>, and that no unexpected element was created); <code>&lt;br&gt;</code> per line break.</li>
+  <li><code>wishlist-panel.spec.ts</code>: loads and renders wishes; add flow round-trip appends the created wish and clears the textarea; submit error surfaced; load error shows retry.</li>
+  <li><code>event-home-page.spec.ts</code>: shows Event name + selected Participant; "changer de participant" clears storage and navigates to entry; stale participant id redirects to entry.</li>
+  <li>Update <code>event-participant-entry.spec.ts</code> / <code>event-entry-page.spec.ts</code> for the new navigation behavior, and any route-shape assertions for the <code>/entry</code> move.</li>
+</ul>
+
+<h2 id="verification">7. Verification &amp; hand-off</h2>
+
+<ul>
+  <li>Cheap default while iterating: <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test</code>.</li>
+  <li>Manual exit-criteria walk (two terminals: <code>pnpm db:up</code>, <code>pnpm dev</code>): create Event → open share link in a private window → create Participant → auto-navigate to <code>/events/:id</code> → add wish <code>"Ligne 1\nhttps://example.com/idée"</code> → reload → wish still rendered, line break visible, link clickable and opening in a new tab. Also verify: clearing localStorage and revisiting <code>/events/:id</code> redirects to <code>…/entry</code>; the network tab shows <code>X-Participant-Id</code> on <code>/api/participants/...</code> requests.</li>
+  <li>PR-ready: <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build</code>, plus <code>pnpm verify</code> (docs are touched by this slice).</li>
+  <li>Docs to update in the same PR:
+    <ul>
+      <li>AGENTS.md §7 "Database Change Workflow" is stale ("The application is not scaffolded yet.") — replace with a pointer to <code>docs/DATABASE.md</code> (<code>pnpm db:generate</code> after schema changes, commit generated migrations).</li>
+      <li>No <code>ARCHITECTURE.md</code> change needed: identity-header semantics are already documented as cross-cutting invariants; this slice implements them.</li>
+    </ul>
+  </li>
+  <li>Conventional Commits; follow the Slice 1 precedent of separate backend and web commits, e.g. <code>feat: add wish creation and own-wishlist backend API</code> then <code>feat(web): add main event experience with own wishlist</code>.</li>
+  <li>PR body must fill every section of <code>.github/PULL_REQUEST_TEMPLATE.md</code>.</li>
+</ul>
+
+<h2 id="out-of-scope">8. Explicitly out of scope (do not build now)</h2>
+
+<ul>
+  <li>Wish edit/delete, <code>PATCH/DELETE /wishes/:wishId</code> (Slice 3).</li>
+  <li><code>GET /events/:eventId/wishes</code>, the visibility shaping, the <code>purchaseCoordination</code> union (Slice 4).</li>
+  <li><code>reservations</code>/<code>reservation_contributors</code> tables, cascades, anti-spoil data (Slices 5–6).</li>
+  <li>Any projection table, event bus, repository, aggregate, or value object — removed architecture; do not reintroduce.</li>
+  <li>E2E tooling, any Event Wishes browsing UI (Slices 4 and 7).</li>
+</ul>
+
+<footer>idkdo Slice 2 implementation plan &middot; 2026-07-08 rewrite for the vertical-slice architecture &middot; contract: <code>docs/SPEC-implementation.md</code> &middot; original: 2026-07-05 plan (git history, <code>ff262ef^</code>)</footer>
+
+</main>
+</body>
+</html>

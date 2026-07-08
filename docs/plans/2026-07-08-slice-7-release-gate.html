@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>idkdo — Slice 7 Implementation Plan: Release gate — E2E, PWA, docs (2026-07-08)</title>
+<style>
+  :root {
+    --ink: #e2e6f0;
+    --muted: #9aa3b8;
+    --line: #2b3245;
+    --bg: #12151d;
+    --card: #1a1f2b;
+    --accent: #6ea8ff;
+    --accent-soft: #1d2a44;
+    --done: #52c98a;
+    --done-soft: #16301f;
+    --warn: #e5a34a;
+    --warn-soft: #33260f;
+    --danger: #ef7070;
+    --danger-soft: #351a1a;
+    --code-bg: #232a3a;
+    --pre-bg: #0d1017;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 1.9rem; margin: 0 0 4px; }
+  h2 { font-size: 1.35rem; margin: 44px 0 12px; border-bottom: 2px solid var(--line); padding-bottom: 8px; }
+  h3 { font-size: 1.08rem; margin: 26px 0 8px; }
+  h4 { font-size: 0.98rem; margin: 20px 0 6px; }
+  p { margin: 8px 0; }
+  .subtitle { color: var(--muted); margin-bottom: 24px; }
+  code {
+    font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.86em;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #d7e3ff;
+  }
+  pre {
+    background: var(--pre-bg);
+    border: 1px solid var(--line);
+    color: #cdd6ea;
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; background: var(--card); font-size: 0.92rem; }
+  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  ul, ol { margin: 8px 0; padding-left: 24px; }
+  li { margin: 4px 0; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .step-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .step-num {
+    background: var(--accent);
+    color: #0d1017;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .step-title { font-size: 1.12rem; font-weight: 700; margin: 0; }
+  .layer-tag {
+    color: var(--muted);
+    font-size: 0.82rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 10px;
+    white-space: nowrap;
+  }
+  .label { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-top: 16px; }
+  .story {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin-top: 12px;
+    font-size: 0.95rem;
+    font-style: italic;
+  }
+  .exit {
+    background: var(--done-soft);
+    border-left: 4px solid var(--done);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 14px 0;
+    font-size: 0.93rem;
+  }
+  .note {
+    background: var(--warn-soft);
+    border-left: 4px solid var(--warn);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 0.93rem;
+  }
+  .danger {
+    background: var(--danger-soft);
+    border-left: 4px solid var(--danger);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 0.93rem;
+  }
+  .file-new::before { content: "➕ "; }
+  .file-mod::before { content: "✏️ "; }
+  .toc { columns: 2; column-gap: 32px; }
+  .toc li { break-inside: avoid; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 16px; }
+  @media (max-width: 640px) { .toc { columns: 1; } main { padding: 24px 14px 60px; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Slice 7 — Release gate: E2E, PWA smoke, docs closure</h1>
+<p class="subtitle">
+  Implementation plan &middot; 2026-07-08 &middot; Status: ready for implementation<br>
+  Source of truth: <code>docs/SPEC-implementation.md</code> (§9 PWA, §11.3, §11.4, §13) &middot; <code>ARCHITECTURE.md</code> &middot; <code>docs/design-docs/frontend-architecture.md</code><br>
+  Rewrite of the 2026-07-06 Slice 7 plan (deleted in <code>ff262ef</code>), adapted to the vertical-slice server architecture &middot;
+  Requires Slices 1–6 shipped
+</p>
+
+<h2 id="toc">Contents</h2>
+<ol class="toc">
+  <li><a href="#goal">Goal &amp; preconditions</a></li>
+  <li><a href="#reading">Required reading &amp; facts</a></li>
+  <li><a href="#decisions">Decisions locked for this slice</a></li>
+  <li><a href="#steps">Implementation steps 1–6</a></li>
+  <li><a href="#specs">The four E2E specs in detail</a></li>
+  <li><a href="#traceability">§13 traceability</a></li>
+  <li><a href="#verification">Verification &amp; hand-off</a></li>
+  <li><a href="#out-of-scope">Explicitly out of scope</a></li>
+</ol>
+
+<h2 id="goal">1. Goal &amp; preconditions</h2>
+
+<div class="story">Not a user-facing slice by design: it converts Slices 1–6 into an automated release gate.</div>
+
+<p>Deliverables: a Playwright E2E workspace package running the three §11.4 regression suites (core workflow, anti-spoil, reservation lifecycle) plus a PWA smoke suite against the production build; root/CI wiring; and docs closure (DEVELOPING, ARCHITECTURE, AGENTS, §13 checklist walk).</p>
+
+<div class="note"><strong>Preconditions.</strong> Slices 1–6 shipped and green. The concrete selectors/labels below reference the French UI copy specified in those plans («Réserver», «Participer», «Toutes les listes», …) — before writing specs, read the shipped components and use what is actually rendered; prefer accessible selectors (<code>getByRole</code>, <code>getByLabel</code>) over CSS. If any flow shipped differently, the spec follows the shipped app.</div>
+
+<div class="exit"><strong>Exit criteria:</strong> all §13 acceptance criteria demonstrably true; <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build</code> plus <code>pnpm test:e2e</code> green locally and in CI. V1 releasable.</div>
+
+<h2 id="reading">2. Required reading &amp; environment facts</h2>
+
+<p>Read: <code>docs/SPEC-implementation.md</code> §9/§11/§13, <code>docs/DEVELOPING.md</code>, <code>docs/DATABASE.md</code>, <code>AGENTS.md</code>, <code>scripts/verify-workspace-scripts.mjs</code>, <code>web/scripts/verify-pwa-cache-policy.mjs</code>, <code>web/ngsw-config.json</code>, <code>.github/workflows/ci.yml</code>.</p>
+
+<p>Facts that shape this slice:</p>
+<ul>
+  <li><code>pnpm lint/test/typecheck</code> each run <code>verify-workspace-scripts.mjs</code>, which fails if any workspace package lacks a meaningful script of that name (placeholder <code>echo</code>/<code>true</code> scripts are rejected). A new <code>e2e</code> workspace package therefore needs real <code>lint</code>, <code>typecheck</code>, and <code>test</code> scripts.</li>
+  <li>Dev topology: API on <code>:3000</code> (<code>tsx watch src/main.ts</code>, reads root <code>.env</code>), web on <code>:4200</code> (<code>ng serve</code> proxying <code>/api</code>), Postgres via docker compose (<code>pnpm db:up</code>, <code>DATABASE_URL=postgres://idkdo:idkdo@localhost:5432/idkdo</code>), migrations via <code>pnpm db:migrate</code>.</li>
+  <li>The Angular service worker (ngsw) is only active in the production build; service workers run on <code>http://localhost</code> without TLS. So the PWA smoke needs a built app served statically with an <code>/api</code> proxy — <code>ng serve</code> cannot exercise it.</li>
+  <li>All application state is Event-scoped behind random UUIDs, so E2E tests get isolation for free by creating a fresh Event per test — no database resets, no cross-test interference, safe local reuse of the dev database.</li>
+  <li>Server reads are strongly consistent (vertical slices, no projections — reads hit the tables the writes just committed to). Still use Playwright's auto-retrying assertions (<code>expect(locator)…</code>, <code>expect.poll</code>) rather than fixed sleeps: the retries cover client-side rendering and cross-context propagation (another browser only converges after its own refetch), not server lag.</li>
+</ul>
+
+<h2 id="decisions">3. Decisions locked for this slice</h2>
+
+<div class="card">
+  <h3>Playwright in a new <code>e2e/</code> workspace package, excluded from the cheap default <code>pnpm test</code></h3>
+  <p><code>@idkdo/e2e</code> joins <code>pnpm-workspace.yaml</code>. Its <code>test</code> script runs Playwright for real (satisfying verify-workspace-scripts), but the root cheap default must stay cheap, so root <code>test</code> becomes:</p>
+<pre><code>"test": "node scripts/verify-workspace-scripts.mjs test && pnpm -r --filter '!@idkdo/e2e' run test",
+"test:e2e": "pnpm db:up && pnpm db:migrate && pnpm --filter @idkdo/e2e run test"</code></pre>
+  <p><code>typecheck</code> and <code>lint</code> keep including e2e (they are cheap). <code>pnpm dev</code> is unaffected (<code>--if-present</code>; the package has no dev script). AGENTS.md's "cheap default" contract is preserved; the E2E suite is the explicit PR-ready/release step.</p>
+</div>
+
+<div class="card">
+  <h3>Stack orchestration via Playwright <code>webServer</code>; database via the existing compose Postgres</h3>
+  <p>Playwright's <code>webServer</code> array starts (and health-checks) everything reproducibly:</p>
+  <ul>
+    <li><strong>API</strong> — <code>pnpm --filter @idkdo/server run start</code> (add a non-watch <code>"start": "tsx src/main.ts"</code> script to <code>server/package.json</code>; dev's watch mode is wrong under a test runner), readiness URL <code>http://localhost:3000/api/health</code>.</li>
+    <li><strong>Web (dev server)</strong> — <code>pnpm --filter @idkdo/web run dev</code>, readiness <code>http://localhost:4200</code>. Used by the three functional suites; the built-in proxy handles <code>/api</code>.</li>
+    <li><strong>Web (production build)</strong> — <code>pnpm --filter @idkdo/web run build &amp;&amp; node scripts/serve-web-prod.mjs</code>, readiness <code>http://localhost:4300</code>. Used by the PWA suite only.</li>
+  </ul>
+  <p><code>reuseExistingServer: !process.env.CI</code> everywhere so a running <code>pnpm dev</code> is reused locally. Postgres is not a webServer: <code>test:e2e</code> runs <code>pnpm db:up &amp;&amp; pnpm db:migrate</code> first (idempotent). Test isolation comes from fresh Events per test, not resets — the suite is safe against a developer's local data.</p>
+</div>
+
+<div class="card">
+  <h3>Three browser projects: <code>desktop</code>, <code>mobile</code>, <code>pwa</code></h3>
+  <ul>
+    <li><code>desktop</code> — Desktop Chrome, <code>baseURL: http://localhost:4200</code>, runs the three functional specs.</li>
+    <li><code>mobile</code> — <code>devices["Pixel 7"]</code>, same baseURL, runs the core workflow spec only (proves §13.9 mobile usability end-to-end without doubling the whole matrix; the visibility logic is identical by construction).</li>
+    <li><code>pwa</code> — Desktop Chrome + mobile viewport, <code>baseURL: http://localhost:4300</code>, runs pwa-smoke only (matched via <code>testMatch</code>/<code>grep</code> per project).</li>
+  </ul>
+  <p>Chromium only for V1 — the risk this gate covers is application behavior, not browser compatibility.</p>
+</div>
+
+<div class="card">
+  <h3>Multi-identity testing = one <code>browser.newContext()</code> per Participant</h3>
+  <p>Selected identity lives in localStorage scoped by Event id, so separate Playwright contexts are genuinely separate people (own storage, own header injection). A shared helper creates an Event via the UI, then enters it from N contexts creating Participants. The anti-spoil spec attaches a <code>page.on("response")</code> collector to the wisher's context only and records every <code>/api/**</code> response body for post-hoc assertions — network-level truth, per §11.4.1, asserted in addition to DOM state.</p>
+</div>
+
+<div class="card">
+  <h3>Docs closure is part of this slice's definition of done</h3>
+  <p><code>DEVELOPING.md</code> (E2E commands + prerequisites), <code>ARCHITECTURE.md</code> (add <code>e2e/</code> to runtime components), <code>AGENTS.md</code> (refresh the stale §7 "Database Change Workflow" if Slices 2–6 haven't already; add <code>pnpm test:e2e</code> to the PR-ready verification list in §8), and a §13 checklist walk recorded in the PR body. The release-gate traceability table is reproduced below and must be true, not aspirational.</p>
+</div>
+
+<h2 id="steps">4. Implementation steps</h2>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 1</span>
+    <span class="step-title">Scaffold the <code>e2e</code> package</span>
+    <span class="layer-tag">workspace</span>
+  </div>
+
+  <p class="file-mod"><code>pnpm-workspace.yaml</code> — add <code>- e2e</code> to packages.</p>
+
+  <p class="file-new"><code>e2e/package.json</code>:</p>
+
+<pre><code>{
+  "name": "@idkdo/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint \"tests/**/*.ts\" \"scripts/**/*.mjs\" --max-warnings=0 --format ../scripts/eslint-agent-formatter.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "&lt;latest&gt;",
+    "typescript": "~6.0.2"
+  }
+}</code></pre>
+
+  <p class="file-new"><code>e2e/tsconfig.json</code> — extend <code>tsconfig.base.json</code> like the other packages; include <code>tests/</code> and <code>playwright.config.ts</code>.</p>
+
+  <p class="file-mod"><code>eslint.config.mjs</code> (root) — ensure the flat config covers <code>e2e/</code> (mirror however <code>server/</code> is wired; add the package to any project-service/tsconfig mapping).</p>
+
+  <p class="file-mod"><code>package.json</code> (root) — the <code>test</code>/<code>test:e2e</code> scripts from the decision card. Verify <code>node scripts/verify-workspace-scripts.mjs test</code> passes with the new package.</p>
+
+  <p class="file-mod"><code>server/package.json</code> — add <code>"start": "tsx src/main.ts"</code>.</p>
+
+  <p class="file-mod"><code>.gitignore</code> — add <code>e2e/test-results/</code> and <code>e2e/playwright-report/</code>.</p>
+
+  <p>Install browsers once: <code>pnpm --filter @idkdo/e2e exec playwright install chromium</code> (document in DEVELOPING.md; CI uses <code>--with-deps</code>).</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 2</span>
+    <span class="step-title">Playwright config + production static server</span>
+    <span class="layer-tag">e2e</span>
+  </div>
+
+  <p class="file-new"><code>e2e/playwright.config.ts</code> — <code>testDir: "tests"</code>; <code>fullyParallel: true</code>; <code>forbidOnly</code> + retries 1 in CI; the three projects and three <code>webServer</code> entries from the decision cards (webServer commands run with cwd at the repo root — use <code>cwd: ".."</code> or prefix with <code>pnpm -w</code>; verify the working directory Playwright actually uses). Generous <code>webServer.timeout</code> (the prod entry runs <code>ng build</code> first — 240s).</p>
+
+  <p class="file-new"><code>e2e/scripts/serve-web-prod.mjs</code> — ~60-line node script, no dependencies:</p>
+  <ul>
+    <li>serve static files from <code>web/dist/web/browser</code> (confirm the exact output path from <code>web/angular.json</code> / a local <code>ng build</code>) on port 4300, with SPA fallback to <code>index.html</code> for extension-less paths;</li>
+    <li>proxy anything under <code>/api</code> to <code>http://localhost:3000</code> preserving method, headers (incl. <code>X-Participant-Id</code>), and body;</li>
+    <li>correct <code>Content-Type</code> for <code>.html</code>/<code>.js</code>/<code>.css</code>/<code>.webmanifest</code>/<code>.json</code>/<code>.ico</code>/<code>.png</code> — the service worker fetches <code>ngsw.json</code> and the manifest and is picky;</li>
+    <li>no caching headers (this server is not the thing under test).</li>
+  </ul>
+
+  <p class="file-new"><code>e2e/tests/support/family.ts</code> — the shared fixture/helper module (one concept: "a family in an Event"):</p>
+
+<pre><code>createEventThroughUi(page, name): Promise&lt;{ eventId, shareUrl }&gt;
+joinAsParticipant(browser, shareUrl, participantName):
+  Promise&lt;{ context, page }&gt;   // fresh context → entry page → create + select → lands on home
+collectApiResponses(page): () =&gt; Array&lt;{ url, status, bodyText }&gt;</code></pre>
+
+  <p>Keep helpers UI-driven (the regressions cover the browser workflow, §11.4.3); do not shortcut setup through raw API calls.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 3</span>
+    <span class="step-title">The four spec files</span>
+    <span class="layer-tag">e2e</span>
+  </div>
+  <p>See section 5 — each spec is detailed there: <code>e2e/tests/core-workflow.spec.ts</code>, <code>anti-spoil.spec.ts</code>, <code>reservation-lifecycle.spec.ts</code>, <code>pwa-smoke.spec.ts</code>.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 4</span>
+    <span class="step-title">CI wiring</span>
+    <span class="layer-tag">ci</span>
+  </div>
+
+  <p class="file-mod"><code>.github/workflows/ci.yml</code> — new <code>e2e</code> job alongside <code>project-checks</code>:</p>
+  <ul>
+    <li>checkout, pnpm 11.5.0, Node 24.17 with pnpm cache, <code>pnpm install --frozen-lockfile</code> (same as project-checks);</li>
+    <li><code>pnpm --filter @idkdo/e2e exec playwright install --with-deps chromium</code>;</li>
+    <li>create the env the server expects: <code>echo "DATABASE_URL=postgres://idkdo:idkdo@localhost:5432/idkdo" &gt; .env</code> (match the compose credentials in <code>docker-compose.yml</code> / <code>docs/DATABASE.md</code>);</li>
+    <li><code>pnpm test:e2e</code> (ubuntu runners have Docker; <code>db:up</code> works as-is);</li>
+    <li>upload <code>e2e/playwright-report</code> as an artifact on failure.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 5</span>
+    <span class="step-title">Docs closure</span>
+    <span class="layer-tag">docs</span>
+  </div>
+
+  <ul>
+    <li><code>docs/DEVELOPING.md</code> — new "End-to-end tests" section: prerequisites (Docker, one-time <code>playwright install chromium</code>), <code>pnpm test:e2e</code>, <code>pnpm --filter @idkdo/e2e run test:ui</code> for debugging, note that the suite reuses an already-running <code>pnpm dev</code> locally.</li>
+    <li><code>ARCHITECTURE.md</code> — add <code>e2e/</code> to "Runtime Components" ("Playwright browser regression suite; not a runtime component of the product — a release gate") and mention it under the testing invariant bullet.</li>
+    <li><code>AGENTS.md</code> — §7 "Database Change Workflow": if still reading "The application is not scaffolded yet.", replace with the real workflow (edit <code>packages/db/src/schema.ts</code> → <code>pnpm db:generate</code> → commit generated migrations → <code>pnpm db:migrate</code>; pointer to <code>docs/DATABASE.md</code>). §8: add <code>pnpm test:e2e</code> to the PR-ready verification list with a note that it needs Docker + installed browsers. §3: add <code>e2e/</code> to the repo map.</li>
+    <li>Walk the spec §13 checklist against the running app and record the result criterion-by-criterion in the PR body (see traceability below).</li>
+    <li>Because docs are touched: run <code>pnpm verify</code> locally.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 6</span>
+    <span class="step-title">Flake hardening pass</span>
+    <span class="layer-tag">e2e</span>
+  </div>
+  <p>Before declaring done: run the suite 3× locally (<code>pnpm test:e2e</code> back to back) and once with <code>--repeat-each=2</code> for the anti-spoil spec. Any failure gets a stronger auto-retrying assertion, never a sleep (flakes here are rendering/propagation races — the server itself is strongly consistent). Total suite budget: &lt; 5 minutes locally.</p>
+</div>
+
+<h2 id="specs">5. The four E2E specs in detail</h2>
+
+<div class="card">
+  <h3><code>core-workflow.spec.ts</code> — §11.4.3 (runs on desktop and mobile projects)</h3>
+  <ol>
+    <li>Context A: create Event «Noël 2026» through the creation page; grab the share link from the UI.</li>
+    <li>Context B opens the share link → entry flow appears (§13.1) → creates Participant «Alice» → lands on the home experience.</li>
+    <li>Context A enters as «Bob» through the same link; both identities coexist (§13.2).</li>
+    <li>Alice adds a multi-line Wish with a URL; it renders in «Ma liste» with a working link.</li>
+    <li>Alice edits the wish (content visibly changes) and adds a second wish, then deletes it — list converges (§13.3).</li>
+    <li>Bob opens «Toutes les listes»: sees Alice's group and her wish (§13.4); his own group is marked and has no coordination area.</li>
+    <li>Bob reserves Alice's wish → reserved state with his name (§13.5).</li>
+    <li>Reload both pages: Bob still reserved-state; Alice's view of her own wish unchanged; identities survived the reload (localStorage).</li>
+  </ol>
+  <p>On mobile, the same spec additionally exercises the tab switcher («Ma liste» ↔ «Toutes les listes») — assert the tap targets work at the Pixel viewport (§13.9).</p>
+</div>
+
+<div class="card">
+  <h3><code>anti-spoil.spec.ts</code> — §11.4.1 (network and DOM)</h3>
+  <ol>
+    <li>Setup: Alice (wisher) + Bob + Carol; attach <code>collectApiResponses</code> to Alice's page before anything else.</li>
+    <li>Alice creates a wish. Bob reserves it; Carol joins the reservation (contributor UI from Slice 6).</li>
+    <li>Positive control first: Carol's view shows «Réservé» with Bob + Carol — proves the reservation exists before asserting its invisibility.</li>
+    <li>Alice reloads her home page, opens both tabs/panels, navigates around the Event.</li>
+    <li>DOM assertions (Alice): her own wish shows no coordination area, no reserved marker, no contributor names anywhere in her rendered page.</li>
+    <li>Network assertions (Alice): iterate every collected <code>/api/**</code> response body: (a) the reservation id (captured from Bob's context) appears in none of them; (b) Bob's and Carol's participant ids appear only where legitimate (the Event participant list), never inside any wish object of Alice's; (c) every wish object with <code>wisherId === alice.id</code> has <code>purchaseCoordination</code> deep-equal to <code>{ kind: "hidden" }</code>.</li>
+    <li>Alice attempts the write paths with her own header (via <code>page.request</code> so the identity header rides along — or construct the request with her id): reserving her own wish → 422; posting a contributor to the captured reservation id → 404; the 404 body byte-equals a request against a random UUID reservation.</li>
+  </ol>
+</div>
+
+<div class="card">
+  <h3><code>reservation-lifecycle.spec.ts</code> — §11.4.2 (the Slice 6 lifecycle through the browser)</h3>
+  <ol>
+    <li>Alice (wisher) + Bob + Carol + Dave. Alice creates a wish.</li>
+    <li>Bob reserves → Carol «Participer» → Carol adds Dave via the picker (picker excludes Alice and existing contributors — assert the options).</li>
+    <li>Carol's view lists Bob, Carol, Dave; Bob's view converges after his panel refresh (auto-retry).</li>
+    <li>Carol removes Dave; Carol «Ne plus participer»; Bob «Ne plus participer» — after the last removal the wish shows «Réserver» again in Carol's freshly reloaded view (§13.6, §13.7).</li>
+    <li>Carol re-reserves successfully — the cycle restarts.</li>
+  </ol>
+</div>
+
+<div class="card">
+  <h3><code>pwa-smoke.spec.ts</code> — §9 PWA requirements (production build on :4300)</h3>
+  <ol>
+    <li><code>manifest.webmanifest</code> is served (200, parses, has name/icons/display) and referenced from <code>index.html</code> (§13.9 installability basis).</li>
+    <li>The service worker registers and activates: <code>await page.evaluate(() =&gt; navigator.serviceWorker.ready)</code>; after activation, CacheStorage contains <code>ngsw:*</code> entries covering hashed app assets (js/css) — assert at least one static asset is cache-served on a reload (offline-mode check: <code>context.setOffline(true)</code> then reload still renders the shell).</li>
+    <li>API responses are never cached: drive a real flow (create Event → enter → add wish) on the prod origin, then enumerate every CacheStorage entry and assert no cached request URL contains <code>/api/</code>. Belt-and-braces with <code>web/scripts/verify-pwa-cache-policy.mjs</code>, which already guards the config statically.</li>
+    <li>Mobile viewport usability: at 390×844, the entry flow and home experience are operable (buttons visible, no horizontal scroll: compare <code>document.documentElement.scrollWidth</code> to the viewport width).</li>
+  </ol>
+</div>
+
+<h2 id="traceability">6. §13 traceability (must be true at hand-off)</h2>
+
+<table>
+  <tr><th>§13 criterion</th><th>Proven by</th></tr>
+  <tr><td>1. Event + share link opens entry flow</td><td>core-workflow steps 1–2</td></tr>
+  <tr><td>2. Multiple selectable Participants</td><td>core-workflow step 3</td></tr>
+  <tr><td>3. Create/edit/delete own Wishes</td><td>core-workflow steps 4–5 (+ Slice 3 suites)</td></tr>
+  <tr><td>4. Event Wishes from selected perspective</td><td>core-workflow step 6 (+ Slice 4 suites)</td></tr>
+  <tr><td>5. Reserve another's Wish</td><td>core-workflow step 7 (+ Slice 5 suites)</td></tr>
+  <tr><td>6. Add/remove Contributors</td><td>reservation-lifecycle (+ Slice 6 suites)</td></tr>
+  <tr><td>7. Last removal deletes Reservation</td><td>reservation-lifecycle step 4</td></tr>
+  <tr><td>8. Coordination never visible to Wisher</td><td>anti-spoil (network + DOM)</td></tr>
+  <tr><td>9. Usable mobile-first PWA</td><td>pwa-smoke + core-workflow@mobile</td></tr>
+</table>
+
+<h2 id="verification">7. Verification &amp; hand-off</h2>
+
+<ul>
+  <li><code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test</code> — still cheap, still green, e2e excluded from <code>test</code>. (Watch specifically: verify-workspace-scripts passes for all three script names with the new package.)</li>
+  <li><code>pnpm test:e2e</code> green 3× consecutively; CI green including the new job; report artifact uploads on a forced failure (test once by breaking a selector locally, then revert).</li>
+  <li><code>pnpm verify</code> (docs touched) and the full PR-ready chain <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build</code>.</li>
+  <li>Conventional Commits, split sensibly: <code>test(e2e): add playwright release-gate suites</code>, <code>ci: run e2e release gate</code>, <code>docs: close out V1 developer and architecture docs</code>.</li>
+  <li>PR body per template, including the criterion-by-criterion §13 walk and anything that could not be verified (with reasons).</li>
+</ul>
+
+<h2 id="out-of-scope">8. Explicitly out of scope (do not build now)</h2>
+
+<ul>
+  <li>Cross-browser matrices (Firefox/WebKit), visual regression testing, performance budgets.</li>
+  <li>Deployment automation, hosting, TLS — V1's release gate is about correctness, not shipping infra.</li>
+  <li>Seeding/reset tooling for the dev database (Event-scoped isolation makes it unnecessary).</li>
+  <li>Component-level test changes in <code>server/</code>/<code>web/</code> (only add E2E; if an E2E failure reveals a bug, fix it in its home slice's style with its own tests).</li>
+  <li>New product behavior of any kind — if a flow feels awkward while writing specs, file it as a follow-up, don't change the app in this slice.</li>
+</ul>
+
+<footer>idkdo Slice 7 implementation plan &middot; 2026-07-08 rewrite for the vertical-slice architecture &middot; contract: <code>docs/SPEC-implementation.md</code> &middot; predecessors: Slice 2–6 plans (2026-07-08) &middot; original: 2026-07-06 plan (git history, <code>ff262ef^</code>)</footer>
+
+</main>
+</body>
+</html>

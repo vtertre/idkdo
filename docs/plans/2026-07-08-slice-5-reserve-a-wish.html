@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>idkdo — Slice 5 Implementation Plan: Reserve a Wish (2026-07-08)</title>
+<style>
+  :root {
+    --ink: #e2e6f0;
+    --muted: #9aa3b8;
+    --line: #2b3245;
+    --bg: #12151d;
+    --card: #1a1f2b;
+    --accent: #6ea8ff;
+    --accent-soft: #1d2a44;
+    --done: #52c98a;
+    --done-soft: #16301f;
+    --warn: #e5a34a;
+    --warn-soft: #33260f;
+    --danger: #ef7070;
+    --danger-soft: #351a1a;
+    --code-bg: #232a3a;
+    --pre-bg: #0d1017;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 1.9rem; margin: 0 0 4px; }
+  h2 { font-size: 1.35rem; margin: 44px 0 12px; border-bottom: 2px solid var(--line); padding-bottom: 8px; }
+  h3 { font-size: 1.08rem; margin: 26px 0 8px; }
+  h4 { font-size: 0.98rem; margin: 20px 0 6px; }
+  p { margin: 8px 0; }
+  .subtitle { color: var(--muted); margin-bottom: 24px; }
+  code {
+    font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.86em;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #d7e3ff;
+  }
+  pre {
+    background: var(--pre-bg);
+    border: 1px solid var(--line);
+    color: #cdd6ea;
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; background: var(--card); font-size: 0.92rem; }
+  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  ul, ol { margin: 8px 0; padding-left: 24px; }
+  li { margin: 4px 0; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .step-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .step-num {
+    background: var(--accent);
+    color: #0d1017;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .step-title { font-size: 1.12rem; font-weight: 700; margin: 0; }
+  .layer-tag {
+    color: var(--muted);
+    font-size: 0.82rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 10px;
+    white-space: nowrap;
+  }
+  .label { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-top: 16px; }
+  .story {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin-top: 12px;
+    font-size: 0.95rem;
+    font-style: italic;
+  }
+  .exit {
+    background: var(--done-soft);
+    border-left: 4px solid var(--done);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 14px 0;
+    font-size: 0.93rem;
+  }
+  .note {
+    background: var(--warn-soft);
+    border-left: 4px solid var(--warn);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 0.93rem;
+  }
+  .danger {
+    background: var(--danger-soft);
+    border-left: 4px solid var(--danger);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 0.93rem;
+  }
+  .file-new::before { content: "➕ "; }
+  .file-mod::before { content: "✏️ "; }
+  .toc { columns: 2; column-gap: 32px; }
+  .toc li { break-inside: avoid; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 16px; }
+  @media (max-width: 640px) { .toc { columns: 1; } main { padding: 24px 14px 60px; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Slice 5 — Reserve a Wish</h1>
+<p class="subtitle">
+  Implementation plan &middot; 2026-07-08 &middot; Status: ready for implementation<br>
+  Source of truth: <code>docs/SPEC-implementation.md</code> (M5 part; §6.4/§6.5 schema; §7 "Reservations"/"Purchase Coordination"; §11) &middot; <code>ARCHITECTURE.md</code> &middot; <code>docs/design-docs/*</code><br>
+  Rewrite of the 2026-07-06 Slice 5 plan (deleted in <code>ff262ef</code>), adapted to the vertical-slice server architecture &middot;
+  Requires Slices 2, 3 and 4 shipped
+</p>
+
+<h2 id="toc">Contents</h2>
+<ol class="toc">
+  <li><a href="#goal">Goal &amp; preconditions</a></li>
+  <li><a href="#reading">Required reading &amp; precedents</a></li>
+  <li><a href="#decisions">Decisions locked for this slice</a></li>
+  <li><a href="#contract">Wire contract added by this slice</a></li>
+  <li><a href="#steps">Implementation steps 1–7</a></li>
+  <li><a href="#tests">Tests (incl. the anti-spoil matrix)</a></li>
+  <li><a href="#verification">Verification &amp; hand-off</a></li>
+  <li><a href="#out-of-scope">Explicitly out of scope</a></li>
+</ol>
+
+<h2 id="goal">1. Goal &amp; preconditions</h2>
+
+<div class="story">I can claim a gift on someone else's list so nobody double-buys — and the wisher never finds out.</div>
+
+<p>This slice introduces the reservation schema and first endpoint, and fills the <code>reservation</code> field that Slice 4 shipped as always-null — without changing the contract shape. It also delivers the <code>ON DELETE CASCADE</code> that makes Slice 3's wish deletion atomic per spec §7, and the <code>409</code> state-conflict error mapping the spec §8 defines.</p>
+
+<div class="note"><strong>Preconditions — verify before starting.</strong> Requires: Slice 2 (<code>wishes</code> table, wishes feature slice, <code>getParticipantEventId</code>, identity plumbing), Slice 3 (<code>wishRouteParamsSchema</code>, <code>delete-wish.ts</code> as single-statement cascade point), and Slice 4 (<code>purchaseCoordinationSchema</code> union, <code>canViewPurchaseCoordination</code>, <code>get-event-wishes.ts</code>, <code>event-wishes-panel</code>). If shipped names differ, follow the shipped code.</div>
+
+<div class="exit"><strong>Exit criteria (verify with three browsers at the end):</strong> Alice (wisher) + Bob + Carol in one Event. Bob reserves Alice's wish; Carol sees «Réservé» with Bob as contributor; Alice's view of her own wish is unchanged — and her network responses are bit-for-bit free of coordination data (checked in devtools, not just the DOM). Alice deleting her wish removes the reservation rows too. Carol's second reserve attempt on the same wish → 409 surfaced gracefully. <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test</code> green.</div>
+
+<h2 id="reading">2. Required reading before coding</h2>
+
+<p>In order: <code>docs/SPEC-implementation.md</code> (§6.4, §6.5, §7, §8, §11 — read §7 "Purchase Coordination" twice), <code>docs/DATABASE.md</code>, <code>ARCHITECTURE.md</code>, <code>docs/design-docs/backend-architecture.md</code>, <code>docs/design-docs/frontend-architecture.md</code>, <code>docs/design-docs/code-organization.md</code>, plus the Slice 2 plan's decision cards and the Slice 4 plan's anti-spoil contract section.</p>
+
+<h3>Code precedents to imitate</h3>
+
+<table>
+  <tr><th>Concern</th><th>Precedent file</th></tr>
+  <tr><td>Write table + migration workflow</td><td><code>packages/db/src/schema.ts</code> (<code>wishes</code>, Slice 2), <code>docs/DATABASE.md</code></td></tr>
+  <tr><td>Mutation use case with transaction + constraint → typed error</td><td><code>server/src/features/participants/create-participant.ts</code> (the 23505 catch), <code>server/src/features/wishes/create-wish.ts</code></td></tr>
+  <tr><td>Read use case shaping via visibility predicate</td><td><code>server/src/features/wishes/get-event-wishes.ts</code> (Slice 4)</td></tr>
+  <tr><td>Error mapping</td><td><code>server/src/http/api-error-handler.ts</code>, <code>server/src/errors/*</code></td></tr>
+  <tr><td>Web coordination area</td><td><code>event-wishes-panel</code>'s <code>@switch</code> on <code>purchaseCoordination.kind</code> (Slice 4)</td></tr>
+</table>
+
+<div class="note"><strong>Codebase facts:</strong> write tables use the <code>timestamps()</code> helper (<code>defaultNow()</code>). <code>api-error-handler.ts</code> currently maps <code>BusinessRuleError</code>→422 and <code>NotFoundError</code>→404; there is no 409 mapping yet — this slice introduces it (see decisions). Postgres unique-violation errors surface with SQLSTATE code <code>23505</code>; <code>create-participant.ts</code> shows how to unwrap them (<code>error.code ?? error.cause?.code</code> recursion — the driver nests it).</div>
+
+<h2 id="decisions">3. Decisions locked for this slice</h2>
+
+<div class="card">
+  <h3>Anti-spoil check order in the create-reservation use case (the load-bearing decision)</h3>
+  <p>The wisher must never be able to distinguish "my wish is reserved" from "my wish is not reserved" through any status code, body, or timing-visible branch. Therefore the use case checks own-wish (422) strictly <em>before</em> reservation-existence (409):</p>
+  <ol>
+    <li>load the wish row — unknown → 404;</li>
+    <li>actor membership in the Wish's Event — unknown/foreign → 404;</li>
+    <li>actor is the Wisher → 422 <code>CANNOT_RESERVE_OWN_WISH</code>, <strong>always, reserved or not</strong>;</li>
+    <li>existing reservation for the Wish → 409 <code>RESERVATION_ALREADY_EXISTS</code>;</li>
+    <li>insert.</li>
+  </ol>
+  <p>A wisher probing their own wish gets the identical 422 in both worlds — the rejection is indistinguishable from the no-reservation case. The anti-spoil matrix tests pin this ordering.</p>
+</div>
+
+<div class="card">
+  <h3>409 = new <code>StateConflictError</code> base class in <code>server/src/errors/</code></h3>
+  <p>Spec §8 defines 409 "state conflict" but nothing maps to it yet. Add <code>StateConflictError extends AppError</code> to <code>server/src/errors/state-conflict-error.ts</code> (sibling of <code>business-rule-error.ts</code>, mirroring its one-line style) and one new branch in <code>api-error-handler.ts</code>: <code>error instanceof StateConflictError</code> → 409 with <code>{ code, message }</code> from the error instance, like the 422 branch. Feature conflict errors (<code>ReservationAlreadyExistsError</code> here, duplicate-contributor in Slice 6) extend it and live under <code>server/src/features/reservations/errors/</code>. This is the only api-error-handler change in Slices 5–6. (The old plan put this base in <code>packages/patterns</code> — that package no longer exists; error bases live in <code>server/src/errors/</code>.)</p>
+</div>
+
+<div class="card">
+  <h3>A Reservation is two tables and one transaction script — created with its first Contributor</h3>
+  <p>The invariants ("at most one reservation per wish", "no reservation without contributors", duplicates forbidden) are enforced by database constraints plus the use cases that write the rows — there is no Reservation aggregate. <code>createReservation</code> inserts the reservation row <em>and</em> the creator's contributor row in one <code>db.transaction()</code>, so a contributor-less reservation never exists outside an open transaction. Slice 6's remove-contributor script owns "last removal deletes the reservation" the same way.</p>
+  <p>The <code>reservations</code> table has no <code>event_id</code> column (spec §6.4); use cases resolve the Event through the Wish row.</p>
+</div>
+
+<div class="card">
+  <h3>Coordination data is joined at query time and shaped per viewer — never serialized to the Wisher</h3>
+  <p><code>get-event-wishes.ts</code> gains a second select: reservations + contributors for the Event's wishes, built into a <code>Map&lt;wishId, ReservationSummary&gt;</code> in memory. The per-wish mapping keeps <code>canViewPurchaseCoordination</code> as the <em>outer</em> branch: the hidden arm never reads the map at all, so coordination data is provably unreachable for own wishes. No projection table, no read-model duplication — this is <code>backend-architecture.md</code> rule 3 verbatim.</p>
+  <p>Contributor entries carry <code>participantId</code> + timestamps only — no names. The web already holds the Event's participant list and resolves names client-side; nothing to keep in sync.</p>
+</div>
+
+<div class="card">
+  <h3>Uniqueness is enforced twice: pre-check (deterministic 409) + DB unique constraint (race-proof 409)</h3>
+  <p><code>reservations.wish_id</code> is unique. The use case pre-checks with a select for the deterministic 409, and additionally catches the Postgres unique violation (23505) on the insert and rethrows <code>ReservationAlreadyExistsError</code>, so two simultaneous reservers both get 409 instead of one getting a raw 500 — the <code>create-participant.ts</code> pattern exactly.</p>
+</div>
+
+<div class="card">
+  <h3>Cascade direction</h3>
+  <p><code>wishes → reservations</code> and <code>reservations → reservation_contributors</code> both get <code>ON DELETE CASCADE</code>. Slice 3's <code>delete-wish.ts</code> (a single SQL DELETE) becomes atomic per spec §7 with zero use-case changes. <code>reservation_contributors.participant_id → participants.id</code> gets no cascade (participants are not deletable in V1; keep the default restrict).</p>
+</div>
+
+<div class="card">
+  <h3>Web: coordination UI lives in the visible branch only; state updates are local</h3>
+  <p>The reserve button and reserved state render exclusively inside Slice 4's <code>@switch</code> visible branch — the hidden branch stays byte-identical to Slice 4 (no code change, guarded by tests). After a successful POST the panel patches the wish's <code>purchaseCoordination.reservation</code> from the 201 response (saves a refetch; a refetch would also be correct — reads are strongly consistent). A 409 means someone beat you to it: surface «Ce souhait vient d'être réservé par quelqu'un d'autre.» and call the panel's existing <code>refresh()</code> to converge.</p>
+</div>
+
+<h2 id="contract">4. Wire contract added by this slice</h2>
+
+<h3><code>POST /api/wishes/:wishId/reservation</code></h3>
+<ul>
+  <li>Headers: <code>X-Participant-Id: &lt;uuid&gt;</code> (required). No request body (send none; do not declare a body schema).</li>
+  <li><code>201</code> response — the created Reservation, creator as first Contributor:</li>
+</ul>
+
+<pre><code>{
+  "id": "&lt;reservation uuid&gt;",
+  "wishId": "&lt;uuid&gt;",
+  "contributors": [
+    { "participantId": "&lt;uuid&gt;", "createdAt": "2026-07-08T10:00:00.000Z" }
+  ],
+  "createdAt": "2026-07-08T10:00:00.000Z",
+  "updatedAt": "2026-07-08T10:00:00.000Z"
+}</code></pre>
+
+<h3>Changed: <code>GET /api/events/:eventId/wishes</code></h3>
+<p>The visible branch's <code>reservation</code> field now carries <code>&lt;reservation summary&gt; | null</code> (same object shape as the 201 response above; contributors ordered <code>createdAt</code> asc, <code>participantId</code> asc). The hidden branch is unchanged. This is the Slice 4 shape with data filled in — clients written against Slice 4 keep parsing.</p>
+
+<h3>Error matrix for the POST</h3>
+
+<table>
+  <tr><th>Case</th><th>Status</th><th>code</th></tr>
+  <tr><td>Header missing/malformed; <code>:wishId</code> not a UUID</td><td>400</td><td><code>VALIDATION_ERROR</code></td></tr>
+  <tr><td>Wish unknown</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code></td></tr>
+  <tr><td>Actor unknown / foreign Event</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code> (byte-identical)</td></tr>
+  <tr><td>Actor is the Wisher (reserved or not — indistinguishable)</td><td>422</td><td><code>CANNOT_RESERVE_OWN_WISH</code></td></tr>
+  <tr><td>Wish already reserved (non-wisher actor)</td><td>409</td><td><code>RESERVATION_ALREADY_EXISTS</code></td></tr>
+</table>
+
+<h2 id="steps">5. Implementation steps</h2>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 1</span>
+    <span class="step-title"><code>server/src/errors</code>: <code>StateConflictError</code> + 409 mapping</span>
+    <span class="layer-tag">server · errors</span>
+  </div>
+
+  <p class="file-new"><code>server/src/errors/state-conflict-error.ts</code> (+ <code>.test.ts</code>) — <code>export class StateConflictError extends AppError {}</code>, mirroring <code>business-rule-error.ts</code> (test: instanceof chain, name, code passthrough).</p>
+
+  <p class="file-mod"><code>server/src/http/api-error-handler.ts</code> — add the <code>StateConflictError</code> → 409 branch (body <code>{ error: { code, message } }</code> from the error instance, mirroring the 422 branch; place it next to the <code>BusinessRuleError</code> branch). Extend <code>api-error-handler.test.ts</code>.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 2</span>
+    <span class="step-title"><code>packages/db</code>: reservation tables + migration</span>
+    <span class="layer-tag">db</span>
+  </div>
+
+  <p class="file-mod"><code>packages/db/src/schema.ts</code> — two additions, both added to the <code>schema</code> export object:</p>
+
+<pre><code>export const reservations = pgTable("reservations", {
+  id: uuid("id").primaryKey(),
+  wishId: uuid("wish_id")
+    .notNull()
+    .unique()
+    .references(() =&gt; wishes.id, { onDelete: "cascade" }),
+  ...timestamps(),
+});
+
+export const reservationContributors = pgTable(
+  "reservation_contributors",
+  {
+    id: uuid("id").primaryKey(),
+    reservationId: uuid("reservation_id")
+      .notNull()
+      .references(() =&gt; reservations.id, { onDelete: "cascade" }),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() =&gt; participants.id),
+    ...timestamps(),
+  },
+  (table) =&gt; [unique().on(table.reservationId, table.participantId)],
+);</code></pre>
+
+  <p><strong>No projection table</strong> — the old plan's <code>purchase_coordination_projection</code> belongs to the removed architecture; coordination reads join these two tables at query time.</p>
+
+  <p>Generate + apply the migration (commit the generated SQL + <code>meta/</code> as-is):</p>
+
+<pre><code>DATABASE_URL=postgres://idkdo:idkdo@localhost:5432/idkdo pnpm db:generate
+DATABASE_URL=postgres://idkdo:idkdo@localhost:5432/idkdo pnpm db:migrate</code></pre>
+
+  <p>Inspect the generated SQL: it must contain <code>ON DELETE CASCADE</code> on both FKs and <code>UNIQUE</code> on <code>reservations.wish_id</code> and <code>(reservation_id, participant_id)</code>. The constraint tests below re-verify through PGlite.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 3</span>
+    <span class="step-title"><code>packages/shared</code>: reservation contracts</span>
+    <span class="layer-tag">shared</span>
+  </div>
+
+  <p>New validators (each + <code>.test.ts</code> + barrel export):</p>
+
+  <p class="file-new"><code>reservation-contributor-summary-schema.ts</code>:</p>
+
+<pre><code>export const reservationContributorSummarySchema = z
+  .object({
+    createdAt: z.string().datetime(),
+    participantId: z.string().uuid(),
+  })
+  .strict();</code></pre>
+
+  <p class="file-new"><code>reservation-summary-schema.ts</code>:</p>
+
+<pre><code>export const reservationSummarySchema = z
+  .object({
+    contributors: z.array(reservationContributorSummarySchema).min(1),
+    createdAt: z.string().datetime(),
+    id: z.string().uuid(),
+    updatedAt: z.string().datetime(),
+    wishId: z.string().uuid(),
+  })
+  .strict();</code></pre>
+
+  <p>(<code>.min(1)</code>: a serialized Reservation with zero contributors is a bug by definition — fail loudly at the boundary.)</p>
+
+  <p class="file-new"><code>create-reservation-response-schema.ts</code> — <code>export const createReservationResponseSchema = reservationSummarySchema;</code> + type.</p>
+
+  <p class="file-mod"><code>purchase-coordination-schema.ts</code> (Slice 4) — the one planned change: <code>reservation: z.null()</code> becomes <code>reservation: reservationSummarySchema.nullable()</code> in the visible branch. The hidden branch must not be touched. Update its test to cover a populated reservation and keep the "hidden with extra key rejected" cases.</p>
+
+  <p>Route params: reuse Slice 3's <code>wishRouteParamsSchema</code> (<code>{ wishId }</code>) — no new params schema.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 4</span>
+    <span class="step-title">Server: the reservations feature slice</span>
+    <span class="layer-tag">server · features</span>
+  </div>
+
+  <p class="file-new"><code>server/src/features/reservations/errors/cannot-reserve-own-wish-error.ts</code> — <code>CannotReserveOwnWishError extends BusinessRuleError</code>, code <code>"CANNOT_RESERVE_OWN_WISH"</code>, message <code>"A participant cannot reserve their own wish."</code>.</p>
+
+  <p class="file-new"><code>server/src/features/reservations/errors/reservation-already-exists-error.ts</code> — <code>ReservationAlreadyExistsError extends StateConflictError</code>, code <code>"RESERVATION_ALREADY_EXISTS"</code>, message <code>"This wish is already reserved."</code>.</p>
+
+  <p class="file-new"><code>server/src/features/reservations/to-reservation-summary.ts</code> — the one mapping from reservation + contributor rows to the shared <code>ReservationSummary</code> shape (contributors sorted <code>createdAt</code> asc, <code>participantId</code> asc; <code>.toISOString()</code> on timestamps). Both this slice's use case and the Slice 4 query extension import it — one shape, one file.</p>
+
+  <p class="file-new"><code>server/src/features/reservations/create-reservation.ts</code>:</p>
+
+<pre><code>export type CreateReservationInput = {
+  readonly actorParticipantId: string;
+  readonly wishId: string;
+};
+
+export async function createReservation(
+  db: Database,
+  input: CreateReservationInput,
+): Promise&lt;ReservationSummary&gt;</code></pre>
+
+  <p>Inside one <code>db.transaction()</code> — <strong>this exact order; the anti-spoil matrix depends on it:</strong></p>
+  <ol>
+    <li>Select the wish row by <code>id</code> (need <code>eventId</code>, <code>wisherId</code>); none → <code>throw new NotFoundError()</code> (404).</li>
+    <li><code>actorEventId = await getParticipantEventId(tx, input.actorParticipantId)</code>; <code>null</code> or <code>!== wish.eventId</code> → <code>throw new NotFoundError()</code> (404).</li>
+    <li><code>input.actorParticipantId === wish.wisherId</code> → <code>throw new CannotReserveOwnWishError()</code> (422 — <em>before any reservation lookup</em>).</li>
+    <li>Select from <code>reservations</code> where <code>wishId</code>; a row → <code>throw new ReservationAlreadyExistsError()</code> (409).</li>
+    <li>Insert the reservation row (<code>id: crypto.randomUUID()</code>) and the creator's <code>reservation_contributors</code> row; catch a 23505 unique violation on the insert and rethrow <code>ReservationAlreadyExistsError</code> (race backstop); map both rows through <code>toReservationSummary</code> and return.</li>
+  </ol>
+
+  <p class="file-mod"><code>server/src/features/wishes/get-event-wishes.ts</code> — after the membership check, run the coordination select: <code>reservations</code> joined with <code>reservation_contributors</code> where the reservation's wish belongs to the Event (join through <code>wishes.event_id</code>, or select reservations whose <code>wish_id</code> is in the already-fetched wish ids); build a <code>Map&lt;wishId, ReservationSummary&gt;</code> via <code>toReservationSummary</code>. In the per-wish mapping, the visible branch becomes <code>{ kind: "visible", reservation: map.get(row.id) ?? null }</code>. <strong>The hidden branch must not read the map at all</strong> — keep <code>canViewPurchaseCoordination</code> as the outer branch so coordination data is provably unreachable for own wishes.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 5</span>
+    <span class="step-title">Server: route + wiring</span>
+    <span class="layer-tag">server · http</span>
+  </div>
+
+  <p class="file-new"><code>server/src/features/reservations/reservations-route.ts</code> — mirrors <code>wishes-route.ts</code> (<code>ReservationsRouteOptions = { readonly db: Database }</code>):</p>
+
+<pre><code>app.post&lt;{ Headers: ParticipantIdHeader; Params: WishRouteParams }&gt;(
+  "/wishes/:wishId/reservation",
+  {
+    schema: {
+      headers: participantIdHeaderSchema,
+      params: wishRouteParamsSchema,
+      response: {
+        201: createReservationResponseSchema,
+        400: apiErrorResponseSchema,
+        404: apiErrorResponseSchema,
+        409: apiErrorResponseSchema,
+        422: apiErrorResponseSchema,
+      },
+    },
+  },
+  async (request, reply) =&gt; {
+    const reservation = await createReservation(options.db, {
+      actorParticipantId: request.headers[participantIdHeaderName],
+      wishId: request.params.wishId,
+    });
+
+    await reply.status(201).send(reservation);
+  },
+);</code></pre>
+
+  <p class="file-mod"><code>server/src/app.ts</code> — register <code>reservationsRoute</code> under <code>/api</code> passing <code>{ db: databaseClient.db }</code>.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 6</span>
+    <span class="step-title">Web: data access</span>
+    <span class="layer-tag">web</span>
+  </div>
+
+  <p class="file-new"><code>web/src/app/features/wishes/data-access/reservation-repository.ts</code> (+ <code>.spec.ts</code>) — root-provided, mirrors <code>wish-repository.ts</code>: <code>createReservation(wishId: string): Observable&lt;CreateReservationResponse&gt;</code> — <code>POST /api/wishes/${wishId}/reservation</code> with an empty object body; Zod-parse the response; normalize errors (keep the 409 distinguishable via the normalized status/code).</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 7</span>
+    <span class="step-title">Web: fill the visible branch</span>
+    <span class="layer-tag">web</span>
+  </div>
+
+  <p class="file-mod"><code>web/src/app/features/wishes/components/event-wishes-panel/event-wishes-panel.ts</code> (+ <code>.html</code>, <code>.css</code>):</p>
+  <ul>
+    <li><code>reservation === null</code> → «Réserver» button (disabled while in flight). On 201: patch the wish in the list signal with <code>purchaseCoordination = { kind: "visible", reservation: response }</code>. On 409: show «Ce souhait vient d'être réservé par quelqu'un d'autre.» and call <code>refresh()</code>. On other errors: «La réservation a échoué. Réessayez.».</li>
+    <li><code>reservation !== null</code> → reserved state: «Réservé par {names}» — resolve each <code>contributor.participantId</code> against the <code>participants</code> input; unknown ids render «Quelqu'un» (stale list tolerance). No join/leave/add UI yet (Slice 6).</li>
+    <li>The hidden branch and «Ma liste» remain visually and structurally untouched — no coordination UI of any kind on own wishes, anywhere.</li>
+  </ul>
+</div>
+
+<h2 id="tests">6. Tests</h2>
+
+<h3>Shared</h3>
+<ul>
+  <li><code>reservation-summary-schema.test.ts</code>: valid parses; empty contributors rejected (<code>.min(1)</code>); extra keys rejected.</li>
+  <li><code>purchase-coordination-schema.test.ts</code> (extend): visible with populated reservation parses; hidden with a reservation key still rejected.</li>
+</ul>
+
+<h3>Server errors</h3>
+<ul>
+  <li><code>state-conflict-error.test.ts</code>: instanceof <code>AppError</code>, name/code behavior matches <code>business-rule-error.test.ts</code>.</li>
+  <li><code>api-error-handler.test.ts</code> (extend): a <code>StateConflictError</code> subclass maps to 409 with its code and message.</li>
+</ul>
+
+<h3>Server use cases (PGlite via <code>createMigratedPgliteTemplate</code>) — incl. the constraint tests</h3>
+<ul>
+  <li><code>create-reservation.test.ts</code>: happy path persists the reservation + one contributor row (the creator) and returns the summary; unknown wish → <code>NotFoundError</code>; unknown actor / foreign-Event actor → <code>NotFoundError</code>; wisher on own <em>unreserved</em> wish → <code>CannotReserveOwnWishError</code>; wisher on own <em>reserved</em> wish → the same <code>CannotReserveOwnWishError</code>, not the conflict error (check-order pin); non-wisher on reserved wish → <code>ReservationAlreadyExistsError</code>, nothing persisted.</li>
+  <li>Cascade test (<code>wish-deletion-cascade.test.ts</code> or inside <code>delete-wish.test.ts</code>): seed wish + reservation + contributors, run <code>deleteWish</code> (Slice 3) → reservation and contributor rows are gone; unrelated rows survive.</li>
+  <li>Constraint tests (raw inserts): duplicate <code>wish_id</code> reservation insert violates the unique constraint; duplicate <code>(reservation_id, participant_id)</code> insert violates the unique constraint (the domain path for the latter arrives in Slice 6).</li>
+</ul>
+
+<h3>Anti-spoil matrix — use case (PGlite)</h3>
+<p><code>get-event-wishes.test.ts</code> (extend): seed Alice's wish + a reservation by Bob + Bob's wish unreserved:</p>
+<ul>
+  <li>viewer Alice: her wish → <code>{ kind: "hidden" }</code> exactly (deep-equal — no <code>reservation</code> key); Bob's wish → visible/null;</li>
+  <li>viewer Bob: Alice's wish → visible with the full reservation summary (contributor = Bob, ordered); his own → hidden;</li>
+  <li>viewer Carol (same Event): sees the reservation on Alice's wish too (visibility is wisher-based, not contributor-based).</li>
+</ul>
+
+<h3>Anti-spoil matrix — HTTP integration (new <code>reservations.integration.test.ts</code>, Alice/Bob/Carol + foreign Mallory)</h3>
+<ul>
+  <li>Bob reserves Alice's wish → 201 parsing <code>createReservationResponseSchema</code>; rows in <code>reservations</code> + <code>reservation_contributors</code>; Carol's event-wishes view shows the reservation with Bob as contributor immediately (no retry helper — reads are strongly consistent).</li>
+  <li>Carol reserves the same wish → 409 <code>RESERVATION_ALREADY_EXISTS</code>.</li>
+  <li>Alice's event-wishes response with the live reservation: her wish is <code>{"kind":"hidden"}</code>, and the raw response body string contains neither the reservation id nor Bob's participant id anywhere within her wish object — assert on the parsed object, and that the reservation id string does not appear in the full body except inside other participants' visible entries (for her own wish: absent entirely).</li>
+  <li>Alice reserves her own reserved wish → 422 <code>CANNOT_RESERVE_OWN_WISH</code>; Alice reserves her own unreserved second wish → the byte-identical 422 (leak check).</li>
+  <li>Mallory reserves Alice's wish → 404; unknown wish id → 404; missing header → 400.</li>
+  <li>Alice deletes her reserved wish (Slice 3 endpoint) → 204; reservation + contributor rows gone (DB cascade); Bob's event view no longer lists the wish.</li>
+  <li><code>resetDatabase</code>: delete in FK-safe order — <code>reservation_contributors</code>, <code>reservations</code>, <code>wishes</code>, <code>participants</code>, <code>events</code>.</li>
+</ul>
+
+<h3>Web (component tests)</h3>
+<ul>
+  <li><code>reservation-repository.spec.ts</code>: POST issued to the right URL; response parsed; 409 normalized distinguishably.</li>
+  <li><code>event-wishes-panel.spec.ts</code> (extend): «Réserver» renders only on visible+null wishes — never on hidden (own) nor on reserved ones; successful reserve flips the wish to reserved locally; contributor names resolved from <code>participants</code>, unknown id → «Quelqu'un»; 409 shows the French message and triggers <code>refresh()</code>; own-wish rendering byte-identical to the Slice 4 state (no coordination container).</li>
+</ul>
+
+<h2 id="verification">7. Verification &amp; hand-off</h2>
+
+<ul>
+  <li>Cheap default while iterating: <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test</code>.</li>
+  <li>Manual exit-criteria walk — three browser profiles (Alice, Bob, Carol) on one Event: Bob reserves Alice's wish → button becomes «Réservé par Bob»; Carol refreshes → sees the same; Alice's devtools Network tab: every <code>/api/**</code> response body is free of the reservation id, of <code>"visible"</code> on her own wish, and of contributor data for it; Carol tries reserving the same wish (pre-loaded stale tab) → French conflict message and converged state; Alice deletes the wish → it disappears for everyone (after refresh) and <code>SELECT count(*) FROM reservations</code> is 0.</li>
+  <li>PR-ready: <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build</code>.</li>
+  <li>Docs: <code>docs/design-docs/backend-architecture.md</code> — extend the error-mapping sentence with <code>StateConflictError</code> → 409 (one line; run <code>pnpm verify</code>). Commit the generated migration files as-is.</li>
+  <li>Conventional Commits, backend then web: <code>feat: add wish reservation backend with anti-spoil filtering</code>, then <code>feat(web): add reserve action and reserved state to event wishes</code>.</li>
+  <li>PR body per template; include the anti-spoil matrix summary (which test pins which cell).</li>
+</ul>
+
+<h2 id="out-of-scope">8. Explicitly out of scope (do not build now)</h2>
+
+<ul>
+  <li>Joining an existing Reservation, adding another Participant, removing Contributors, last-leaves-deletes, <code>POST /reservations/:reservationId/contributors</code>, <code>DELETE …/contributors/:participantId</code> (all Slice 6).</li>
+  <li>Any contributor-management UI (picker, leave, remove).</li>
+  <li>Reservation notes or quantities (V1 out of scope entirely).</li>
+  <li>Projection tables, domain events, repositories, aggregates — removed architecture; do not reintroduce.</li>
+  <li>E2E automation of the anti-spoil flow (Slice 7 — the integration matrix here is the pre-E2E guarantee).</li>
+</ul>
+
+<footer>idkdo Slice 5 implementation plan &middot; 2026-07-08 rewrite for the vertical-slice architecture &middot; contract: <code>docs/SPEC-implementation.md</code> &middot; predecessors: Slice 2–4 plans (2026-07-08) &middot; original: 2026-07-06 plan (git history, <code>ff262ef^</code>)</footer>
+
+</main>
+</body>
+</html>

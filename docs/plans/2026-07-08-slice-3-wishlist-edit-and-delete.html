@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>idkdo — Slice 3 Implementation Plan: Wishlist edit &amp; delete (2026-07-08)</title>
+<style>
+  :root {
+    --ink: #e2e6f0;
+    --muted: #9aa3b8;
+    --line: #2b3245;
+    --bg: #12151d;
+    --card: #1a1f2b;
+    --accent: #6ea8ff;
+    --accent-soft: #1d2a44;
+    --done: #52c98a;
+    --done-soft: #16301f;
+    --warn: #e5a34a;
+    --warn-soft: #33260f;
+    --danger: #ef7070;
+    --danger-soft: #351a1a;
+    --code-bg: #232a3a;
+    --pre-bg: #0d1017;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 1.9rem; margin: 0 0 4px; }
+  h2 { font-size: 1.35rem; margin: 44px 0 12px; border-bottom: 2px solid var(--line); padding-bottom: 8px; }
+  h3 { font-size: 1.08rem; margin: 26px 0 8px; }
+  h4 { font-size: 0.98rem; margin: 20px 0 6px; }
+  p { margin: 8px 0; }
+  .subtitle { color: var(--muted); margin-bottom: 24px; }
+  code {
+    font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.86em;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #d7e3ff;
+  }
+  pre {
+    background: var(--pre-bg);
+    border: 1px solid var(--line);
+    color: #cdd6ea;
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; background: var(--card); font-size: 0.92rem; }
+  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  ul, ol { margin: 8px 0; padding-left: 24px; }
+  li { margin: 4px 0; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .step-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .step-num {
+    background: var(--accent);
+    color: #0d1017;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .step-title { font-size: 1.12rem; font-weight: 700; margin: 0; }
+  .layer-tag {
+    color: var(--muted);
+    font-size: 0.82rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 10px;
+    white-space: nowrap;
+  }
+  .label { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-top: 16px; }
+  .story {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin-top: 12px;
+    font-size: 0.95rem;
+    font-style: italic;
+  }
+  .exit {
+    background: var(--done-soft);
+    border-left: 4px solid var(--done);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 14px 0;
+    font-size: 0.93rem;
+  }
+  .note {
+    background: var(--warn-soft);
+    border-left: 4px solid var(--warn);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 0.93rem;
+  }
+  .danger {
+    background: var(--danger-soft);
+    border-left: 4px solid var(--danger);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 0.93rem;
+  }
+  .file-new::before { content: "➕ "; }
+  .file-mod::before { content: "✏️ "; }
+  .toc { columns: 2; column-gap: 32px; }
+  .toc li { break-inside: avoid; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 16px; }
+  @media (max-width: 640px) { .toc { columns: 1; } main { padding: 24px 14px 60px; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Slice 3 — Wishlist: edit &amp; delete</h1>
+<p class="subtitle">
+  Implementation plan &middot; 2026-07-08 &middot; Status: ready for implementation<br>
+  Source of truth: <code>docs/SPEC-implementation.md</code> (completes M3, §11.1 wish rules) &middot; <code>ARCHITECTURE.md</code> &middot; <code>docs/design-docs/*</code><br>
+  Rewrite of the 2026-07-06 Slice 3 plan (deleted in <code>ff262ef</code>), adapted to the vertical-slice server architecture &middot;
+  Builds directly on the Slice 2 plan: <code>docs/plans/2026-07-08-slice-2-wishlist-create-and-view.html</code>
+</p>
+
+<h2 id="toc">Contents</h2>
+<ol class="toc">
+  <li><a href="#goal">Goal &amp; preconditions</a></li>
+  <li><a href="#reading">Required reading &amp; precedents</a></li>
+  <li><a href="#decisions">Decisions locked for this slice</a></li>
+  <li><a href="#contract">Wire contract added by this slice</a></li>
+  <li><a href="#steps">Implementation steps 1–4</a></li>
+  <li><a href="#tests">Tests</a></li>
+  <li><a href="#verification">Verification &amp; hand-off</a></li>
+  <li><a href="#out-of-scope">Explicitly out of scope</a></li>
+</ol>
+
+<h2 id="goal">1. Goal &amp; preconditions</h2>
+
+<div class="story">I can fix a typo in my Wish or remove it entirely — and nobody else can touch it.</div>
+
+<p>This slice completes Milestone 3 (Wishlist): full wish CRUD, with the spec §11.1 wish ownership/editing rules discharged exhaustively by named tests.</p>
+
+<div class="note"><strong>Preconditions — verify before starting.</strong> This plan assumes Slice 2 has shipped: the <code>wishes</code> table, shared wish schemas (<code>wishSummarySchema</code>, <code>participantIdHeaderSchema</code>, …), <code>server/src/features/wishes/</code> (<code>create-wish.ts</code>, <code>get-participant-wishes.ts</code>, <code>wishes-route.ts</code>), <code>getParticipantEventId</code>, <code>wishes.integration.test.ts</code>, and the web wishes feature (<code>wishlist-panel</code>, <code>wish-repository.ts</code>, <code>event-home-page</code>). If any name below differs from what actually shipped, follow the shipped code and adapt the plan's file references — do not create parallel duplicates.</div>
+
+<div class="exit"><strong>Exit criteria (verify in a browser at the end):</strong> full wishlist CRUD by hand — add a Wish, edit it (content actually changes after reload), delete it with confirmation (gone after reload); a second Participant in the same Event can see the list evolve but gets no edit/delete affordances and the API rejects their mutation attempts. <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test</code> green.</div>
+
+<h2 id="reading">2. Required reading before coding</h2>
+
+<p>In order: <code>docs/GOAL.md</code>, <code>docs/PRODUCT.md</code>, <code>docs/SPEC-implementation.md</code> (§3, §6.3, §7 "Wishes", §8, §11.1), <code>docs/DEVELOPING.md</code>, <code>ARCHITECTURE.md</code>, <code>docs/design-docs/backend-architecture.md</code>, <code>docs/design-docs/frontend-architecture.md</code>, <code>docs/design-docs/code-organization.md</code>, and the Slice 2 plan (<code>docs/plans/2026-07-08-slice-2-wishlist-create-and-view.html</code>) — its "Decisions locked" section (D1 404-uniformity via <code>NotFoundError</code>, direct-table reads, <code>getParticipantEventId</code> membership checks in use cases) governs this slice too.</p>
+
+<h3>Code precedents to imitate (all shipped by Slice 2 unless noted)</h3>
+
+<table>
+  <tr><th>Concern</th><th>Precedent file</th></tr>
+  <tr><td>Mutation use case with membership checks + typed errors</td><td><code>server/src/features/wishes/create-wish.ts</code></td></tr>
+  <tr><td>Membership lookup helper</td><td><code>server/src/features/participants/get-participant-event-id.ts</code></td></tr>
+  <tr><td>Feature error class (422)</td><td><code>server/src/features/wishes/errors/cannot-create-wish-for-another-participant-error.ts</code></td></tr>
+  <tr><td>Route module with header schema</td><td><code>server/src/features/wishes/wishes-route.ts</code></td></tr>
+  <tr><td>Error mapping (404/422 bases)</td><td><code>server/src/http/api-error-handler.ts</code>, <code>server/src/errors/*</code></td></tr>
+  <tr><td>Use-case test on PGlite</td><td><code>server/src/features/wishes/create-wish.test.ts</code></td></tr>
+  <tr><td>HTTP integration context</td><td><code>server/src/wishes.integration.test.ts</code> (Slice 2), <code>server/src/events.integration.test.ts</code> (Slice 1)</td></tr>
+  <tr><td>Web wishes feature</td><td><code>web/src/app/features/wishes/components/wishlist-panel/*</code>, <code>web/src/app/features/wishes/data-access/wish-repository.ts</code></td></tr>
+  <tr><td>Signal-forms component</td><td><code>web/src/app/features/events/pages/event-entry-page/event-participant-entry.ts</code></td></tr>
+</table>
+
+<div class="note">
+  <strong>Codebase facts that save you surprises:</strong>
+  <ul>
+    <li>Node 24, pnpm 11.5, TypeScript ~6.0, Zod v4 (v3-compatible style), Fastify 5, Drizzle 0.45, Angular 22 with signal forms. Server files use ESM with explicit <code>.js</code> import suffixes. Web UI copy is French.</li>
+    <li>The server has no repositories or domain entities — mutations are transaction scripts: load the row, check the rules, write, return the API shape. Wrap check-then-write in <code>db.transaction()</code>.</li>
+    <li>Reads are strongly consistent (Slice 2 D3): the web app may patch its local list from mutation responses (snappier) or re-fetch — both are correct.</li>
+  </ul>
+</div>
+
+<h2 id="decisions">3. Decisions locked for this slice</h2>
+
+<div class="card">
+  <h3>Error semantics follow Slice 2's D1, extended to wish mutations</h3>
+  <ul>
+    <li>Unknown <code>wishId</code> → 404 generic <code>RESOURCE_NOT_FOUND</code> body (throw <code>NotFoundError</code>).</li>
+    <li>Actor unknown, or actor belongs to a different Event than the Wish → 404, byte-identical body (also <code>NotFoundError</code>). Never reveal whether the wish exists to outsiders.</li>
+    <li>Actor is a same-Event member but not the Wisher → 422 with one shared code for both edit and delete: <code>CANNOT_MODIFY_ANOTHER_PARTICIPANT_WISH</code>.</li>
+    <li>Blank content on update → 400 at the HTTP boundary (body schema). Nothing more: the use case receives already-valid content (boundary owns shape).</li>
+  </ul>
+  <p><strong>Check order in both use cases:</strong> (1) load the wish row — unknown → 404; (2) actor membership in the Wish's Event via <code>getParticipantEventId</code> — unknown/foreign → 404; (3) ownership — non-owner → 422; (4) write. Do not introduce any new 404-mapped error class; <code>api-error-handler.ts</code> stays untouched.</p>
+</div>
+
+<div class="card">
+  <h3>One ownership rule + one error for both mutations</h3>
+  <p>Spec §7 states one rule ("A Participant can edit and delete only their own Wishes"), so model it once: both use cases perform the same <code>actorParticipantId !== wish.wisherId</code> check throwing <code>CannotModifyAnotherParticipantWishError</code> (extends <code>BusinessRuleError</code> → 422). Do not create separate edit/delete error classes — there is no behavioral difference to encode, and the §11.1 tests exercise the single rule through both endpoints. If you want zero duplication, factor a tiny local helper into the feature (e.g. <code>assert-wish-owned-by.ts</code>, one exported function) — but two identical <code>if</code> statements are also acceptable; do not build more than that.</p>
+</div>
+
+<div class="card">
+  <h3>Wish deletion is written as the future cascade point</h3>
+  <p>Spec §7: deleting a Wish deletes its Reservation and Contributors "in the same operation". The enforcement will be a DB <code>ON DELETE CASCADE</code> arriving with the <code>reservations</code> schema in Slice 5. In this slice:</p>
+  <ul>
+    <li><code>deleteWish</code> ends in exactly one <code>DELETE FROM wishes WHERE id = …</code> — so when Slice 5 adds the FK cascades the operation becomes atomic for free, with no use-case change;</li>
+    <li>write a short comment on the delete statement noting the cascade contract.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3>Update semantics</h3>
+  <p><code>updateWish</code> sets <code>content</code> and <code>updatedAt = new Date()</code> in one <code>UPDATE … RETURNING</code>; <code>createdAt</code> never changes. No-op edits (same content) still update <code>updatedAt</code> — do not special-case; the UI avoids pointless submits. The 200 response is the updated row mapped through the same <code>toWishSummary</code> shape as create.</p>
+</div>
+
+<div class="card">
+  <h3>Web: edit-in-place, inline delete confirmation, local list updates</h3>
+  <p>Own-wishlist rows gain «Modifier» and «Supprimer». Edit switches the row to a textarea form in place (no separate route — the wishlist is a panel, not a page). Delete uses a two-step inline confirmation (« Supprimer ce souhait ? » with «Confirmer» / «Annuler»), not <code>window.confirm</code>. After a successful PATCH the row is replaced from the 200 response; after a DELETE the row is removed locally — patching from responses saves round trips (a re-fetch would also be correct; reads are strongly consistent).</p>
+</div>
+
+<h2 id="contract">4. Wire contract added by this slice</h2>
+
+<h3><code>PATCH /api/wishes/:wishId</code></h3>
+<ul>
+  <li>Headers: <code>X-Participant-Id: &lt;uuid&gt;</code> (required, shared header schema).</li>
+  <li>Body: <code>{ "content": string }</code> — same trim/non-blank/line-breaks-preserved rule as create.</li>
+  <li><code>200</code> response: the updated Wish, exact <code>wishSummarySchema</code> shape (Slice 2), with the new content and a fresh <code>updatedAt</code>; <code>createdAt</code> unchanged.</li>
+</ul>
+
+<h3><code>DELETE /api/wishes/:wishId</code></h3>
+<ul>
+  <li>Headers: <code>X-Participant-Id: &lt;uuid&gt;</code> (required).</li>
+  <li><code>204 No Content</code> on success. No response body.</li>
+</ul>
+
+<h3>Error matrix (both endpoints unless noted)</h3>
+
+<table>
+  <tr><th>Case</th><th>Status</th><th>code</th></tr>
+  <tr><td>Header missing or not a UUID</td><td>400</td><td><code>VALIDATION_ERROR</code> ("Invalid request headers.")</td></tr>
+  <tr><td><code>:wishId</code> not a UUID</td><td>400</td><td><code>VALIDATION_ERROR</code> ("Invalid route parameters.")</td></tr>
+  <tr><td>Body invalid / blank content (PATCH)</td><td>400</td><td><code>VALIDATION_ERROR</code> ("Invalid request body.")</td></tr>
+  <tr><td>Wish unknown (including already deleted)</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code></td></tr>
+  <tr><td>Actor unknown</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code></td></tr>
+  <tr><td>Actor belongs to a different Event</td><td>404</td><td><code>RESOURCE_NOT_FOUND</code></td></tr>
+  <tr><td>Actor is same-Event member but not the Wisher</td><td>422</td><td><code>CANNOT_MODIFY_ANOTHER_PARTICIPANT_WISH</code></td></tr>
+</table>
+
+<div class="danger">All three 404 bodies must be byte-identical to each other and to Slice 2's 404s: <code>{ "error": { "code": "RESOURCE_NOT_FOUND", "message": "Resource not found." } }</code>. Throwing <code>NotFoundError</code> everywhere guarantees this; the integration tests assert it.</div>
+
+<h2 id="steps">5. Implementation steps</h2>
+
+<p>Work bottom-up. Each step lists every file to create (➕) or modify (✏️). Every new concept gets its own file named after it, with a sibling <code>.test.ts</code>/<code>.spec.ts</code>. No database schema change in this slice — the <code>wishes</code> table already exists.</p>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 1</span>
+    <span class="step-title"><code>packages/shared</code>: wire contracts</span>
+    <span class="layer-tag">shared</span>
+  </div>
+
+  <p>New files under <code>packages/shared/src/validators/</code>, each with a <code>.test.ts</code> sibling; export schema + inferred type from <code>packages/shared/src/index.ts</code>.</p>
+
+  <p class="file-new"><code>wish-route-params-schema.ts</code> — shared by PATCH and DELETE (and reused by Slice 5's <code>POST /wishes/:wishId/reservation</code>; name it generically, not per-operation):</p>
+
+<pre><code>export const wishRouteParamsSchema = z
+  .object({ wishId: z.string().uuid() })
+  .strict();
+
+export type WishRouteParams = z.infer&lt;typeof wishRouteParamsSchema&gt;;</code></pre>
+
+  <p class="file-new"><code>update-wish-request-body-schema.ts</code> — same rule as create; alias to keep one definition of "valid wish content on the wire":</p>
+
+<pre><code>import { createWishRequestBodySchema } from "./create-wish-request-body-schema.js";
+
+export const updateWishRequestBodySchema = createWishRequestBodySchema;
+
+export type UpdateWishRequestBody = z.infer&lt;typeof updateWishRequestBodySchema&gt;;</code></pre>
+
+  <p class="file-new"><code>update-wish-response-schema.ts</code> — <code>export const updateWishResponseSchema = wishSummarySchema;</code> + inferred type (mirrors <code>create-wish-response-schema.ts</code>).</p>
+
+  <p>Tests: params schema accepts a UUID and rejects non-UUID / extra keys; the two aliases parse a valid payload (identity with their source schemas — a one-assertion test each is enough since the source schemas are already tested).</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 2</span>
+    <span class="step-title">Server: update &amp; delete use cases</span>
+    <span class="layer-tag">server · features</span>
+  </div>
+
+  <p class="file-new"><code>server/src/features/wishes/errors/cannot-modify-another-participant-wish-error.ts</code> — <code>CannotModifyAnotherParticipantWishError extends BusinessRuleError</code>, code <code>"CANNOT_MODIFY_ANOTHER_PARTICIPANT_WISH"</code>, message <code>"A participant can only modify their own wishes."</code> (maps to 422 automatically via the existing api-error-handler).</p>
+
+  <p class="file-new"><code>server/src/features/wishes/update-wish.ts</code>:</p>
+
+<pre><code>export type UpdateWishInput = {
+  readonly actorParticipantId: string;
+  readonly content: string;
+  readonly wishId: string;
+};
+
+export async function updateWish(
+  db: Database,
+  input: UpdateWishInput,
+): Promise&lt;WishSummary&gt;</code></pre>
+
+  <p>Inside one <code>db.transaction()</code>:</p>
+  <ol>
+    <li>Select the wish row by <code>id</code> (need <code>eventId</code> and <code>wisherId</code>); none → <code>throw new NotFoundError()</code> (→ 404).</li>
+    <li><code>actorEventId = await getParticipantEventId(tx, input.actorParticipantId)</code>; <code>null</code> or <code>!== wish.eventId</code> → <code>throw new NotFoundError()</code> (→ 404).</li>
+    <li><code>input.actorParticipantId !== wish.wisherId</code> → <code>throw new CannotModifyAnotherParticipantWishError()</code> (→ 422).</li>
+    <li><code>UPDATE wishes SET content = …, updated_at = new Date() WHERE id = … RETURNING</code>; map through <code>toWishSummary</code> and return. Extract <code>toWishSummary</code> into its own file (<code>server/src/features/wishes/to-wish-summary.ts</code>) if Slice 2 left it private in two places — one concept, one file.</li>
+  </ol>
+
+  <p class="file-new"><code>server/src/features/wishes/delete-wish.ts</code>:</p>
+
+<pre><code>export type DeleteWishInput = {
+  readonly actorParticipantId: string;
+  readonly wishId: string;
+};
+
+export async function deleteWish(
+  db: Database,
+  input: DeleteWishInput,
+): Promise&lt;void&gt;</code></pre>
+
+  <p>Same transaction, steps 1–3 identical to update (load → 404; membership → 404; ownership → 422), then a single <code>DELETE FROM wishes WHERE id = …</code>. Add the cascade-contract comment: <em>"Single-statement delete: Slice 5's reservations schema attaches ON DELETE CASCADE here (spec §7 'same operation')."</em></p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 3</span>
+    <span class="step-title">Server: routes</span>
+    <span class="layer-tag">server · http</span>
+  </div>
+
+  <p class="file-mod"><code>server/src/features/wishes/wishes-route.ts</code> — register both routes with full schema declarations:</p>
+
+<pre><code>app.patch&lt;{ Body: UpdateWishRequestBody; Headers: ParticipantIdHeader; Params: WishRouteParams }&gt;(
+  "/wishes/:wishId",
+  {
+    schema: {
+      body: updateWishRequestBodySchema,
+      headers: participantIdHeaderSchema,
+      params: wishRouteParamsSchema,
+      response: {
+        200: updateWishResponseSchema,
+        400: apiErrorResponseSchema,
+        404: apiErrorResponseSchema,
+        422: apiErrorResponseSchema,
+      },
+    },
+  },
+  async (request, reply) =&gt; {
+    const wish = await updateWish(options.db, {
+      actorParticipantId: request.headers[participantIdHeaderName],
+      content: request.body.content,
+      wishId: request.params.wishId,
+    });
+
+    await reply.send(wish);
+  },
+);
+
+app.delete&lt;{ Headers: ParticipantIdHeader; Params: WishRouteParams }&gt;(
+  "/wishes/:wishId",
+  {
+    schema: {
+      headers: participantIdHeaderSchema,
+      params: wishRouteParamsSchema,
+      response: {
+        400: apiErrorResponseSchema,
+        404: apiErrorResponseSchema,
+        422: apiErrorResponseSchema,
+      },
+    },
+  },
+  async (request, reply) =&gt; {
+    await deleteWish(options.db, {
+      actorParticipantId: request.headers[participantIdHeaderName],
+      wishId: request.params.wishId,
+    });
+
+    await reply.status(204).send();
+  },
+);</code></pre>
+
+  <p>Do not declare a 204 response schema — the reply has no body and the serializer must not run on it. No <code>app.ts</code> change: the route module is already registered.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card">
+  <div class="step-header">
+    <span class="step-num">Step 4</span>
+    <span class="step-title">Web</span>
+    <span class="layer-tag">web</span>
+  </div>
+
+  <p class="file-mod"><code>web/src/app/features/wishes/data-access/wish-repository.ts</code> — two new methods, mirroring the existing ones (Zod-parse responses, <code>normalizeError</code>):</p>
+  <ul>
+    <li><code>updateWish(wishId: string, content: string): Observable&lt;UpdateWishResponse&gt;</code> — <code>PATCH /api/wishes/${wishId}</code>.</li>
+    <li><code>deleteWish(wishId: string): Observable&lt;void&gt;</code> — <code>DELETE /api/wishes/${wishId}</code> (no body to parse; map to <code>undefined</code>).</li>
+  </ul>
+
+  <p class="file-new"><code>web/src/app/features/wishes/components/wishlist-item/wishlist-item.ts</code> (+ <code>.html</code>, <code>.css</code>, <code>.spec.ts</code>) — standalone OnPush component extracted so <code>wishlist-panel</code> stays manageable. Presentation-only: it does not inject the repository.</p>
+  <ul>
+    <li>Inputs: <code>wish</code> (<code>WishSummary</code>), <code>busy</code> (boolean — disables actions while a mutation is in flight).</li>
+    <li>Outputs: <code>updateRequested</code> (<code>{ wishId: string; content: string }</code>), <code>deleteRequested</code> (<code>{ wishId: string }</code>).</li>
+    <li>Three local states via a signal: <em>display</em> (wish content through the existing <code>wish-content</code> renderer + «Modifier» / «Supprimer» buttons), <em>editing</em> (signal-forms <code>&lt;textarea&gt;</code> prefilled with the current content, validated with <code>validateStandardSchema(…, updateWishRequestBodySchema)</code>, «Enregistrer» emits <code>updateRequested</code>, «Annuler» reverts), <em>confirming-delete</em> (« Supprimer ce souhait ? » with «Confirmer» → emits <code>deleteRequested</code>, «Annuler» reverts).</li>
+    <li>Expose an <code>exitEditing()</code>-style method (or make the states reset when the <code>wish</code> input changes) so the panel can close the editor after a successful save.</li>
+  </ul>
+
+  <p class="file-mod"><code>web/src/app/features/wishes/components/wishlist-panel/wishlist-panel.ts</code> (+ <code>.html</code>) — replace the plain wish rendering with <code>&lt;app-wishlist-item&gt;</code> per wish and handle the outputs:</p>
+  <ul>
+    <li><code>updateRequested</code> → <code>wishRepository.updateWish(…)</code>; on success replace the matching item in the list signal with the 200 response and close the editor; on error surface French copy («Le souhait n'a pas pu être modifié. Réessayez.») without losing the draft.</li>
+    <li><code>deleteRequested</code> → <code>wishRepository.deleteWish(…)</code>; on success remove the item from the list signal; on error surface «Le souhait n'a pas pu être supprimé. Réessayez.».</li>
+    <li>Track the in-flight wish id in a signal to drive each item's <code>busy</code> input.</li>
+  </ul>
+
+  <p>No route, guard, or interceptor changes — the Slice 2 identity plumbing already covers the new endpoints (the interceptor matches all <code>/api/**</code> requests).</p>
+</div>
+
+<h2 id="tests">6. Tests</h2>
+
+<p>This slice discharges the spec §11.1 "Wish ownership and editing rules" — name tests after the rules so the coverage is auditable.</p>
+
+<h3>Shared (<code>packages/shared</code>, vitest)</h3>
+<ul>
+  <li><code>wish-route-params-schema.test.ts</code>: accepts UUID; rejects non-UUID and unknown keys.</li>
+  <li><code>update-wish-request-body-schema.test.ts</code> / <code>update-wish-response-schema.test.ts</code>: valid payload parses (aliases of already-tested schemas — keep short).</li>
+</ul>
+
+<h3>Server use cases (PGlite via <code>createMigratedPgliteTemplate</code>; seed Alice/Bob same Event, Mallory foreign)</h3>
+<ul>
+  <li><code>update-wish.test.ts</code>: happy path persists the new content, bumps <code>updatedAt</code>, keeps <code>createdAt</code>, and returns the updated summary; unknown wish → <code>NotFoundError</code>; unknown actor → <code>NotFoundError</code>; actor from another Event → <code>NotFoundError</code>; same-Event non-owner → <code>CannotModifyAnotherParticipantWishError</code> and content unchanged; the update is immediately readable via <code>getParticipantWishes</code> (read-your-writes).</li>
+  <li><code>delete-wish.test.ts</code>: happy path removes the row; the same four failure cases, wish still present afterwards; deleting an already-deleted wish → <code>NotFoundError</code>.</li>
+</ul>
+
+<h3>Server HTTP integration (extend <code>wishes.integration.test.ts</code>; same Alice/Bob/Mallory setup)</h3>
+<ul>
+  <li>PATCH as Alice on her wish → 200 parsing <code>updateWishResponseSchema</code>; <code>wishes</code> row updated; a subsequent GET reflects the edit immediately (no retry helper).</li>
+  <li>PATCH as Bob (same Event) → 422 <code>CANNOT_MODIFY_ANOTHER_PARTICIPANT_WISH</code>; as Mallory (foreign Event) → 404; unknown <code>wishId</code> → 404; unknown actor → 404 — assert the three 404 bodies are byte-identical; blank content → 400 and content unchanged; missing header → 400.</li>
+  <li>DELETE as Alice → 204 with empty body; <code>wishes</code> row gone; a subsequent GET omits it; repeat DELETE → 404; PATCH the deleted wish → 404.</li>
+  <li>DELETE as Bob → 422 and the wish survives; as Mallory → 404 and the wish survives.</li>
+</ul>
+
+<h3>Web (component tests, mirroring existing <code>.spec.ts</code> conventions)</h3>
+<ul>
+  <li><code>wishlist-item.spec.ts</code>: display state renders content and both actions; «Modifier» shows a prefilled textarea; «Enregistrer» emits <code>updateRequested</code> with the edited content; «Annuler» restores display without emitting; delete requires the confirm step before emitting <code>deleteRequested</code>; «Annuler» on confirm emits nothing; <code>busy</code> disables the action buttons; blank draft cannot be submitted.</li>
+  <li><code>wishlist-panel.spec.ts</code> (extend): successful update replaces the item and closes the editor; failed update keeps the editor open and shows the French error; successful delete removes the item; failed delete keeps the item and shows the error.</li>
+</ul>
+
+<h2 id="verification">7. Verification &amp; hand-off</h2>
+
+<ul>
+  <li>Cheap default while iterating: <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test</code>.</li>
+  <li>Manual exit-criteria walk (<code>pnpm db:up</code>, <code>pnpm dev</code>): enter an Event as Alice → add a wish → edit it (multi-line + URL still render after the edit) → reload → edit persisted → delete it via the inline confirmation → reload → gone. In a private window as Bob: Bob sees no edit/delete affordances on Alice's wishes (they only appear in «Ma liste»); with devtools, replay a PATCH on Alice's wish id with Bob's header → 422.</li>
+  <li>PR-ready: <code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test &amp;&amp; pnpm build</code>.</li>
+  <li>Docs: no <code>ARCHITECTURE.md</code> change (no new modules or invariants). If Slice 2 did not refresh the stale AGENTS.md §7 "Database Change Workflow", leave it — Slice 7 owns docs closure and this slice touches no schema.</li>
+  <li>Conventional Commits, backend then web (Slice 1/2 precedent): <code>feat: add wish update and deletion backend API</code>, then <code>feat(web): add wish editing and deletion to own wishlist</code>.</li>
+  <li>PR body must fill every section of <code>.github/PULL_REQUEST_TEMPLATE.md</code>. State in the PR that spec §11.1 wish rules are each covered by a named test (list them).</li>
+</ul>
+
+<h2 id="out-of-scope">8. Explicitly out of scope (do not build now)</h2>
+
+<ul>
+  <li><code>GET /events/:eventId/wishes</code>, the visibility shaping, and the <code>purchaseCoordination</code> union (Slice 4 — independent of this slice; both build on Slice 2 only).</li>
+  <li><code>reservations</code>/<code>reservation_contributors</code> tables and the actual <code>ON DELETE CASCADE</code> (Slice 5) — this slice only shapes wish deletion as the future cascade point.</li>
+  <li>Domain events, projection maintenance, repository interfaces — removed architecture; do not reintroduce.</li>
+  <li>Editing other Participants' wishes UI affordances of any kind; wish reordering; edit history.</li>
+</ul>
+
+<footer>idkdo Slice 3 implementation plan &middot; 2026-07-08 rewrite for the vertical-slice architecture &middot; contract: <code>docs/SPEC-implementation.md</code> &middot; predecessor: Slice 2 plan (2026-07-08) &middot; original: 2026-07-06 plan (git history, <code>ff262ef^</code>)</footer>
+
+</main>
+</body>
+</html>
