@@ -1,12 +1,10 @@
 import {
   createDatabaseClient,
-  eventEntryPageProjection,
   events,
   migrateDatabase,
   participants,
   type DatabaseClient,
 } from "@idkdo/db";
-import { Uuid } from "@idkdo/patterns";
 import {
   createParticipantResponseSchema,
   createEventResponseSchema,
@@ -27,7 +25,6 @@ import {
   describe,
   expect,
   it,
-  vi,
 } from "vitest";
 
 import { buildApp } from "./app.js";
@@ -58,7 +55,7 @@ describe("Events integration", () => {
     const persistedEvents = await context.databaseClient.db.select().from(events);
     const persistedEvent = persistedEvents[0];
 
-    expect(() => Uuid.parse(responseBody.id)).not.toThrow();
+    expect(responseBody.id).toMatch(uuidPattern);
     expect(persistedEvents).toHaveLength(1);
     expect(persistedEvent).toBeDefined();
 
@@ -131,19 +128,11 @@ describe("Event lookup integration", () => {
     const createResponseBody = createEventResponseSchema.parse(
       JSON.parse(createResponse.body) as unknown,
     );
-    let projectionRow:
-      | typeof eventEntryPageProjection.$inferSelect
-      | undefined;
-
-    await vi.waitFor(async () => {
-      const rows = await context.databaseClient.db
-        .select()
-        .from(eventEntryPageProjection)
-        .where(eq(eventEntryPageProjection.id, createResponseBody.id));
-
-      projectionRow = rows[0];
-      expect(rows).toHaveLength(1);
-    });
+    const eventRows = await context.databaseClient.db
+      .select()
+      .from(events)
+      .where(eq(events.id, createResponseBody.id));
+    const eventRow = eventRows[0];
 
     const getResponse = await app.inject({
       method: "GET",
@@ -159,9 +148,9 @@ describe("Event lookup integration", () => {
     expect(getResponseBody).toEqual({
       id: createResponseBody.id,
       name: "Christmas 2026",
-      createdAt: projectionRow!.createdAt.toISOString(),
+      createdAt: eventRow!.createdAt.toISOString(),
       participants: [],
-      updatedAt: projectionRow!.updatedAt.toISOString(),
+      updatedAt: eventRow!.updatedAt.toISOString(),
     });
   });
 
@@ -187,7 +176,7 @@ describe("Event lookup integration", () => {
 
     const response = await app.inject({
       method: "GET",
-      url: `/api/events/${Uuid.random().toString()}`,
+      url: "/api/events/00000000-0000-4000-8000-000000000001",
     });
 
     expect(response.statusCode).toBe(404);
@@ -240,9 +229,58 @@ describe("Participant create integration", () => {
     expect(persistedParticipants).toHaveLength(1);
     expect(persistedParticipants[0]?.name).toBe("Alice");
   });
+
+  it("returns 404 when creating a Participant for an unknown Event", async () => {
+    const app = context.openApp();
+
+    const response = await app.inject({
+      method: "POST",
+      payload: { name: "Alice" },
+      url: "/api/events/00000000-0000-4000-8000-000000000001/participants",
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(JSON.parse(response.body)).toEqual({
+      error: {
+        code: "RESOURCE_NOT_FOUND",
+        message: "Resource not found.",
+      },
+    });
+  });
+
+  it("returns 422 for duplicate Participant names in the same Event", async () => {
+    const app = context.openApp();
+    const createEventResponse = await app.inject({
+      method: "POST",
+      payload: { name: "Christmas 2026" },
+      url: "/api/events",
+    });
+    const createEventBody = createEventResponseSchema.parse(
+      JSON.parse(createEventResponse.body) as unknown,
+    );
+
+    await app.inject({
+      method: "POST",
+      payload: { name: "Alice" },
+      url: `/api/events/${createEventBody.id}/participants`,
+    });
+    const response = await app.inject({
+      method: "POST",
+      payload: { name: "Alice" },
+      url: `/api/events/${createEventBody.id}/participants`,
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(JSON.parse(response.body)).toEqual({
+      error: {
+        code: "PARTICIPANT_NAME_ALREADY_EXISTS",
+        message: "A participant with that name already exists for this event.",
+      },
+    });
+  });
 });
 
-describe("Participant Event entry projection integration", () => {
+describe("Participant Event entry read model integration", () => {
   const context = new EventsIntegrationContext();
 
   beforeAll(() => context.start(), 120_000);
@@ -270,27 +308,11 @@ describe("Participant Event entry projection integration", () => {
       JSON.parse(createParticipantResponse.body) as unknown,
     );
 
-    let projectionRow:
-      | typeof eventEntryPageProjection.$inferSelect
-      | undefined;
-
-    await vi.waitFor(async () => {
-      const rows = await context.databaseClient.db
-        .select()
-        .from(eventEntryPageProjection)
-        .where(eq(eventEntryPageProjection.id, createEventBody.id));
-
-      projectionRow = rows[0];
-      expect(projectionRow?.participants).toEqual([
-        {
-          createdAt: participantBody.createdAt,
-          eventId: createEventBody.id,
-          id: participantBody.id,
-          name: "Alice",
-          updatedAt: participantBody.updatedAt,
-        },
-      ]);
-    });
+    const eventRows = await context.databaseClient.db
+      .select()
+      .from(events)
+      .where(eq(events.id, createEventBody.id));
+    const eventRow = eventRows[0];
 
     const response = await app.inject({
       method: "GET",
@@ -301,7 +323,7 @@ describe("Participant Event entry projection integration", () => {
     expect(
       getEventEntryPageResponseSchema.parse(JSON.parse(response.body) as unknown),
     ).toEqual({
-      createdAt: projectionRow!.createdAt.toISOString(),
+      createdAt: eventRow!.createdAt.toISOString(),
       id: createEventBody.id,
       name: "Christmas 2026",
       participants: [
@@ -313,7 +335,7 @@ describe("Participant Event entry projection integration", () => {
           updatedAt: participantBody.updatedAt,
         },
       ],
-      updatedAt: projectionRow!.updatedAt.toISOString(),
+      updatedAt: eventRow!.updatedAt.toISOString(),
     });
   });
 
@@ -373,7 +395,6 @@ class EventsIntegrationContext {
 
   async resetDatabase(): Promise<void> {
     await this.databaseClient.db.delete(participants);
-    await this.databaseClient.db.delete(eventEntryPageProjection);
     await this.databaseClient.db.delete(events);
   }
 
@@ -396,3 +417,6 @@ class EventsIntegrationContext {
     await this.postgresContainer?.stop();
   }
 }
+
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
