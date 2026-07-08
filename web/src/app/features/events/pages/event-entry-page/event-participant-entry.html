@@ -3,9 +3,12 @@
     <p class="eyebrow">Identité choisie</p>
     <h2 id="selected-participant-title">{{ participant.name }}</h2>
     <p>Vous entrez dans cet événement avec cette identité.</p>
-    <button class="secondary" type="button" (click)="changeParticipant()">
-      Changer de participant
-    </button>
+    <div class="identity-actions">
+      <button type="button" (click)="continueToEvent()">Continuer</button>
+      <button class="secondary" type="button" (click)="changeParticipant()">
+        Changer de participant
+      </button>
+    </div>
   </section>
 } @else {
   <div class="entry-flow">

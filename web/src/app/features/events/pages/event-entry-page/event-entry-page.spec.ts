@@ -1,5 +1,6 @@
+import { Component } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import { provideRouter } from "@angular/router";
+import { Router, provideRouter } from "@angular/router";
 import { RouterTestingHarness } from "@angular/router/testing";
 import { By } from "@angular/platform-browser";
 import type {
@@ -17,6 +18,9 @@ import { SelectedParticipantStorage } from "../../data-access/selected-participa
 import { EventParticipantEntry } from "./event-participant-entry";
 import { EventEntryPage } from "./event-entry-page";
 import { EventUnavailablePage } from "../event-unavailable-page/event-unavailable-page";
+
+@Component({ template: "Home" })
+class TestHomePage {}
 
 const eventId = "4d8f4cb5-6188-420f-b2ec-12059c972793";
 const alice: ParticipantSummary = {
@@ -99,11 +103,11 @@ describe("EventEntryPage participant identity", () => {
     const { element, harness } = await navigateToEvent(loadedEventWithParticipants);
 
     clickButtonWithText(element, "Alice");
-    harness.detectChanges();
+    await harness.fixture.whenStable();
 
     expect(setSelectedParticipantId).toHaveBeenCalledWith(eventId, alice.id);
-    expect(element.textContent).toContain("Identité choisie");
-    expect(element.textContent).toContain("Alice");
+    expect(TestBed.inject(Router).url).toBe(`/events/${eventId}`);
+    expect(harness.routeNativeElement?.textContent).toContain("Home");
   });
 
   it("stores the returned Participant id after creating one", async () => {
@@ -125,11 +129,10 @@ describe("EventEntryPage participant identity", () => {
     request.next(alice);
     request.complete();
     await harness.fixture.whenStable();
-    harness.detectChanges();
 
     expect(setSelectedParticipantId).toHaveBeenCalledWith(eventId, alice.id);
-    expect(element.textContent).toContain("Identité choisie");
-    expect(element.textContent).toContain("Alice");
+    expect(TestBed.inject(Router).url).toBe(`/events/${eventId}`);
+    expect(harness.routeNativeElement?.textContent).toContain("Home");
   });
 
   it("restores a valid selected Participant after refresh", async () => {
@@ -139,6 +142,18 @@ describe("EventEntryPage participant identity", () => {
 
     expect(element.textContent).toContain("Identité choisie");
     expect(element.textContent).toContain("Alice");
+    expect(element.textContent).toContain("Continuer");
+  });
+
+  it("continues to the main Event route when an identity is already chosen", async () => {
+    getSelectedParticipantId.mockReturnValue(alice.id);
+    const { element, harness } = await navigateToEvent(loadedEventWithParticipants);
+
+    clickButtonWithText(element, "Continuer");
+    await harness.fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe(`/events/${eventId}`);
+    expect(harness.routeNativeElement?.textContent).toContain("Home");
   });
 
   it("keeps a stored Participant id that is missing from the current projection", async () => {
@@ -173,16 +188,15 @@ describe("EventEntryPage participant identity", () => {
 
     expect(getParticipantButton(element, "Alice")?.disabled).toBe(true);
     selectParticipantInComponent(harness, bob);
-    harness.detectChanges();
+    await harness.fixture.whenStable();
 
     request.next(charlie);
     request.complete();
     await harness.fixture.whenStable();
-    harness.detectChanges();
 
     expect(setSelectedParticipantId).toHaveBeenLastCalledWith(eventId, bob.id);
-    expect(element.textContent).toContain("Identité choisie");
-    expect(element.textContent).toContain("Bob");
+    expect(TestBed.inject(Router).url).toBe(`/events/${eventId}`);
+    expect(harness.routeNativeElement?.textContent).toContain("Home");
   });
 });
 
@@ -253,8 +267,8 @@ describe("EventEntryPage create errors", () => {
 
     expect(createParticipant).toHaveBeenCalledTimes(2);
     expect(setSelectedParticipantId).toHaveBeenCalledWith(eventId, alice.id);
-    expect(element.textContent).toContain("Identité choisie");
-    expect(element.textContent).toContain("Alice");
+    expect(TestBed.inject(Router).url).toBe(`/events/${eventId}`);
+    expect(harness.routeNativeElement?.textContent).toContain("Home");
   });
 });
 
@@ -273,7 +287,7 @@ describe("EventEntryPage resolver", () => {
       }),
     );
     const harness = await RouterTestingHarness.create();
-    const navigation = harness.navigateByUrl(`/events/${eventId}`);
+    const navigation = harness.navigateByUrl(`/events/${eventId}/entry`);
 
     await vi.advanceTimersByTimeAsync(150);
     await navigation;
@@ -296,7 +310,7 @@ describe("EventEntryPage resolver", () => {
       }),
     );
     const harness = await RouterTestingHarness.create();
-    const navigation = harness.navigateByUrl(`/events/${eventId}`);
+    const navigation = harness.navigateByUrl(`/events/${eventId}/entry`);
 
     await vi.advanceTimersByTimeAsync(750);
     await navigation;
@@ -320,7 +334,7 @@ describe("EventEntryPage resolver", () => {
       }),
     );
     const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl(`/events/${eventId}`);
+    await harness.navigateByUrl(`/events/${eventId}/entry`);
     harness.detectChanges();
 
     expect(getEvent).toHaveBeenCalledOnce();
@@ -346,11 +360,15 @@ function configureEventEntryPageTest(): void {
     providers: [
       provideRouter([
         {
-          path: "events/:eventId",
+          path: "events/:eventId/entry",
           component: EventEntryPage,
           resolve: {
             [eventEntryRoute.dataKey]: eventEntryRoute.resolve,
           },
+        },
+        {
+          path: "events/:eventId",
+          component: TestHomePage,
         },
         {
           path: "events/:eventId/unavailable",
@@ -378,7 +396,7 @@ async function navigateToEvent(event: GetEventEntryPageResponse): Promise<{
   getEvent.mockReturnValue(of(event));
   const harness = await RouterTestingHarness.create();
   const page = await harness.navigateByUrl(
-    `/events/${eventId}`,
+    `/events/${eventId}/entry`,
     EventEntryPage,
   );
   harness.detectChanges();

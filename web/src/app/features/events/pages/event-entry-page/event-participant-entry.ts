@@ -16,6 +16,7 @@ import {
   submit,
   validateStandardSchema,
 } from "@angular/forms/signals";
+import { Router } from "@angular/router";
 import {
   createParticipantRequestBodySchema,
   type GetEventEntryPageResponse,
@@ -23,6 +24,7 @@ import {
 } from "@idkdo/shared";
 import { finalize } from "rxjs";
 
+import { SelectedParticipantContext } from "../../../../core/identity/selected-participant-context";
 import { EventRepositoryError } from "../../data-access/event-repository-error";
 import { EventRepository } from "../../data-access/event-repository";
 import { SelectedParticipantStorage } from "../../data-access/selected-participant-storage";
@@ -37,6 +39,8 @@ import { SelectedParticipantStorage } from "../../data-access/selected-participa
 export class EventParticipantEntry {
   private readonly destroyRef = inject(DestroyRef);
   private readonly repository = inject(EventRepository);
+  private readonly router = inject(Router);
+  private readonly selectedParticipantContext = inject(SelectedParticipantContext);
   private readonly selectedParticipantStorage = inject(SelectedParticipantStorage);
 
   readonly eventEntry = model.required<GetEventEntryPageResponse>();
@@ -70,12 +74,18 @@ export class EventParticipantEntry {
   protected selectParticipant(participant: ParticipantSummary): void {
     this.submitError.set(null);
     this.storeSelectedParticipant(participant.id);
+    void this.continueToEvent();
   }
 
   protected changeParticipant(): void {
     this.submitError.set(null);
     this.selectedParticipantStorage.clearSelectedParticipantId(this.eventEntry().id);
+    this.selectedParticipantContext.clear();
     this.selectedParticipantId.set(null);
+  }
+
+  protected continueToEvent(): Promise<boolean> {
+    return this.router.navigate(["/events", this.eventEntry().id]);
   }
 
   protected onCreateParticipant(event: SubmitEvent): void {
@@ -111,6 +121,7 @@ export class EventParticipantEntry {
             this.mergeParticipant(participant);
             if (this.selectedParticipantId() === null) {
               this.storeSelectedParticipant(participant.id);
+              void this.continueToEvent();
             }
             this.participantModel.set({ name: "" });
           },
@@ -166,6 +177,10 @@ export class EventParticipantEntry {
       this.eventEntry().id,
       participantId,
     );
+    this.selectedParticipantContext.set({
+      eventId: this.eventEntry().id,
+      participantId,
+    });
     this.selectedParticipantId.set(participantId);
   }
 }

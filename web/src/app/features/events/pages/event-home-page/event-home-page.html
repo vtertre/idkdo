@@ -1,0 +1,16 @@
+@if (selectedParticipant(); as participant) {
+  <section class="event-home" aria-labelledby="event-title">
+    <header class="event-header">
+      <div>
+        <p class="eyebrow">Votre événement</p>
+        <h1 id="event-title">{{ event().name }}</h1>
+        <p class="selected-name">{{ participant.name }}</p>
+      </div>
+      <button class="secondary" type="button" (click)="changeParticipant()">
+        Changer de participant
+      </button>
+    </header>
+
+    <app-wishlist-panel [participantId]="participant.id" />
+  </section>
+}
