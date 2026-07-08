@@ -29,7 +29,6 @@ Before making changes, read in this order:
 - `ARCHITECTURE.md`: top-level technical map and entry point to detailed design docs
 - `server/`: Fastify REST API and backend application
 - `web/`: Angular Progressive Web App
-- `packages/patterns/`: framework-independent DDD and CQRS base interfaces/classes
 - `packages/db/`: Drizzle schema, migrations, and database helpers
 - `packages/shared/`: shared package placeholder for future API contracts, schemas, and types
 
@@ -52,6 +51,8 @@ Keep detailed local development commands in `docs/DEVELOPING.md`.
 
 2. Keep repo plan docs dated and centralized.
    When creating a plan file in the repository, new plan documents belong in `docs/plans/` and should use `YYYY-MM-DD-slug.md` filenames.
+
+3. Server changes follow the vertical-slice shape in `ARCHITECTURE.md`: route validates and delegates; use-case function owns behavior; queries read the real tables with the viewer as a parameter.
 
 ## 6. Commit Messages
 

@@ -8,7 +8,8 @@ Product intent belongs in `docs/GOAL.md` and `docs/PRODUCT.md`.
 Functional behavior and acceptance criteria belong in `docs/SPEC-implementation.md`.
 Detailed technical decisions belong in indexed design docs under `docs/design-docs/`.
 
-Update this file when domains, runtime components, package layering, or architectural invariants change. Do not use it as a full implementation manual.
+Update this file when domains, runtime components, package layering, or
+architectural invariants change. Do not use it as a full implementation manual.
 
 ## Runtime Components
 
@@ -16,72 +17,92 @@ idkdo is a pnpm workspace with these runtime components:
 
 - `web/` - Angular Progressive Web App.
 - `server/` - Fastify REST API and backend application.
-- `packages/patterns/` - framework-independent DDD and CQRS base interfaces/classes.
-- `packages/db/` - Drizzle schema, migrations, projection tables, and database helpers.
-- `packages/shared/` - shared API contracts, schemas, types, constants, and path helpers when useful.
+- `packages/db/` - Drizzle schema, migrations, and database client helpers.
+- `packages/shared/` - shared API contracts, schemas, types, constants, and path
+  helpers when useful.
 
 The Web UI communicates with the server through the REST API under `/api`.
 
-The server owns persistence, domain behavior, permission enforcement, visibility enforcement, and projection updates. The frontend renders server-provided read models and must not implement hidden Purchase Coordination rules.
+The server owns persistence, domain rules, permission enforcement, and visibility
+filtering in queries. The frontend renders server-provided read models and must
+not implement hidden Purchase Coordination rules.
 
 ## Package Layering
 
 Stable package responsibilities:
 
-- `packages/patterns/` contains reusable architectural abstractions only. It must not contain idkdo product/domain concepts and must not depend on Fastify, Angular, Awilix, Drizzle, PostgreSQL, or Zod.
-- `packages/shared/` contains API-facing contracts and validators shared between server and web. It must not contain projection table shapes or server-only infrastructure details.
-- `packages/db/` owns the canonical database schema, migrations, projection tables, and database client helpers. It must not contain domain entities, command/query handlers, business policies, or API DTOs.
-- `server/` owns backend application behavior, HTTP presentation, command/query handling, domain model, projections, infrastructure wiring, and error mapping.
+- `packages/shared/` contains API-facing contracts and validators shared between
+  server and web. It must not contain server-only infrastructure details.
+- `packages/db/` owns the canonical database schema, migrations, and database
+  client helpers. It must not contain business policies or API DTOs.
+- `server/` owns backend application behavior, HTTP presentation, use-case
+  functions, database queries, transaction scripts, and error mapping.
 - `web/` owns browser UI, routing, client-side state, and PWA behavior.
 
-Implementation should introduce abstractions just in time. Keep names and dependency direction compatible with this map, but do not build unused framework surface.
+Implementation should introduce abstractions just in time. Keep names and
+dependency direction compatible with this map, but do not build unused framework
+surface.
 
-## Server Layering
+## Server Architecture
 
-The server uses a DDD/CQRS shape with one bounded context for gift coordination.
+The server uses vertical slices with transaction scripts.
 
-Allowed dependency direction:
+Three rules govern server code:
+
+1. Routes validate and delegate. A route declares shared Zod schemas, calls one
+   use-case function, and maps the result to a reply. Routes contain no SQL and
+   no business rules.
+2. Use cases own behavior. One exported async function per use case lives under
+   `server/src/features/<feature>/`. It receives the Drizzle `Database` plus
+   validated input, enforces business rules with typed errors, wraps multi-step
+   writes in `db.transaction()`, and returns a plain API-shaped result.
+3. Reads query the real tables with the viewer as a parameter. Anti-spoil
+   visibility is enforced inside query functions through predicates and field
+   omission, never in the frontend.
+
+Target server layout:
 
 ```txt
-presentation -> command bus / query bus
-command bus  -> command handlers
-query bus    -> query handlers
-commands     -> domain + domain repository interfaces
-queries      -> projected read tables through a read-side database port
-projections  -> domain events + projected read tables
-infrastructure -> domain + commands + queries + projections
-```
-
-Forbidden dependencies:
-
-```txt
-domain -> infrastructure
-domain -> presentation
-domain -> Zod
-commands -> presentation
-queries -> presentation
-routes -> Drizzle directly
-routes -> business rules
-projection handlers -> write-side repositories
+server/src/
+  app.ts
+  main.ts
+  configuration/
+  errors/
+  features/
+    events/
+    participants/
+  http/
+  test/
 ```
 
 ## Frontend Layering
 
 The Web UI is an Angular PWA organized feature-first.
 
-Frontend components should use frontend repositories or feature services for API access. Components should not call `HttpClient` directly and should not enforce domain invariants. Visibility-sensitive behavior must come from server-filtered read models.
+Frontend components should use frontend repositories or feature services for API
+access. Components should not call `HttpClient` directly and should not enforce
+domain invariants. Visibility-sensitive behavior must come from server-filtered
+read models.
 
-The service worker caches static application assets only. It must not cache REST API responses containing Event, Participant, Wish, Reservation, Contributor, or Purchase Coordination data.
+The service worker caches static application assets only. It must not cache REST
+API responses containing Event, Participant, Wish, Reservation, Contributor, or
+Purchase Coordination data.
 
 ## Cross-Cutting Invariants
 
-- `X-Participant-Id` is lightweight selected Participant identity, not authentication.
-- Server handlers treat selected Participant identity as untrusted input and verify Event membership before applying visibility or mutation rules.
-- Zod validation belongs at external boundaries. Domain invariants belong in domain code.
-- Fastify executes shared Zod wire contracts through the HTTP boundary's validator and serializer compilers. Routes should reference shared request and response schemas directly rather than defining server-local API wire schemas.
+- `X-Participant-Id` is lightweight selected Participant identity, not
+  authentication.
+- Server use cases treat selected Participant identity as untrusted input and
+  verify Event membership before applying visibility or mutation rules.
+- Zod validation belongs at external boundaries. Business invariants belong in
+  use-case functions and server domain rules.
+- Fastify executes shared Zod wire contracts through the HTTP boundary's
+  validator and serializer compilers. Routes should reference shared request and
+  response schemas directly rather than defining server-local API wire schemas.
 - HTTP errors use the API contract in `docs/SPEC-implementation.md`.
 - PostgreSQL is the persistence target; Drizzle owns schema and migrations.
-- Tests and future structural checks should enforce dependency direction and anti-spoil behavior.
+- Tests and future structural checks should enforce dependency direction and
+  anti-spoil behavior.
 
 ## Design Docs
 
@@ -89,9 +110,8 @@ Detailed architectural decisions are catalogued in `docs/design-docs/index.md`.
 
 Read design docs only when a task touches that area:
 
-- Backend DDD/CQRS boundaries: `docs/design-docs/backend-ddd-cqrs.md`
+- Backend architecture: `docs/design-docs/backend-architecture.md`
 - Code organization and file boundaries: `docs/design-docs/code-organization.md`
 - Design doc principles: `docs/design-docs/core-beliefs.md`
-- Projections and event bus: `docs/design-docs/projections-and-event-bus.md`
 - Workspace packages: `docs/design-docs/workspace-packages.md`
 - Frontend architecture: `docs/design-docs/frontend-architecture.md`

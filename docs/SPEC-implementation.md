@@ -67,7 +67,6 @@ These decisions close open questions from `SPEC.md` for V1.
 
 - `server/` — Fastify REST API and backend application.
 - `web/` — Angular Progressive Web App.
-- `packages/patterns/` — framework-independent DDD and CQRS base interfaces/classes.
 - `packages/db/` — Drizzle schema, migrations, and database client helpers.
 - `packages/shared/` — shared API contracts, schemas, and types when useful.
 
@@ -75,7 +74,7 @@ V1 uses a simple pnpm workspace for the monorepo.
 
 The Web UI communicates with the server through the REST API.
 
-The server owns persistence, domain behavior, visibility rules, permission enforcement, and projection updates.
+The server owns persistence, domain behavior, visibility rules, permission enforcement, and API read-model shaping.
 
 ## 5.2 Data Stores
 
@@ -358,7 +357,7 @@ Each milestone is a vertical product slice unless explicitly stated otherwise.
 Deliver a runnable monorepo foundation with no product feature beyond a working application shell.
 
 - pnpm workspace.
-- `server/`, `web/`, `packages/patterns/`, `packages/db/`, `packages/shared/`.
+- `server/`, `web/`, `packages/db/`, `packages/shared/`.
 - Docker Compose PostgreSQL.
 - Drizzle setup and initial migration.
 - Fastify server bootstrap with healthcheck.

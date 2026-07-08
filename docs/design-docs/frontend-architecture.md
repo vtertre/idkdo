@@ -8,7 +8,7 @@ Verification: Browser and end-to-end tests should cover the core gift coordinati
 
 The Web UI is an Angular Progressive Web App using modern Angular patterns.
 
-Frontend code is organized feature-first. The frontend does not own domain invariants or Purchase Coordination visibility rules. It renders server-provided read models whose visibility has already been enforced by projections and API queries.
+Frontend code is organized feature-first. The frontend does not own domain invariants or Purchase Coordination visibility rules. It renders server-provided read models whose visibility has already been enforced by API queries.
 
 ## Details
 
@@ -26,6 +26,6 @@ Frontend repositories are placed by reuse scope:
 
 The app starts without a third-party state management library. State uses native Angular primitives: services, signals, computed values, effects, route params, and forms. State stays as close as possible to the feature that owns it and is promoted upward only when multiple features need it.
 
-After successful command requests, frontend flows must account for projection lag. The refresh strategy is chosen per feature flow and may use re-query, pending state, bounded retry, or optimistic local state. Server projections remain authoritative for persisted read models.
+After successful mutation requests, frontend flows should refresh from the server or patch local state only when the API response already contains the authoritative result needed for that screen.
 
 The service worker caches static application assets only. It must not cache REST API responses containing Event, Participant, Wish, Reservation, Contributor, or Purchase Coordination data.
