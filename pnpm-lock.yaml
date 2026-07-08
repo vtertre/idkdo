@@ -43,27 +43,8 @@ importers:
         specifier: ^0.31.10
         version: 0.31.10
 
-  packages/patterns:
-    dependencies:
-      '@js-temporal/polyfill':
-        specifier: ^0.5.1
-        version: 0.5.1
-      uuid:
-        specifier: ^14.0.0
-        version: 14.0.0
-    devDependencies:
-      '@types/node':
-        specifier: ^25.9.1
-        version: 25.9.1
-      vitest:
-        specifier: ^4.1.8
-        version: 4.1.8(@types/node@25.9.1)(jsdom@28.1.0)(vite@8.0.16(@types/node@25.9.1)(esbuild@0.28.1)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0))
-
   packages/shared:
     dependencies:
-      '@js-temporal/polyfill':
-        specifier: ^0.5.1
-        version: 0.5.1
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -77,15 +58,9 @@ importers:
       '@idkdo/db':
         specifier: workspace:*
         version: link:../packages/db
-      '@idkdo/patterns':
-        specifier: workspace:*
-        version: link:../packages/patterns
       '@idkdo/shared':
         specifier: workspace:*
         version: link:../packages/shared
-      '@js-temporal/polyfill':
-        specifier: ^0.5.1
-        version: 0.5.1
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -1566,10 +1541,6 @@ packages:
 
   '@js-sdsl/ordered-map@4.4.2':
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
-
-  '@js-temporal/polyfill@0.5.1':
-    resolution: {integrity: sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ==}
-    engines: {node: '>=12'}
 
   '@kwsites/file-exists@1.1.1':
     resolution: {integrity: sha512-m9/5YGR18lIwxSFDwfE3oA7bWuq9kdau6ugN4H2rJeyhFQZcG9AgSHkQtSD15a8WvTgfz9aikZMrKPHvbpqFiw==}
@@ -3364,9 +3335,6 @@ packages:
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
-  jsbi@4.3.2:
-    resolution: {integrity: sha512-9fqMSQbhJykSeii05nxKl4m6Eqn2P6rOlYiS+C5Dr/HPIU/7yZxu5qzbs40tgaFORiw2Amd0mirjxatXYMkIew==}
-
   jsdom@28.1.0:
     resolution: {integrity: sha512-0+MoQNYyr2rBHqO1xilltfDjV9G7ymYGlAUazgcDLQaUf8JDHbuGwsxN6U9qWaElZ4w1B2r7yEGIL3GdeW3Rug==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
@@ -4348,10 +4316,6 @@ packages:
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
-
-  uuid@14.0.0:
-    resolution: {integrity: sha512-Qo+uWgilfSmAhXCMav1uYFynlQO7fMFiMVZsQqZRMIXp0O7rR7qjkj+cPvBHLgBqi960QCoo/PH2/6ZtVqKvrg==}
-    hasBin: true
 
   validate-npm-package-name@7.0.2:
     resolution: {integrity: sha512-hVDIBwsRruT73PbK7uP5ebUt+ezEtCmzZz3F59BSr2F6OVFnJ/6h8liuvdLrQ88Xmnk6/+xGGuq+pG9WwTuy3A==}
@@ -5702,10 +5666,6 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.5
 
   '@js-sdsl/ordered-map@4.4.2': {}
-
-  '@js-temporal/polyfill@0.5.1':
-    dependencies:
-      jsbi: 4.3.2
 
   '@kwsites/file-exists@1.1.1':
     dependencies:
@@ -7461,8 +7421,6 @@ snapshots:
 
   js-tokens@4.0.0: {}
 
-  jsbi@4.3.2: {}
-
   jsdom@28.1.0:
     dependencies:
       '@acemir/cssom': 0.9.31
@@ -8609,8 +8567,6 @@ snapshots:
       punycode: 2.3.1
 
   util-deprecate@1.0.2: {}
-
-  uuid@14.0.0: {}
 
   validate-npm-package-name@7.0.2: {}
 

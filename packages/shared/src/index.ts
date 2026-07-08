@@ -3,9 +3,6 @@ export {
   type ApiErrorResponse,
 } from "./validators/api-error-response-schema.js";
 export {
-  instantToIsoString,
-} from "./time/instant-to-iso-string.js";
-export {
   createParticipantRequestBodySchema,
   type CreateParticipantRequestBody,
 } from "./validators/create-participant-request-body-schema.js";

@@ -1,13 +1,4 @@
-import { sql } from "drizzle-orm";
-import { jsonb, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
-
-export type ParticipantSummaryRecord = {
-  readonly createdAt: string;
-  readonly eventId: string;
-  readonly id: string;
-  readonly name: string;
-  readonly updatedAt: string;
-};
+import { pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 const timestamps = () => ({
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -34,19 +25,7 @@ export const participants = pgTable(
   (table) => [unique().on(table.eventId, table.name)],
 );
 
-export const eventEntryPageProjection = pgTable("event_entry_page_projection", {
-  id: uuid("id").primaryKey(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
-  participants: jsonb("participants")
-    .$type<ParticipantSummaryRecord[]>()
-    .notNull()
-    .default(sql`'[]'::jsonb`),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
-});
-
 export const schema = {
-  eventEntryPageProjection,
   events,
   participants,
 };
