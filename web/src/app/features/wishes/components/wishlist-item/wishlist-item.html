@@ -1,0 +1,77 @@
+@switch (mode()) {
+  @case ("display") {
+    <div class="wishlist-item">
+      <app-wish-content [content]="wish().content" />
+      <div class="actions">
+        <button type="button" class="secondary" [disabled]="busy()" (click)="startEditing()">
+          Modifier
+        </button>
+        <button
+          type="button"
+          class="danger"
+          [disabled]="busy()"
+          (click)="startDeleteConfirmation()"
+        >
+          Supprimer
+        </button>
+      </div>
+    </div>
+  }
+  @case ("editing") {
+    <form class="wishlist-item edit-form" (submit)="onSubmitUpdate($event)" novalidate>
+      <label [for]="'wish-edit-' + wish().id">Modifier le souhait</label>
+      <textarea
+        [id]="'wish-edit-' + wish().id"
+        rows="4"
+        [formField]="wishForm.content"
+        [attr.aria-describedby]="
+          wishForm.content().touched() && wishForm.content().invalid()
+            ? 'wish-edit-error-' + wish().id
+            : null
+        "
+        [attr.aria-invalid]="
+          wishForm.content().touched() && wishForm.content().invalid()
+            ? 'true'
+            : null
+        "
+      ></textarea>
+
+      @if (wishForm.content().touched() && wishForm.content().invalid()) {
+        <p class="field-error" [id]="'wish-edit-error-' + wish().id">
+          Saisissez un souhait.
+        </p>
+      }
+
+      <div class="actions">
+        <button
+          type="submit"
+          [disabled]="busy() || wishForm.content().invalid()"
+        >
+          Enregistrer
+        </button>
+        <button type="button" class="secondary" [disabled]="busy()" (click)="cancelEditing()">
+          Annuler
+        </button>
+      </div>
+    </form>
+  }
+  @case ("confirming-delete") {
+    <div class="wishlist-item confirm-delete">
+      <app-wish-content [content]="wish().content" />
+      <p> Supprimer ce souhait ? </p>
+      <div class="actions">
+        <button type="button" class="danger" [disabled]="busy()" (click)="confirmDelete()">
+          Confirmer
+        </button>
+        <button
+          type="button"
+          class="secondary"
+          [disabled]="busy()"
+          (click)="cancelDeleteConfirmation()"
+        >
+          Annuler
+        </button>
+      </div>
+    </div>
+  }
+}

@@ -15,10 +15,20 @@
       </button>
     </div>
   } @else {
+    @if (mutationError()) {
+      <p class="mutation-error" aria-live="polite">{{ mutationError() }}</p>
+    }
+
     <ul class="wishes">
       @for (wish of wishes(); track wish.id) {
         <li>
-          <app-wish-content [content]="wish.content" />
+          <app-wishlist-item
+            [wish]="wish"
+            [busy]="mutatingWishId() !== null"
+            (updateRequested)="onUpdateWish($event)"
+            (deleteRequested)="onDeleteWish($event)"
+            (cancelled)="onWishItemCancelled()"
+          />
         </li>
       } @empty {
         <li class="empty">Aucun souhait pour le moment.</li>

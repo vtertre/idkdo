@@ -19,11 +19,15 @@ import { createWishRequestBodySchema, type WishSummary } from "@idkdo/shared";
 import { finalize } from "rxjs";
 
 import { WishRepository } from "../../data-access/wish-repository";
-import { WishContent } from "../wish-content/wish-content";
+import {
+  WishlistItem,
+  type WishlistItemDeleteRequest,
+  type WishlistItemUpdateRequest,
+} from "../wishlist-item/wishlist-item";
 
 @Component({
   selector: "app-wishlist-panel",
-  imports: [FormField, WishContent],
+  imports: [FormField, WishlistItem],
   templateUrl: "./wishlist-panel.html",
   styleUrl: "./wishlist-panel.css",
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,8 +46,10 @@ export class WishlistPanel implements OnInit {
   protected readonly wishes = signal<WishSummary[]>([]);
   protected readonly loadPending = signal(false);
   protected readonly createPending = signal(false);
+  protected readonly mutatingWishId = signal<string | null>(null);
   protected readonly loadError = signal<string | null>(null);
   protected readonly submitError = signal<string | null>(null);
+  protected readonly mutationError = signal<string | null>(null);
 
   ngOnInit(): void {
     this.loadWishes();
@@ -113,5 +119,69 @@ export class WishlistPanel implements OnInit {
 
       return Promise.resolve(undefined);
     });
+  }
+
+  protected onUpdateWish(request: WishlistItemUpdateRequest): void {
+    if (this.mutatingWishId() !== null) {
+      return;
+    }
+
+    this.mutationError.set(null);
+    this.mutatingWishId.set(request.wishId);
+    this.repository
+      .updateWish(request.wishId, request.content)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.mutatingWishId.set(null);
+        }),
+      )
+      .subscribe({
+        next: (updatedWish) => {
+          this.wishes.update((currentWishes) =>
+            currentWishes.map((wish) =>
+              wish.id === updatedWish.id ? updatedWish : wish,
+            ),
+          );
+        },
+        error: () => {
+          this.mutationError.set(
+            "Le souhait n'a pas pu être modifié. Réessayez.",
+          );
+        },
+      });
+  }
+
+  protected onDeleteWish(request: WishlistItemDeleteRequest): void {
+    if (this.mutatingWishId() !== null) {
+      return;
+    }
+
+    this.mutationError.set(null);
+    this.mutatingWishId.set(request.wishId);
+    this.repository
+      .deleteWish(request.wishId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.mutatingWishId.set(null);
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.wishes.update((currentWishes) =>
+            currentWishes.filter((wish) => wish.id !== request.wishId),
+          );
+        },
+        error: () => {
+          this.mutationError.set(
+            "Le souhait n'a pas pu être supprimé. Réessayez.",
+          );
+        },
+      });
+  }
+
+  protected onWishItemCancelled(): void {
+    this.mutationError.set(null);
   }
 }
