@@ -52,6 +52,9 @@ Three rules govern server code:
 1. Routes validate and delegate. A route declares shared Zod schemas, calls one
    use-case function, and maps the result to a reply. Routes contain no SQL and
    no business rules.
+   Route plugins are typed with `FastifyPluginAsyncZod`, and request/reply types
+   are inferred from the Zod schemas in each route `schema` block. Do not write
+   manual route generics; register routes inline in reading order.
 2. Use cases own behavior. One exported async function per use case lives under
    `server/src/features/<feature>/`. It receives the Drizzle `Database` plus
    validated input, enforces business rules with typed errors, wraps multi-step

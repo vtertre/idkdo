@@ -1,19 +1,15 @@
+import type { Database } from "@idkdo/db";
 import {
   apiErrorResponseSchema,
-  type CreateParticipantRequestBody,
   createParticipantRequestBodySchema,
   createParticipantResponseSchema,
   createParticipantRouteParamsSchema,
-  type CreateParticipantRouteParams,
-  type CreateEventRequestBody,
   createEventRequestBodySchema,
   createEventResponseSchema,
   getEventEntryPageResponseSchema,
   getEventEntryPageRouteParamsSchema,
-  type GetEventEntryPageRouteParams,
 } from "@idkdo/shared";
-import type { Database } from "@idkdo/db";
-import type { FastifyInstance } from "fastify";
+import { type FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 
 import { createParticipant } from "../participants/create-participant.js";
 import { createEvent } from "./create-event.js";
@@ -23,12 +19,11 @@ export type EventsRouteOptions = {
   readonly db: Database;
 };
 
-// eslint-disable-next-line @typescript-eslint/require-await -- Fastify async plugins may only register routes.
-export async function eventsRoute(
-  app: FastifyInstance,
-  options: EventsRouteOptions,
-): Promise<void> {
-  app.get<{ Params: GetEventEntryPageRouteParams }>(
+export const eventsRoute: FastifyPluginAsyncZod<EventsRouteOptions> = async (
+  app,
+  options,
+) => {
+  app.get(
     "/events/:eventId",
     {
       schema: {
@@ -60,10 +55,7 @@ export async function eventsRoute(
     },
   );
 
-  app.post<{
-    Body: CreateParticipantRequestBody;
-    Params: CreateParticipantRouteParams;
-  }>(
+  app.post(
     "/events/:eventId/participants",
     {
       schema: {
@@ -87,7 +79,7 @@ export async function eventsRoute(
     },
   );
 
-  app.post<{ Body: CreateEventRequestBody }>(
+  app.post(
     "/events",
     {
       schema: {
@@ -105,4 +97,4 @@ export async function eventsRoute(
       await reply.status(201).send(response);
     },
   );
-}
+};
