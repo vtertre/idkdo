@@ -65,6 +65,32 @@ describe("WishRepository", () => {
     await expect(result).resolves.toEqual({ wishes: [wishResponse] });
   });
 
+  it("updates a Wish with the exact API request", async () => {
+    const updatedResponse = {
+      ...wishResponse,
+      content: "Chocolat noir",
+      updatedAt: "2026-07-08T10:01:00.000Z",
+    };
+    const result = firstValueFrom(repository.updateWish(wishId, "Chocolat noir"));
+    const request = http.expectOne(`/api/wishes/${wishId}`);
+
+    expect(request.request.method).toBe("PATCH");
+    expect(request.request.body).toEqual({ content: "Chocolat noir" });
+    request.flush(updatedResponse);
+
+    await expect(result).resolves.toEqual(updatedResponse);
+  });
+
+  it("deletes a Wish with the exact API request", async () => {
+    const result = firstValueFrom(repository.deleteWish(wishId));
+    const request = http.expectOne(`/api/wishes/${wishId}`);
+
+    expect(request.request.method).toBe("DELETE");
+    request.flush(null);
+
+    await expect(result).resolves.toBeUndefined();
+  });
+
   it("rejects a malformed successful response", async () => {
     const result = firstValueFrom(repository.getParticipantWishes(participantId));
     http

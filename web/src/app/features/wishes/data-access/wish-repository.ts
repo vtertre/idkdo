@@ -4,8 +4,10 @@ import {
   apiErrorResponseSchema,
   createWishResponseSchema,
   getParticipantWishesResponseSchema,
+  updateWishResponseSchema,
   type CreateWishResponse,
   type GetParticipantWishesResponse,
+  type UpdateWishResponse,
 } from "@idkdo/shared";
 import { catchError, map, throwError } from "rxjs";
 import type { Observable } from "rxjs";
@@ -37,6 +39,20 @@ export class WishRepository {
         map((response) => getParticipantWishesResponseSchema.parse(response)),
         catchError((error: unknown) => throwError(() => normalizeError(error))),
       );
+  }
+
+  updateWish(wishId: string, content: string): Observable<UpdateWishResponse> {
+    return this.http.patch<unknown>(`/api/wishes/${wishId}`, { content }).pipe(
+      map((response) => updateWishResponseSchema.parse(response)),
+      catchError((error: unknown) => throwError(() => normalizeError(error))),
+    );
+  }
+
+  deleteWish(wishId: string): Observable<void> {
+    return this.http.delete<void>(`/api/wishes/${wishId}`).pipe(
+      map(() => undefined),
+      catchError((error: unknown) => throwError(() => normalizeError(error))),
+    );
   }
 }
 

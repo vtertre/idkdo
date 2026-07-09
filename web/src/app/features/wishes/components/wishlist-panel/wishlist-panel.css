@@ -97,6 +97,7 @@ button:disabled {
 }
 
 .field-error,
+.mutation-error,
 .submit-error,
 .load-error p {
   color: var(--error);

@@ -60,6 +60,18 @@ export {
   type ParticipantWishesRouteParams,
 } from "./validators/participant-wishes-route-params-schema.js";
 export {
+  updateWishRequestBodySchema,
+  type UpdateWishRequestBody,
+} from "./validators/update-wish-request-body-schema.js";
+export {
+  updateWishResponseSchema,
+  type UpdateWishResponse,
+} from "./validators/update-wish-response-schema.js";
+export {
+  wishRouteParamsSchema,
+  type WishRouteParams,
+} from "./validators/wish-route-params-schema.js";
+export {
   wishSummarySchema,
   type WishSummary,
 } from "./validators/wish-summary-schema.js";

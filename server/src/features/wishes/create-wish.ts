@@ -6,6 +6,7 @@ import type { WishSummary } from "@idkdo/shared";
 import { NotFoundError } from "../../errors/not-found-error.js";
 import { getParticipantEventId } from "../participants/get-participant-event-id.js";
 import { CannotCreateWishForAnotherParticipantError } from "./errors/cannot-create-wish-for-another-participant-error.js";
+import { toWishSummary } from "./to-wish-summary.js";
 
 export type CreateWishInput = {
   readonly actorParticipantId: string;
@@ -54,17 +55,4 @@ export async function createWish(
 
     return toWishSummary(wish);
   });
-}
-
-type WishRow = typeof wishes.$inferSelect;
-
-function toWishSummary(row: WishRow): WishSummary {
-  return {
-    content: row.content,
-    createdAt: row.createdAt.toISOString(),
-    eventId: row.eventId,
-    id: row.id,
-    updatedAt: row.updatedAt.toISOString(),
-    wisherId: row.wisherId,
-  };
 }
