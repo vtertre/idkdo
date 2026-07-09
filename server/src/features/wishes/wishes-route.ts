@@ -33,6 +33,16 @@ export async function wishesRoute(
   app: FastifyInstance,
   options: WishesRouteOptions,
 ): Promise<void> {
+  registerCreateWishRoute(app, options);
+  registerGetParticipantWishesRoute(app, options);
+  registerUpdateWishRoute(app, options);
+  registerDeleteWishRoute(app, options);
+}
+
+function registerCreateWishRoute(
+  app: FastifyInstance,
+  options: WishesRouteOptions,
+): void {
   app.post<{
     Body: CreateWishRequestBody;
     Headers: ParticipantIdHeader;
@@ -62,7 +72,12 @@ export async function wishesRoute(
       await reply.status(201).send(wish);
     },
   );
+}
 
+function registerGetParticipantWishesRoute(
+  app: FastifyInstance,
+  options: WishesRouteOptions,
+): void {
   app.get<{
     Headers: ParticipantIdHeader;
     Params: ParticipantWishesRouteParams;
@@ -89,9 +104,6 @@ export async function wishesRoute(
       await reply.send(response);
     },
   );
-
-  registerUpdateWishRoute(app, options);
-  registerDeleteWishRoute(app, options);
 }
 
 function registerUpdateWishRoute(
