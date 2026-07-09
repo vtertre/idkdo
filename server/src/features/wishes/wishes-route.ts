@@ -1,23 +1,18 @@
 import type { Database } from "@idkdo/db";
 import {
   apiErrorResponseSchema,
-  type CreateWishRequestBody,
   createWishRequestBodySchema,
   createWishResponseSchema,
-  type GetParticipantWishesResponse,
   getParticipantWishesResponseSchema,
-  type ParticipantIdHeader,
   participantIdHeaderName,
   participantIdHeaderSchema,
-  type ParticipantWishesRouteParams,
   participantWishesRouteParamsSchema,
-  type UpdateWishRequestBody,
   updateWishRequestBodySchema,
   updateWishResponseSchema,
-  type WishRouteParams,
   wishRouteParamsSchema,
 } from "@idkdo/shared";
-import type { FastifyInstance } from "fastify";
+import { type FastifyPluginAsyncZod } from "fastify-type-provider-zod";
+import { z } from "zod";
 
 import { createWish } from "./create-wish.js";
 import { deleteWish } from "./delete-wish.js";
@@ -28,26 +23,11 @@ export type WishesRouteOptions = {
   readonly db: Database;
 };
 
-// eslint-disable-next-line @typescript-eslint/require-await -- Fastify async plugins may only register routes.
-export async function wishesRoute(
-  app: FastifyInstance,
-  options: WishesRouteOptions,
-): Promise<void> {
-  registerCreateWishRoute(app, options);
-  registerGetParticipantWishesRoute(app, options);
-  registerUpdateWishRoute(app, options);
-  registerDeleteWishRoute(app, options);
-}
-
-function registerCreateWishRoute(
-  app: FastifyInstance,
-  options: WishesRouteOptions,
-): void {
-  app.post<{
-    Body: CreateWishRequestBody;
-    Headers: ParticipantIdHeader;
-    Params: ParticipantWishesRouteParams;
-  }>(
+export const wishesRoute: FastifyPluginAsyncZod<WishesRouteOptions> = async (
+  app,
+  options,
+) => {
+  app.post(
     "/participants/:participantId/wishes",
     {
       schema: {
@@ -72,17 +52,8 @@ function registerCreateWishRoute(
       await reply.status(201).send(wish);
     },
   );
-}
 
-function registerGetParticipantWishesRoute(
-  app: FastifyInstance,
-  options: WishesRouteOptions,
-): void {
-  app.get<{
-    Headers: ParticipantIdHeader;
-    Params: ParticipantWishesRouteParams;
-    Reply: GetParticipantWishesResponse;
-  }>(
+  app.get(
     "/participants/:participantId/wishes",
     {
       schema: {
@@ -104,17 +75,8 @@ function registerGetParticipantWishesRoute(
       await reply.send(response);
     },
   );
-}
 
-function registerUpdateWishRoute(
-  app: FastifyInstance,
-  options: WishesRouteOptions,
-): void {
-  app.patch<{
-    Body: UpdateWishRequestBody;
-    Headers: ParticipantIdHeader;
-    Params: WishRouteParams;
-  }>(
+  app.patch(
     "/wishes/:wishId",
     {
       schema: {
@@ -139,22 +101,15 @@ function registerUpdateWishRoute(
       await reply.send(wish);
     },
   );
-}
 
-function registerDeleteWishRoute(
-  app: FastifyInstance,
-  options: WishesRouteOptions,
-): void {
-  app.delete<{
-    Headers: ParticipantIdHeader;
-    Params: WishRouteParams;
-  }>(
+  app.delete(
     "/wishes/:wishId",
     {
       schema: {
         headers: participantIdHeaderSchema,
         params: wishRouteParamsSchema,
         response: {
+          204: z.undefined(),
           400: apiErrorResponseSchema,
           404: apiErrorResponseSchema,
           422: apiErrorResponseSchema,
@@ -170,4 +125,4 @@ function registerDeleteWishRoute(
       await reply.status(204).send();
     },
   );
-}
+};

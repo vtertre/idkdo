@@ -1,5 +1,5 @@
 import { healthResponseSchema, type HealthResponse } from "@idkdo/shared";
-import type { FastifyPluginCallback } from "fastify";
+import { type FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 
 export function getHealthResponse(): HealthResponse {
   return {
@@ -8,7 +8,7 @@ export function getHealthResponse(): HealthResponse {
   };
 }
 
-export const healthRoute: FastifyPluginCallback = (app) => {
+export const healthRoute: FastifyPluginAsyncZod = async (app) => {
   app.get(
     "/health",
     {

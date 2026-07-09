@@ -1,5 +1,6 @@
 import { createDatabaseClient, type DatabaseClient } from "@idkdo/db";
-import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
+import Fastify, { type FastifyServerOptions } from "fastify";
+import { type ZodTypeProvider } from "fastify-type-provider-zod";
 
 import type { ServerEnvironment } from "./configuration/environment.js";
 import { eventsRoute } from "./features/events/events-route.js";
@@ -14,8 +15,10 @@ export type BuildAppOptions = {
   environment: ServerEnvironment;
 };
 
-export function buildApp(options: BuildAppOptions): FastifyInstance {
-  const app = Fastify(buildFastifyOptions(options.environment));
+export function buildApp(options: BuildAppOptions) {
+  const app = Fastify(
+    buildFastifyOptions(options.environment),
+  ).withTypeProvider<ZodTypeProvider>();
   app.setValidatorCompiler(zodValidatorCompiler);
   app.setSerializerCompiler(zodSerializerCompiler);
   app.setErrorHandler(apiErrorHandler);

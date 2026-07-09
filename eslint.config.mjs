@@ -82,4 +82,12 @@ export default tseslint.config(
       "no-nested-ternary": "error",
     },
   },
+  {
+    files: ["server/src/**/*-route.ts"],
+    rules: {
+      // Fastify async route plugins register routes without awaiting anything.
+      "@typescript-eslint/require-await": "off",
+      "max-lines-per-function": "off",
+    },
+  },
 );
