@@ -12,9 +12,11 @@ import {
   createWishResponseSchema,
   getParticipantWishesResponseSchema,
   participantIdHeaderName,
+  updateWishResponseSchema,
   type ApiErrorResponse,
   type CreateParticipantResponse,
   type CreateEventResponse,
+  type CreateWishResponse,
 } from "@idkdo/shared";
 import {
   PostgreSqlContainer,
@@ -247,6 +249,254 @@ describe("Wish create and read integration", () => {
   });
 });
 
+describe("Wish update success integration", () => {
+  const context = useWishesIntegrationContext();
+
+  it("allows a Participant to edit their own Wish", async () => {
+    const app = context.openApp();
+    const fixture = await createParticipantsFixture(app);
+    const createdWish = await createWishForParticipant(app, fixture.alice.id);
+    const content = "Chocolat noir\nhttps://example.com/updated";
+
+    const response = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.alice.id },
+      method: "PATCH",
+      payload: { content },
+      url: `/api/wishes/${createdWish.id}`,
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    const body = updateWishResponseSchema.parse(parseBody(response.body));
+    const wishRows = await context.databaseClient.db
+      .select()
+      .from(wishes)
+      .where(eq(wishes.id, createdWish.id));
+
+    expect(body).toMatchObject({
+      content,
+      createdAt: createdWish.createdAt,
+      eventId: fixture.event.id,
+      id: createdWish.id,
+      wisherId: fixture.alice.id,
+    });
+    expect(body.updatedAt).not.toBe(createdWish.updatedAt);
+    expect(wishRows[0]).toMatchObject({ content });
+
+    const getResponse = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.alice.id },
+      method: "GET",
+      url: `/api/participants/${fixture.alice.id}/wishes`,
+    });
+
+    expect(getResponse.statusCode).toBe(200);
+    expect(
+      getParticipantWishesResponseSchema.parse(parseBody(getResponse.body)),
+    ).toEqual({ wishes: [body] });
+  });
+
+});
+
+describe("Wish update permission integration", () => {
+  const context = useWishesIntegrationContext();
+
+  it("prevents a same-Event Participant from editing another Participant's Wish", async () => {
+    const app = context.openApp();
+    const fixture = await createParticipantsFixture(app);
+    const createdWish = await createWishForParticipant(app, fixture.alice.id);
+
+    const response = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.bob.id },
+      method: "PATCH",
+      payload: { content: "Bob edit" },
+      url: `/api/wishes/${createdWish.id}`,
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(parseBody(response.body)).toEqual({
+      error: {
+        code: "CANNOT_MODIFY_ANOTHER_PARTICIPANT_WISH",
+        message: "A participant can only modify their own wishes.",
+      },
+    });
+    await expect(readWishContent(context, createdWish.id)).resolves.toBe(
+      createdWish.content,
+    );
+  });
+
+  it("hides Wish and actor existence failures behind identical 404 bodies", async () => {
+    const app = context.openApp();
+    const fixture = await createParticipantsFixture(app);
+    const createdWish = await createWishForParticipant(app, fixture.alice.id);
+    const expectedBody: ApiErrorResponse = {
+      error: {
+        code: "RESOURCE_NOT_FOUND",
+        message: "Resource not found.",
+      },
+    };
+
+    const foreignActorResponse = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.mallory.id },
+      method: "PATCH",
+      payload: { content: "Mallory edit" },
+      url: `/api/wishes/${createdWish.id}`,
+    });
+    const unknownWishResponse = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.alice.id },
+      method: "PATCH",
+      payload: { content: "Alice edit" },
+      url: `/api/wishes/${unknownWishId}`,
+    });
+    const unknownActorResponse = await app.inject({
+      headers: { [participantIdHeaderName]: unknownParticipantId },
+      method: "PATCH",
+      payload: { content: "Unknown edit" },
+      url: `/api/wishes/${createdWish.id}`,
+    });
+
+    expect(foreignActorResponse.statusCode).toBe(404);
+    expect(unknownWishResponse.statusCode).toBe(404);
+    expect(unknownActorResponse.statusCode).toBe(404);
+    expect(parseBody(foreignActorResponse.body)).toEqual(expectedBody);
+    expect(parseBody(unknownWishResponse.body)).toEqual(expectedBody);
+    expect(parseBody(unknownActorResponse.body)).toEqual(expectedBody);
+    expect(foreignActorResponse.body).toBe(unknownWishResponse.body);
+    expect(foreignActorResponse.body).toBe(unknownActorResponse.body);
+  });
+
+  it("returns 400 for blank content and leaves the Wish unchanged", async () => {
+    const app = context.openApp();
+    const fixture = await createParticipantsFixture(app);
+    const createdWish = await createWishForParticipant(app, fixture.alice.id);
+
+    const response = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.alice.id },
+      method: "PATCH",
+      payload: { content: " \n " },
+      url: `/api/wishes/${createdWish.id}`,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody(response.body)).toEqual({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid request body.",
+      },
+    });
+    await expect(readWishContent(context, createdWish.id)).resolves.toBe(
+      createdWish.content,
+    );
+  });
+
+  it("returns 400 for missing headers", async () => {
+    const app = context.openApp();
+    const fixture = await createParticipantsFixture(app);
+    const createdWish = await createWishForParticipant(app, fixture.alice.id);
+
+    const response = await app.inject({
+      method: "PATCH",
+      payload: { content: "Updated content" },
+      url: `/api/wishes/${createdWish.id}`,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody(response.body)).toEqual({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid request headers.",
+      },
+    });
+  });
+});
+
+describe("Wish delete integration", () => {
+  const context = useWishesIntegrationContext();
+
+  it("allows a Participant to delete their own Wish", async () => {
+    const app = context.openApp();
+    const fixture = await createParticipantsFixture(app);
+    const createdWish = await createWishForParticipant(app, fixture.alice.id);
+
+    const response = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.alice.id },
+      method: "DELETE",
+      url: `/api/wishes/${createdWish.id}`,
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(response.body).toBe("");
+    await expect(readWishRows(context, createdWish.id)).resolves.toHaveLength(0);
+
+    const getResponse = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.alice.id },
+      method: "GET",
+      url: `/api/participants/${fixture.alice.id}/wishes`,
+    });
+
+    expect(getResponse.statusCode).toBe(200);
+    expect(
+      getParticipantWishesResponseSchema.parse(parseBody(getResponse.body)),
+    ).toEqual({ wishes: [] });
+
+    const repeatDeleteResponse = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.alice.id },
+      method: "DELETE",
+      url: `/api/wishes/${createdWish.id}`,
+    });
+    const patchDeletedResponse = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.alice.id },
+      method: "PATCH",
+      payload: { content: "Updated after delete" },
+      url: `/api/wishes/${createdWish.id}`,
+    });
+
+    expect(repeatDeleteResponse.statusCode).toBe(404);
+    expect(patchDeletedResponse.statusCode).toBe(404);
+  });
+
+  it("prevents a same-Event Participant from deleting another Participant's Wish", async () => {
+    const app = context.openApp();
+    const fixture = await createParticipantsFixture(app);
+    const createdWish = await createWishForParticipant(app, fixture.alice.id);
+
+    const response = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.bob.id },
+      method: "DELETE",
+      url: `/api/wishes/${createdWish.id}`,
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(parseBody(response.body)).toEqual({
+      error: {
+        code: "CANNOT_MODIFY_ANOTHER_PARTICIPANT_WISH",
+        message: "A participant can only modify their own wishes.",
+      },
+    });
+    await expect(readWishRows(context, createdWish.id)).resolves.toHaveLength(1);
+  });
+
+  it("hides a foreign Event actor when deleting and preserves the Wish", async () => {
+    const app = context.openApp();
+    const fixture = await createParticipantsFixture(app);
+    const createdWish = await createWishForParticipant(app, fixture.alice.id);
+
+    const response = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.mallory.id },
+      method: "DELETE",
+      url: `/api/wishes/${createdWish.id}`,
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(parseBody(response.body)).toEqual({
+      error: {
+        code: "RESOURCE_NOT_FOUND",
+        message: "Resource not found.",
+      },
+    });
+    await expect(readWishRows(context, createdWish.id)).resolves.toHaveLength(1);
+  });
+});
+
 function useWishesIntegrationContext(): WishesIntegrationContext {
   const context = new WishesIntegrationContext();
 
@@ -309,6 +559,41 @@ async function createParticipant(
   return createParticipantResponseSchema.parse(parseBody(response.body));
 }
 
+async function createWishForParticipant(
+  app: FastifyInstance,
+  participantId: string,
+): Promise<CreateWishResponse> {
+  const response = await app.inject({
+    headers: { [participantIdHeaderName]: participantId },
+    method: "POST",
+    payload: { content: "Chocolat" },
+    url: `/api/participants/${participantId}/wishes`,
+  });
+
+  expect(response.statusCode).toBe(201);
+
+  return createWishResponseSchema.parse(parseBody(response.body));
+}
+
+async function readWishRows(
+  context: WishesIntegrationContext,
+  wishId: string,
+): Promise<(typeof wishes.$inferSelect)[]> {
+  return context.databaseClient.db
+    .select()
+    .from(wishes)
+    .where(eq(wishes.id, wishId));
+}
+
+async function readWishContent(
+  context: WishesIntegrationContext,
+  wishId: string,
+): Promise<string | undefined> {
+  const rows = await readWishRows(context, wishId);
+
+  return rows[0]?.content;
+}
+
 function parseBody(body: string): unknown {
   return JSON.parse(body) as unknown;
 }
@@ -366,3 +651,4 @@ class WishesIntegrationContext {
 }
 
 const unknownParticipantId = "00000000-0000-4000-8000-000000000999";
+const unknownWishId = "00000000-0000-4000-8000-000000000998";

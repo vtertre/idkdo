@@ -1,9 +1,10 @@
 import { wishes, type Database } from "@idkdo/db";
-import type { GetParticipantWishesResponse, WishSummary } from "@idkdo/shared";
+import type { GetParticipantWishesResponse } from "@idkdo/shared";
 import { asc, eq } from "drizzle-orm";
 
 import { NotFoundError } from "../../errors/not-found-error.js";
 import { getParticipantEventId } from "../participants/get-participant-event-id.js";
+import { toWishSummary } from "./to-wish-summary.js";
 
 export type GetParticipantWishesInput = {
   readonly participantId: string;
@@ -34,18 +35,5 @@ export async function getParticipantWishes(
 
   return {
     wishes: wishRows.map(toWishSummary),
-  };
-}
-
-type WishRow = typeof wishes.$inferSelect;
-
-function toWishSummary(row: WishRow): WishSummary {
-  return {
-    content: row.content,
-    createdAt: row.createdAt.toISOString(),
-    eventId: row.eventId,
-    id: row.id,
-    updatedAt: row.updatedAt.toISOString(),
-    wisherId: row.wisherId,
   };
 }
