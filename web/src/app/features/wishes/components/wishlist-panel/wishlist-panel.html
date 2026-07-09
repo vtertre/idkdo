@@ -1,0 +1,59 @@
+<section class="wishlist" aria-labelledby="wishlist-title">
+  <div class="wishlist-heading">
+    <h2 id="wishlist-title">Ma liste</h2>
+  </div>
+
+  @if (loadPending()) {
+    <p aria-live="polite">Chargement...</p>
+  }
+
+  @if (loadError()) {
+    <div class="load-error" role="alert">
+      <p>{{ loadError() }}</p>
+      <button class="secondary" type="button" (click)="loadWishes()">
+        Réessayer
+      </button>
+    </div>
+  } @else {
+    <ul class="wishes">
+      @for (wish of wishes(); track wish.id) {
+        <li>
+          <app-wish-content [content]="wish.content" />
+        </li>
+      } @empty {
+        <li class="empty">Aucun souhait pour le moment.</li>
+      }
+    </ul>
+  }
+
+  <form class="add-wish" (submit)="onCreateWish($event)" novalidate>
+    <label for="wish-content">Ajouter un souhait</label>
+    <textarea
+      id="wish-content"
+      rows="4"
+      [formField]="wishForm.content"
+      [attr.aria-describedby]="
+        wishForm.content().touched() && wishForm.content().invalid()
+          ? 'wish-content-error'
+          : null
+      "
+      [attr.aria-invalid]="
+        wishForm.content().touched() && wishForm.content().invalid()
+          ? 'true'
+          : null
+      "
+    ></textarea>
+
+    @if (wishForm.content().touched() && wishForm.content().invalid()) {
+      <p class="field-error" id="wish-content-error">Saisissez un souhait.</p>
+    }
+
+    <button type="submit" [disabled]="createPending()">
+      {{ createPending() ? "Ajout..." : "Ajouter" }}
+    </button>
+
+    @if (submitError()) {
+      <p class="submit-error" aria-live="polite">{{ submitError() }}</p>
+    }
+  </form>
+</section>

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { index, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 const timestamps = () => ({
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -25,7 +25,24 @@ export const participants = pgTable(
   (table) => [unique().on(table.eventId, table.name)],
 );
 
+export const wishes = pgTable(
+  "wishes",
+  {
+    id: uuid("id").primaryKey(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id),
+    wisherId: uuid("wisher_id")
+      .notNull()
+      .references(() => participants.id),
+    content: text("content").notNull(),
+    ...timestamps(),
+  },
+  (table) => [index().on(table.eventId), index().on(table.wisherId)],
+);
+
 export const schema = {
   events,
   participants,
+  wishes,
 };

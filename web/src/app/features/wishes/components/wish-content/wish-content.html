@@ -1,0 +1,15 @@
+@for (segment of segments(); track $index) {
+  @switch (segment.kind) {
+    @case ("text") {
+      {{ segment.text }}
+    }
+    @case ("line-break") {
+      <br />
+    }
+    @case ("link") {
+      <a [href]="segment.url" target="_blank" rel="noopener noreferrer">
+        {{ segment.url }}
+      </a>
+    }
+  }
+}

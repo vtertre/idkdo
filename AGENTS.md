@@ -60,7 +60,8 @@ Use Conventional Commits for commit messages.
 
 ## 7. Database Change Workflow
 
-The application is not scaffolded yet.
+Database guidance lives in `docs/DATABASE.md`. After Drizzle schema changes,
+run `pnpm db:generate` and commit the generated migration files.
 
 ## 8. Verification Before Hand-off
 

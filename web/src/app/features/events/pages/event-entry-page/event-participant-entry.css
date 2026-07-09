@@ -19,6 +19,12 @@ p { color: var(--muted); line-height: 1.55; }
   gap: 0.75rem;
 }
 
+.identity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 label { font-weight: 700; }
 
 input {
