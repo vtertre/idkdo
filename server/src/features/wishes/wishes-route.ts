@@ -3,6 +3,8 @@ import {
   apiErrorResponseSchema,
   createWishRequestBodySchema,
   createWishResponseSchema,
+  getEventWishesResponseSchema,
+  getEventWishesRouteParamsSchema,
   getParticipantWishesResponseSchema,
   participantIdHeaderName,
   participantIdHeaderSchema,
@@ -16,6 +18,7 @@ import { z } from "zod";
 
 import { createWish } from "./create-wish.js";
 import { deleteWish } from "./delete-wish.js";
+import { getEventWishes } from "./get-event-wishes.js";
 import { getParticipantWishes } from "./get-participant-wishes.js";
 import { updateWish } from "./update-wish.js";
 
@@ -69,6 +72,29 @@ export const wishesRoute: FastifyPluginAsyncZod<WishesRouteOptions> = async (
     async (request, reply) => {
       const response = await getParticipantWishes(options.db, {
         participantId: request.params.participantId,
+        viewerParticipantId: request.headers[participantIdHeaderName],
+      });
+
+      await reply.send(response);
+    },
+  );
+
+  app.get(
+    "/events/:eventId/wishes",
+    {
+      schema: {
+        headers: participantIdHeaderSchema,
+        params: getEventWishesRouteParamsSchema,
+        response: {
+          200: getEventWishesResponseSchema,
+          400: apiErrorResponseSchema,
+          404: apiErrorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const response = await getEventWishes(options.db, {
+        eventId: request.params.eventId,
         viewerParticipantId: request.headers[participantIdHeaderName],
       });
 
