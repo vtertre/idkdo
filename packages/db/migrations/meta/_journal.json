@@ -43,6 +43,13 @@
       "when": 1783539904517,
       "tag": "0005_overrated_havok",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783711478936,
+      "tag": "0006_cheerful_malice",
+      "breakpoints": true
     }
   ]
 }

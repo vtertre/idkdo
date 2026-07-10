@@ -23,6 +23,10 @@ export {
   type CreateWishResponse,
 } from "./validators/create-wish-response-schema.js";
 export {
+  createReservationResponseSchema,
+  type CreateReservationResponse,
+} from "./validators/create-reservation-response-schema.js";
+export {
   eventWishSchema,
   type EventWish,
 } from "./validators/event-wish-schema.js";
@@ -75,6 +79,14 @@ export {
   purchaseCoordinationSchema,
   type PurchaseCoordination,
 } from "./validators/purchase-coordination-schema.js";
+export {
+  reservationContributorSummarySchema,
+  type ReservationContributorSummary,
+} from "./validators/reservation-contributor-summary-schema.js";
+export {
+  reservationSummarySchema,
+  type ReservationSummary,
+} from "./validators/reservation-summary-schema.js";
 export {
   updateWishRequestBodySchema,
   type UpdateWishRequestBody,

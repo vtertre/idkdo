@@ -41,8 +41,34 @@ export const wishes = pgTable(
   (table) => [index().on(table.eventId), index().on(table.wisherId)],
 );
 
+export const reservations = pgTable("reservations", {
+  id: uuid("id").primaryKey(),
+  wishId: uuid("wish_id")
+    .notNull()
+    .unique()
+    .references(() => wishes.id, { onDelete: "cascade" }),
+  ...timestamps(),
+});
+
+export const reservationContributors = pgTable(
+  "reservation_contributors",
+  {
+    id: uuid("id").primaryKey(),
+    reservationId: uuid("reservation_id")
+      .notNull()
+      .references(() => reservations.id, { onDelete: "cascade" }),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => participants.id),
+    ...timestamps(),
+  },
+  (table) => [unique().on(table.reservationId, table.participantId)],
+);
+
 export const schema = {
   events,
   participants,
+  reservationContributors,
+  reservations,
   wishes,
 };

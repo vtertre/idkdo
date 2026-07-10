@@ -3,6 +3,8 @@ import {
   events,
   migrateDatabase,
   participants,
+  reservationContributors,
+  reservations,
   wishes,
   type DatabaseClient,
 } from "@idkdo/db";
@@ -770,6 +772,8 @@ class WishesIntegrationContext {
   }
 
   async resetDatabase(): Promise<void> {
+    await this.databaseClient.db.delete(reservationContributors);
+    await this.databaseClient.db.delete(reservations);
     await this.databaseClient.db.delete(wishes);
     await this.databaseClient.db.delete(participants);
     await this.databaseClient.db.delete(events);

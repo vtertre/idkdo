@@ -3,6 +3,7 @@ import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 
 import { BusinessRuleError } from "../errors/business-rule-error.js";
 import { NotFoundError } from "../errors/not-found-error.js";
+import { StateConflictError } from "../errors/state-conflict-error.js";
 
 type HttpErrorResponse = {
   readonly body: ApiErrorResponse;
@@ -35,6 +36,18 @@ function mapErrorToHttpResponse(error: unknown): HttpErrorResponse {
         },
       },
       statusCode: 422,
+    };
+  }
+
+  if (error instanceof StateConflictError) {
+    return {
+      body: {
+        error: {
+          code: errorCode,
+          message: error.message,
+        },
+      },
+      statusCode: 409,
     };
   }
 

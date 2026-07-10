@@ -1,4 +1,10 @@
-import { events, participants, wishes } from "@idkdo/db";
+import {
+  events,
+  participants,
+  reservationContributors,
+  reservations,
+  wishes,
+} from "@idkdo/db";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -38,6 +44,55 @@ describe("deleteWish", () => {
     }
   });
 
+});
+
+describe("deleteWish Reservation cascade", () => {
+  it("cascades through its Reservation and Contributors without deleting unrelated rows", async () => {
+    const database = await template.clone();
+
+    try {
+      await seedFixture(database.db);
+      await database.db.insert(wishes).values({
+        content: "Unrelated Wish",
+        eventId,
+        id: unrelatedWishId,
+        wisherId: bobId,
+      });
+      await database.db.insert(reservations).values([
+        { id: reservationId, wishId },
+        { id: unrelatedReservationId, wishId: unrelatedWishId },
+      ]);
+      await database.db.insert(reservationContributors).values([
+        {
+          id: contributorId,
+          participantId: bobId,
+          reservationId,
+        },
+        {
+          id: unrelatedContributorId,
+          participantId: aliceId,
+          reservationId: unrelatedReservationId,
+        },
+      ]);
+
+      await deleteWish(database.applicationDatabase, {
+        actorParticipantId: aliceId,
+        wishId,
+      });
+
+      await expect(
+        database.db.select().from(reservations),
+      ).resolves.toMatchObject([{ id: unrelatedReservationId }]);
+      await expect(
+        database.db.select().from(reservationContributors),
+      ).resolves.toMatchObject([{ id: unrelatedContributorId }]);
+    } finally {
+      await database.close();
+    }
+  });
+});
+
+describe("deleteWish permissions and state", () => {
   it("throws NotFoundError for an unknown Wish", async () => {
     const database = await template.clone();
 
@@ -186,3 +241,8 @@ const malloryId = "00000000-0000-4000-8000-000000000201";
 const unknownParticipantId = "00000000-0000-4000-8000-000000000999";
 const wishId = "00000000-0000-4000-8000-000000000301";
 const unknownWishId = "00000000-0000-4000-8000-000000000999";
+const unrelatedWishId = "00000000-0000-4000-8000-000000000302";
+const reservationId = "00000000-0000-4000-8000-000000000401";
+const unrelatedReservationId = "00000000-0000-4000-8000-000000000402";
+const contributorId = "00000000-0000-4000-8000-000000000501";
+const unrelatedContributorId = "00000000-0000-4000-8000-000000000502";
