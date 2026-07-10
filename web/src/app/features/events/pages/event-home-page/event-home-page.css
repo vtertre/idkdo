@@ -83,6 +83,10 @@ button:hover:not(:disabled) {
   color: var(--primary);
 }
 
+.tab:hover:not(:disabled) {
+  background: #edf4ef;
+}
+
 .event-panels {
   display: grid;
   gap: 1.5rem;
