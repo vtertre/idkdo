@@ -57,9 +57,58 @@ button:hover:not(:disabled) {
   background: #edf4ef;
 }
 
+.tab-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.tab {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--muted);
+}
+
+.tab:first-child {
+  border-radius: 0.4rem 0 0 0.4rem;
+}
+
+.tab:last-child {
+  border-radius: 0 0.4rem 0.4rem 0;
+  border-left: 0;
+}
+
+.tab.is-active {
+  background: #edf4ef;
+  color: var(--primary);
+}
+
+.event-panels {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.event-panel:not(.is-active) {
+  display: none;
+}
+
 @media (min-width: 42rem) {
   .event-header {
     align-items: start;
     grid-template-columns: 1fr auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .tab-bar {
+    display: none;
+  }
+
+  .event-panels {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .event-panel:not(.is-active) {
+    display: block;
   }
 }

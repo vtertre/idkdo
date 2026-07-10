@@ -1,0 +1,56 @@
+<section class="event-wishes" aria-labelledby="event-wishes-title">
+  <div class="event-wishes-heading">
+    <h2 id="event-wishes-title">Toutes les listes</h2>
+    <button
+      class="secondary refresh"
+      type="button"
+      [disabled]="loadPending()"
+      (click)="refresh()"
+    >
+      Actualiser
+    </button>
+  </div>
+
+  @if (loadPending()) {
+    <p aria-live="polite">Chargement...</p>
+  }
+
+  @if (loadError()) {
+    <div class="load-error" role="alert">
+      <p>{{ loadError() }}</p>
+      <button class="secondary retry" type="button" (click)="refresh()">
+        Réessayer
+      </button>
+    </div>
+  } @else {
+    <div class="wish-groups">
+      @for (group of groups(); track group.wisherId) {
+        <section class="wish-group" [attr.data-wisher-id]="group.wisherId">
+          <h3>
+            {{ group.name }}
+            @if (group.isViewer) {
+              <span class="viewer-badge">vous</span>
+            }
+          </h3>
+
+          <ul class="wishes">
+            @for (wish of group.wishes; track wish.id) {
+              <li class="event-wish">
+                <app-wish-content [content]="wish.content" />
+
+                @switch (wish.purchaseCoordination.kind) {
+                  @case ("hidden") {}
+                  @case ("visible") {
+                    <div class="purchase-coordination"></div>
+                  }
+                }
+              </li>
+            } @empty {
+              <li class="empty">Aucun souhait pour le moment</li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  }
+</section>

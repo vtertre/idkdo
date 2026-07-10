@@ -3,9 +3,11 @@ import { Injectable, inject } from "@angular/core";
 import {
   apiErrorResponseSchema,
   createWishResponseSchema,
+  getEventWishesResponseSchema,
   getParticipantWishesResponseSchema,
   updateWishResponseSchema,
   type CreateWishResponse,
+  type GetEventWishesResponse,
   type GetParticipantWishesResponse,
   type UpdateWishResponse,
 } from "@idkdo/shared";
@@ -39,6 +41,13 @@ export class WishRepository {
         map((response) => getParticipantWishesResponseSchema.parse(response)),
         catchError((error: unknown) => throwError(() => normalizeError(error))),
       );
+  }
+
+  getEventWishes(eventId: string): Observable<GetEventWishesResponse> {
+    return this.http.get<unknown>(`/api/events/${eventId}/wishes`).pipe(
+      map((response) => getEventWishesResponseSchema.parse(response)),
+      catchError((error: unknown) => throwError(() => normalizeError(error))),
+    );
   }
 
   updateWish(wishId: string, content: string): Observable<UpdateWishResponse> {
