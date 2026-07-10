@@ -3,6 +3,7 @@ import type { EventWish, ParticipantSummary } from "@idkdo/shared";
 import { of, throwError } from "rxjs";
 
 import { WishRepositoryError } from "../../data-access/wish-repository-error";
+import { ReservationRepository } from "../../data-access/reservation-repository";
 import { WishRepository } from "../../data-access/wish-repository";
 import { EventWishesPanel } from "./event-wishes-panel";
 
@@ -29,18 +30,37 @@ const bobWish: EventWish = {
   purchaseCoordination: { kind: "visible", reservation: null },
   wisherId: bob.id,
 };
+const reservation = {
+  contributors: [
+    {
+      createdAt: "2026-07-08T10:01:00.000Z",
+      participantId: alice.id,
+    },
+  ],
+  createdAt: "2026-07-08T10:01:00.000Z",
+  id: "2ac83c83-bd5d-467f-9253-3640e00cc02d",
+  updatedAt: "2026-07-08T10:01:00.000Z",
+  wishId: bobWish.id,
+};
 
 const getEventWishes = vi.fn<WishRepository["getEventWishes"]>();
+const createReservation = vi.fn<ReservationRepository["createReservation"]>();
 
 beforeEach(() => {
   getEventWishes.mockReset();
   getEventWishes.mockReturnValue(of({ wishes: [] }));
+  createReservation.mockReset();
+  createReservation.mockReturnValue(of(reservation));
   TestBed.configureTestingModule({
     imports: [EventWishesPanel],
     providers: [
       {
         provide: WishRepository,
         useValue: { getEventWishes },
+      },
+      {
+        provide: ReservationRepository,
+        useValue: { createReservation },
       },
     ],
   });
@@ -65,7 +85,7 @@ describe("EventWishesPanel", () => {
     );
   });
 
-  it("omits coordination entirely for own Wishes and renders an empty container for visible-null Wishes", async () => {
+  it("renders Réserver only for visible unreserved Wishes and omits coordination for own Wishes", async () => {
     getEventWishes.mockReturnValue(of({ wishes: [aliceWish, bobWish] }));
 
     const { element } = await createPanel();
@@ -76,9 +96,93 @@ describe("EventWishesPanel", () => {
 
     expect(aliceGroup.querySelector(".purchase-coordination")).toBeNull();
     expect(bobCoordination).not.toBeNull();
-    expect(bobCoordination?.textContent?.trim()).toBe("");
+    expect(bobCoordination?.textContent).toContain("Réserver");
+    expect(aliceGroup.textContent).not.toContain("Réserver");
+  });
+});
+
+describe("EventWishesPanel reservation coordination", () => {
+  it("patches a successfully reserved Wish locally", async () => {
+    getEventWishes.mockReturnValue(of({ wishes: [aliceWish, bobWish] }));
+    const { element, fixture } = await createPanel();
+
+    clickButtonWithText(element, "Réserver");
+    await fixture.whenStable();
+
+    expect(createReservation).toHaveBeenCalledWith(bobWish.id);
+    expect(element.textContent).toContain("Réservé par Alice");
+    expect(groupFor(element, bob.id).textContent).not.toContain("Réserver");
   });
 
+  it("resolves contributor names and tolerates unknown Participants", async () => {
+    getEventWishes.mockReturnValue(
+      of({
+        wishes: [
+          {
+            ...bobWish,
+            purchaseCoordination: {
+              kind: "visible",
+              reservation: {
+                ...reservation,
+                contributors: [
+                  reservation.contributors[0]!,
+                  {
+                    createdAt: "2026-07-08T10:02:00.000Z",
+                    participantId: "4ca8b4d7-af86-4110-9fa0-5f3e0248c877",
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      }),
+    );
+
+    const { element } = await createPanel();
+
+    expect(element.textContent).toContain("Réservé par Alice, Quelqu'un");
+    expect(element.textContent).not.toContain("Réserver");
+  });
+
+  it("shows the conflict message and refreshes", async () => {
+    getEventWishes.mockReturnValue(of({ wishes: [bobWish] }));
+    createReservation.mockReturnValue(
+      throwError(
+        () =>
+          new WishRepositoryError(
+            "This wish is already reserved.",
+            409,
+            "RESERVATION_ALREADY_EXISTS",
+          ),
+      ),
+    );
+    const { element, fixture } = await createPanel();
+
+    clickButtonWithText(element, "Réserver");
+    await fixture.whenStable();
+
+    expect(element.textContent).toContain(
+      "Ce souhait vient d'être réservé par quelqu'un d'autre.",
+    );
+    expect(getEventWishes).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows a generic reservation failure", async () => {
+    getEventWishes.mockReturnValue(of({ wishes: [bobWish] }));
+    createReservation.mockReturnValue(
+      throwError(() => new WishRepositoryError("Failure.", 500, "FAILURE")),
+    );
+    const { element, fixture } = await createPanel();
+
+    clickButtonWithText(element, "Réserver");
+    await fixture.whenStable();
+
+    expect(element.textContent).toContain("La réservation a échoué. Réessayez.");
+    expect(getEventWishes).toHaveBeenCalledOnce();
+  });
+});
+
+describe("EventWishesPanel loading and rendering", () => {
   it("shows a load error and retries successfully", async () => {
     getEventWishes
       .mockReturnValueOnce(

@@ -41,7 +41,26 @@
                 @switch (wish.purchaseCoordination.kind) {
                   @case ("hidden") {}
                   @case ("visible") {
-                    <div class="purchase-coordination"></div>
+                    <div class="purchase-coordination">
+                      @if (wish.purchaseCoordination.reservation; as reservation) {
+                        <p class="reserved">
+                          Réservé par {{ reservationContributorNames(reservation) }}
+                        </p>
+                      } @else {
+                        <button
+                          class="reserve"
+                          type="button"
+                          [disabled]="reservationPendingWishIds().has(wish.id)"
+                          (click)="reserve(wish.id)"
+                        >
+                          Réserver
+                        </button>
+                      }
+
+                      @if (reservationErrors().get(wish.id); as error) {
+                        <p class="reservation-error" role="alert">{{ error }}</p>
+                      }
+                    </div>
                   }
                 }
               </li>

@@ -62,7 +62,25 @@ p,
 }
 
 .purchase-coordination {
+  display: grid;
+  gap: 0.5rem;
   margin-top: 0.75rem;
+}
+
+.reserved {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.reservation-error {
+  color: var(--error);
+}
+
+.reserve {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  color: var(--surface);
+  justify-self: start;
 }
 
 button {
