@@ -11,6 +11,56 @@
       </button>
     </header>
 
-    <app-wishlist-panel [participantId]="participant.id" />
+    <div class="tab-bar" role="tablist" aria-label="Listes de souhaits">
+      <button
+        id="my-list-tab"
+        class="tab"
+        role="tab"
+        type="button"
+        aria-controls="my-list-panel"
+        [attr.aria-selected]="activeTab() === 'my-list'"
+        [class.is-active]="activeTab() === 'my-list'"
+        (click)="selectTab('my-list')"
+      >
+        Ma liste
+      </button>
+      <button
+        id="event-wishes-tab"
+        class="tab"
+        role="tab"
+        type="button"
+        aria-controls="event-wishes-panel"
+        [attr.aria-selected]="activeTab() === 'event-wishes'"
+        [class.is-active]="activeTab() === 'event-wishes'"
+        (click)="selectTab('event-wishes')"
+      >
+        Toutes les listes
+      </button>
+    </div>
+
+    <div class="event-panels">
+      <div
+        id="my-list-panel"
+        class="event-panel my-list-panel"
+        role="tabpanel"
+        aria-labelledby="my-list-tab"
+        [class.is-active]="activeTab() === 'my-list'"
+      >
+        <app-wishlist-panel [participantId]="participant.id" />
+      </div>
+      <div
+        id="event-wishes-panel"
+        class="event-panel event-wishes-panel"
+        role="tabpanel"
+        aria-labelledby="event-wishes-tab"
+        [class.is-active]="activeTab() === 'event-wishes'"
+      >
+        <app-event-wishes-panel
+          [eventId]="event().id"
+          [viewerParticipantId]="participant.id"
+          [participants]="event().participants"
+        />
+      </div>
+    </div>
   </section>
 }

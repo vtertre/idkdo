@@ -10,6 +10,7 @@ import {
   createParticipantResponseSchema,
   createEventResponseSchema,
   createWishResponseSchema,
+  getEventWishesResponseSchema,
   getParticipantWishesResponseSchema,
   participantIdHeaderName,
   updateWishResponseSchema,
@@ -246,6 +247,137 @@ describe("Wish create and read integration", () => {
     expect(
       getParticipantWishesResponseSchema.parse(parseBody(laterGetResponse.body)),
     ).toEqual({ wishes: [createBody] });
+  });
+});
+
+describe("Event Wishes browsing integration", () => {
+  const context = useWishesIntegrationContext();
+
+  it("filters Purchase Coordination for Alice and Bob's perspectives", async () => {
+    const app = context.openApp();
+    const fixture = await createParticipantsFixture(app);
+    const aliceWish = await createWishForParticipant(
+      app,
+      fixture.alice.id,
+      "Livre d'Alice",
+    );
+    const bobWish = await createWishForParticipant(
+      app,
+      fixture.bob.id,
+      "Chocolat de Bob",
+    );
+
+    const aliceResponse = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.alice.id },
+      method: "GET",
+      url: `/api/events/${fixture.event.id}/wishes`,
+    });
+    const bobResponse = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.bob.id },
+      method: "GET",
+      url: `/api/events/${fixture.event.id}/wishes`,
+    });
+
+    expect(aliceResponse.statusCode).toBe(200);
+    expect(bobResponse.statusCode).toBe(200);
+
+    const aliceBody = getEventWishesResponseSchema.parse(
+      parseBody(aliceResponse.body),
+    );
+    const bobBody = getEventWishesResponseSchema.parse(parseBody(bobResponse.body));
+
+    expect(aliceBody.wishes).toEqual([
+      { ...aliceWish, purchaseCoordination: { kind: "hidden" } },
+      {
+        ...bobWish,
+        purchaseCoordination: { kind: "visible", reservation: null },
+      },
+    ]);
+    expect(bobBody.wishes).toEqual([
+      {
+        ...aliceWish,
+        purchaseCoordination: { kind: "visible", reservation: null },
+      },
+      { ...bobWish, purchaseCoordination: { kind: "hidden" } },
+    ]);
+    expectHiddenCoordinationToOmitReservation(aliceResponse.body);
+    expectHiddenCoordinationToOmitReservation(bobResponse.body);
+  });
+});
+
+describe("Event Wishes access integration", () => {
+  const context = useWishesIntegrationContext();
+
+  it("hides every membership failure behind byte-identical 404 bodies", async () => {
+    const app = context.openApp();
+    const fixture = await createParticipantsFixture(app);
+
+    const foreignViewerResponse = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.mallory.id },
+      method: "GET",
+      url: `/api/events/${fixture.event.id}/wishes`,
+    });
+    const unknownViewerResponse = await app.inject({
+      headers: { [participantIdHeaderName]: unknownParticipantId },
+      method: "GET",
+      url: `/api/events/${fixture.event.id}/wishes`,
+    });
+    const foreignEventResponse = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.alice.id },
+      method: "GET",
+      url: `/api/events/${fixture.otherEvent.id}/wishes`,
+    });
+    const expectedBody: ApiErrorResponse = {
+      error: {
+        code: "RESOURCE_NOT_FOUND",
+        message: "Resource not found.",
+      },
+    };
+
+    expect(foreignViewerResponse.statusCode).toBe(404);
+    expect(unknownViewerResponse.statusCode).toBe(404);
+    expect(foreignEventResponse.statusCode).toBe(404);
+    expect(parseBody(foreignViewerResponse.body)).toEqual(expectedBody);
+    expect(foreignViewerResponse.body).toBe(unknownViewerResponse.body);
+    expect(foreignViewerResponse.body).toBe(foreignEventResponse.body);
+  });
+
+  it("validates Event Wishes headers and route parameters", async () => {
+    const app = context.openApp();
+    const fixture = await createParticipantsFixture(app);
+
+    const missingHeaderResponse = await app.inject({
+      method: "GET",
+      url: `/api/events/${fixture.event.id}/wishes`,
+    });
+    const malformedHeaderResponse = await app.inject({
+      headers: { [participantIdHeaderName]: "not-a-uuid" },
+      method: "GET",
+      url: `/api/events/${fixture.event.id}/wishes`,
+    });
+    const malformedParamsResponse = await app.inject({
+      headers: { [participantIdHeaderName]: fixture.alice.id },
+      method: "GET",
+      url: "/api/events/not-a-uuid/wishes",
+    });
+    const expectedHeaderBody: ApiErrorResponse = {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid request headers.",
+      },
+    };
+
+    expect(missingHeaderResponse.statusCode).toBe(400);
+    expect(malformedHeaderResponse.statusCode).toBe(400);
+    expect(parseBody(missingHeaderResponse.body)).toEqual(expectedHeaderBody);
+    expect(parseBody(malformedHeaderResponse.body)).toEqual(expectedHeaderBody);
+    expect(malformedParamsResponse.statusCode).toBe(400);
+    expect(parseBody(malformedParamsResponse.body)).toEqual({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid route parameters.",
+      },
+    });
   });
 });
 
@@ -562,17 +694,30 @@ async function createParticipant(
 async function createWishForParticipant(
   app: FastifyInstance,
   participantId: string,
+  content = "Chocolat",
 ): Promise<CreateWishResponse> {
   const response = await app.inject({
     headers: { [participantIdHeaderName]: participantId },
     method: "POST",
-    payload: { content: "Chocolat" },
+    payload: { content },
     url: `/api/participants/${participantId}/wishes`,
   });
 
   expect(response.statusCode).toBe(201);
 
   return createWishResponseSchema.parse(parseBody(response.body));
+}
+
+function expectHiddenCoordinationToOmitReservation(body: string): void {
+  const hiddenObjects =
+    body.match(
+      /"purchaseCoordination":\{(?=[^}]*"kind":"hidden")[^}]*\}/g,
+    ) ?? [];
+
+  expect(hiddenObjects.length).toBeGreaterThan(0);
+  for (const hiddenObject of hiddenObjects) {
+    expect(hiddenObject).not.toContain('"reservation"');
+  }
 }
 
 async function readWishRows(

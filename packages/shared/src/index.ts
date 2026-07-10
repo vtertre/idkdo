@@ -23,6 +23,10 @@ export {
   type CreateWishResponse,
 } from "./validators/create-wish-response-schema.js";
 export {
+  eventWishSchema,
+  type EventWish,
+} from "./validators/event-wish-schema.js";
+export {
   createEventRequestBodySchema,
   type CreateEventRequestBody,
 } from "./validators/create-event-request-body-schema.js";
@@ -38,6 +42,14 @@ export {
   getEventEntryPageRouteParamsSchema,
   type GetEventEntryPageRouteParams,
 } from "./validators/get-event-entry-page-route-params-schema.js";
+export {
+  getEventWishesResponseSchema,
+  type GetEventWishesResponse,
+} from "./validators/get-event-wishes-response-schema.js";
+export {
+  getEventWishesRouteParamsSchema,
+  type GetEventWishesRouteParams,
+} from "./validators/get-event-wishes-route-params-schema.js";
 export {
   getParticipantWishesResponseSchema,
   type GetParticipantWishesResponse,
@@ -59,6 +71,10 @@ export {
   participantWishesRouteParamsSchema,
   type ParticipantWishesRouteParams,
 } from "./validators/participant-wishes-route-params-schema.js";
+export {
+  purchaseCoordinationSchema,
+  type PurchaseCoordination,
+} from "./validators/purchase-coordination-schema.js";
 export {
   updateWishRequestBodySchema,
   type UpdateWishRequestBody,

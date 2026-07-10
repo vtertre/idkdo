@@ -65,6 +65,20 @@ describe("WishRepository", () => {
     await expect(result).resolves.toEqual({ wishes: [wishResponse] });
   });
 
+  it("loads and validates Event Wishes", async () => {
+    const eventWish = {
+      ...wishResponse,
+      purchaseCoordination: { kind: "hidden" },
+    };
+    const result = firstValueFrom(repository.getEventWishes(eventId));
+    const request = http.expectOne(`/api/events/${eventId}/wishes`);
+
+    expect(request.request.method).toBe("GET");
+    request.flush({ wishes: [eventWish] });
+
+    await expect(result).resolves.toEqual({ wishes: [eventWish] });
+  });
+
   it("updates a Wish with the exact API request", async () => {
     const updatedResponse = {
       ...wishResponse,

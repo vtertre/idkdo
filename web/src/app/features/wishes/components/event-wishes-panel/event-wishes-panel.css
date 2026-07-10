@@ -1,0 +1,101 @@
+.event-wishes,
+.wish-groups,
+.wish-group {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.event-wishes-heading {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.2rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+}
+
+p,
+.empty {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.viewer-badge {
+  background: #edf4ef;
+  border-radius: 999px;
+  color: var(--primary);
+  display: inline-block;
+  font-size: 0.8rem;
+  margin-left: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  vertical-align: middle;
+}
+
+.wishes {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.event-wish,
+.empty {
+  background: #f8faf7;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  padding: 0.85rem;
+}
+
+.purchase-coordination {
+  margin-top: 0.75rem;
+}
+
+button {
+  border-radius: 0.4rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.secondary {
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+
+.secondary:hover:not(:disabled) {
+  background: #edf4ef;
+}
+
+.load-error {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1.25rem;
+}
+
+.load-error p {
+  color: var(--error);
+}
