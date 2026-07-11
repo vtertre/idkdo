@@ -83,6 +83,11 @@ p,
   justify-self: start;
 }
 
+.reserve:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
 button {
   border-radius: 0.4rem;
   cursor: pointer;
