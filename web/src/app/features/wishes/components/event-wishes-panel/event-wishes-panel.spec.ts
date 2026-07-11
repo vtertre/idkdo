@@ -45,12 +45,23 @@ const reservation = {
 
 const getEventWishes = vi.fn<WishRepository["getEventWishes"]>();
 const createReservation = vi.fn<ReservationRepository["createReservation"]>();
+const addContributor = vi.fn<ReservationRepository["addContributor"]>();
+const removeContributor = vi.fn<ReservationRepository["removeContributor"]>();
+
+const reservedBobWish: EventWish = {
+  ...bobWish,
+  purchaseCoordination: { kind: "visible", reservation },
+};
 
 beforeEach(() => {
   getEventWishes.mockReset();
   getEventWishes.mockReturnValue(of({ wishes: [] }));
   createReservation.mockReset();
   createReservation.mockReturnValue(of(reservation));
+  addContributor.mockReset();
+  addContributor.mockReturnValue(of(reservation));
+  removeContributor.mockReset();
+  removeContributor.mockReturnValue(of({ reservation }));
   TestBed.configureTestingModule({
     imports: [EventWishesPanel],
     providers: [
@@ -60,7 +71,7 @@ beforeEach(() => {
       },
       {
         provide: ReservationRepository,
-        useValue: { createReservation },
+        useValue: { createReservation, addContributor, removeContributor },
       },
     ],
   });
@@ -110,7 +121,7 @@ describe("EventWishesPanel reservation coordination", () => {
     await fixture.whenStable();
 
     expect(createReservation).toHaveBeenCalledWith(bobWish.id);
-    expect(element.textContent).toContain("Réservé par Alice");
+    expect(contributorNames(groupFor(element, bob.id))).toEqual(["Alice"]);
     expect(groupFor(element, bob.id).textContent).not.toContain("Réserver");
   });
 
@@ -140,7 +151,10 @@ describe("EventWishesPanel reservation coordination", () => {
 
     const { element } = await createPanel();
 
-    expect(element.textContent).toContain("Réservé par Alice, Quelqu'un");
+    expect(contributorNames(groupFor(element, bob.id))).toEqual([
+      "Alice",
+      "Quelqu'un",
+    ]);
     expect(element.textContent).not.toContain("Réserver");
   });
 
@@ -179,6 +193,174 @@ describe("EventWishesPanel reservation coordination", () => {
 
     expect(element.textContent).toContain("La réservation a échoué. Réessayez.");
     expect(getEventWishes).toHaveBeenCalledOnce();
+  });
+});
+
+describe("EventWishesPanel contributor management", () => {
+  it("patches the reservation from a join response", async () => {
+    getEventWishes.mockReturnValue(of({ wishes: [reservedBobWish] }));
+    addContributor.mockReturnValue(
+      of({
+        ...reservation,
+        contributors: [
+          reservation.contributors[0]!,
+          { createdAt: "2026-07-08T10:02:00.000Z", participantId: chloe.id },
+        ],
+      }),
+    );
+    const { element, fixture } = await createPanel(chloe.id);
+
+    clickButtonWithText(element, "Participer");
+    await fixture.whenStable();
+
+    expect(addContributor).toHaveBeenCalledWith(reservation.id, chloe.id);
+    expect(contributorNames(groupFor(element, bob.id))).toEqual([
+      "Alice",
+      "Chloé",
+    ]);
+  });
+
+  it("patches the reservation from an add response", async () => {
+    getEventWishes.mockReturnValue(of({ wishes: [reservedBobWish] }));
+    addContributor.mockReturnValue(
+      of({
+        ...reservation,
+        contributors: [
+          reservation.contributors[0]!,
+          { createdAt: "2026-07-08T10:02:00.000Z", participantId: chloe.id },
+        ],
+      }),
+    );
+    const { element, fixture } = await createPanel();
+
+    clickButtonWithText(element, "Ajouter quelqu'un");
+    fixture.detectChanges();
+    const select = groupFor(element, bob.id).querySelector<HTMLSelectElement>(
+      ".picker-select",
+    );
+    if (!select) throw new Error("Expected the picker select.");
+    select.value = chloe.id;
+    select.dispatchEvent(new Event("change"));
+    fixture.detectChanges();
+    clickButtonWithText(element, "Ajouter");
+    await fixture.whenStable();
+
+    expect(addContributor).toHaveBeenCalledWith(reservation.id, chloe.id);
+    expect(contributorNames(groupFor(element, bob.id))).toEqual([
+      "Alice",
+      "Chloé",
+    ]);
+  });
+
+  it("patches the reservation from a remove response", async () => {
+    getEventWishes.mockReturnValue(
+      of({
+        wishes: [
+          {
+            ...bobWish,
+            purchaseCoordination: {
+              kind: "visible",
+              reservation: {
+                ...reservation,
+                contributors: [
+                  reservation.contributors[0]!,
+                  {
+                    createdAt: "2026-07-08T10:02:00.000Z",
+                    participantId: chloe.id,
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      }),
+    );
+    removeContributor.mockReturnValue(of({ reservation }));
+    const { element, fixture } = await createPanel();
+
+    const chloeRow = Array.from(
+      groupFor(element, bob.id).querySelectorAll<HTMLElement>(".contributor"),
+    ).find((row) => row.textContent?.includes("Chloé"));
+    chloeRow?.querySelector<HTMLButtonElement>(".remove")?.click();
+    await fixture.whenStable();
+
+    expect(removeContributor).toHaveBeenCalledWith(reservation.id, chloe.id);
+    expect(contributorNames(groupFor(element, bob.id))).toEqual(["Alice"]);
+  });
+
+  it("flips the wish back to Réserver when remove returns null", async () => {
+    getEventWishes.mockReturnValue(of({ wishes: [reservedBobWish] }));
+    removeContributor.mockReturnValue(of({ reservation: null }));
+    const { element, fixture } = await createPanel();
+
+    groupFor(element, bob.id)
+      .querySelector<HTMLButtonElement>(".remove")
+      ?.click();
+    await fixture.whenStable();
+
+    expect(removeContributor).toHaveBeenCalledWith(reservation.id, alice.id);
+    expect(groupFor(element, bob.id).textContent).toContain("Réserver");
+    expect(contributorNames(groupFor(element, bob.id))).toEqual([]);
+  });
+
+});
+
+describe("EventWishesPanel contributor management errors", () => {
+  it("shows the duplicate message and refreshes on 409", async () => {
+    getEventWishes.mockReturnValue(of({ wishes: [reservedBobWish] }));
+    addContributor.mockReturnValue(
+      throwError(
+        () =>
+          new WishRepositoryError(
+            "This participant already contributes to the reservation.",
+            409,
+            "CONTRIBUTOR_ALREADY_EXISTS",
+          ),
+      ),
+    );
+    const { element, fixture } = await createPanel(chloe.id);
+
+    clickButtonWithText(element, "Participer");
+    await fixture.whenStable();
+
+    expect(element.textContent).toContain("Cette personne participe déjà.");
+    expect(getEventWishes).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows the gone message and refreshes on 404", async () => {
+    getEventWishes.mockReturnValue(of({ wishes: [reservedBobWish] }));
+    addContributor.mockReturnValue(
+      throwError(
+        () => new WishRepositoryError("Resource not found.", 404, "RESOURCE_NOT_FOUND"),
+      ),
+    );
+    const { element, fixture } = await createPanel(chloe.id);
+
+    clickButtonWithText(element, "Participer");
+    await fixture.whenStable();
+
+    expect(element.textContent).toContain("Cette réservation n'existe plus.");
+    expect(getEventWishes).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("EventWishesPanel own reserved Wishes", () => {
+  it("renders no coordination UI for own reserved Wishes", async () => {
+    const ownReservedWish: EventWish = {
+      ...aliceWish,
+      purchaseCoordination: { kind: "hidden" },
+    };
+    getEventWishes.mockReturnValue(of({ wishes: [ownReservedWish] }));
+
+    const { element } = await createPanel();
+    const aliceGroup = groupFor(element, alice.id);
+
+    expect(aliceGroup.querySelector(".purchase-coordination")).toBeNull();
+    expect(
+      aliceGroup.querySelector("app-reservation-coordination"),
+    ).toBeNull();
+    expect(aliceGroup.textContent).not.toContain("Participer");
+    expect(aliceGroup.textContent).not.toContain("Réserver");
   });
 });
 
@@ -260,17 +442,25 @@ describe("EventWishesPanel loading and rendering", () => {
   });
 });
 
-async function createPanel(): Promise<{
+async function createPanel(
+  viewerId: string = alice.id,
+): Promise<{
   readonly element: HTMLElement;
   readonly fixture: ComponentFixture<EventWishesPanel>;
 }> {
   const fixture = TestBed.createComponent(EventWishesPanel);
   fixture.componentRef.setInput("eventId", eventId);
-  fixture.componentRef.setInput("viewerParticipantId", alice.id);
+  fixture.componentRef.setInput("viewerParticipantId", viewerId);
   fixture.componentRef.setInput("participants", [alice, bob, chloe]);
   await fixture.whenStable();
 
   return { element: fixture.nativeElement as HTMLElement, fixture };
+}
+
+function contributorNames(group: HTMLElement): readonly string[] {
+  return Array.from(
+    group.querySelectorAll<HTMLElement>(".contributor-name"),
+  ).map((node) => node.textContent?.trim() ?? "");
 }
 
 function participant(id: string, name: string): ParticipantSummary {

@@ -1,0 +1,84 @@
+<div class="coordination">
+  <p class="reserved-label">Réservé par</p>
+  <ul class="contributors">
+    @for (row of contributorRows(); track row.participantId) {
+      <li class="contributor">
+        <span class="contributor-name">{{ row.name }}</span>
+        <button
+          class="secondary remove"
+          type="button"
+          [disabled]="busy()"
+          (click)="remove(row.participantId)"
+        >
+          @if (row.isViewer) {
+            Ne plus participer
+          } @else {
+            Retirer
+          }
+        </button>
+      </li>
+    }
+  </ul>
+
+  <div class="actions">
+    @if (!viewerContributes()) {
+      <button
+        class="primary participate"
+        type="button"
+        [disabled]="busy()"
+        (click)="join()"
+      >
+        Participer
+      </button>
+    }
+
+    @if (eligibleParticipants().length > 0) {
+      @if (pickerOpen()) {
+        <div class="picker">
+          <label class="picker-label" for="add-contributor-{{ reservation().id }}">
+            Ajouter quelqu'un
+          </label>
+          <select
+            id="add-contributor-{{ reservation().id }}"
+            class="picker-select"
+            [disabled]="busy()"
+            [value]="selectedParticipantId()"
+            (change)="onPickerChange($event)"
+          >
+            <option value="">Choisir une personne</option>
+            @for (participant of eligibleParticipants(); track participant.id) {
+              <option [value]="participant.id">{{ participant.name }}</option>
+            }
+          </select>
+          <div class="picker-actions">
+            <button
+              class="primary confirm-add"
+              type="button"
+              [disabled]="busy() || selectedParticipantId() === ''"
+              (click)="confirmAdd()"
+            >
+              Ajouter
+            </button>
+            <button
+              class="secondary cancel-add"
+              type="button"
+              [disabled]="busy()"
+              (click)="closePicker()"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      } @else {
+        <button
+          class="secondary add-someone"
+          type="button"
+          [disabled]="busy()"
+          (click)="openPicker()"
+        >
+          Ajouter quelqu'un
+        </button>
+      }
+    }
+  </div>
+</div>

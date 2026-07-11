@@ -19,6 +19,7 @@ import { finalize } from "rxjs";
 import { ReservationRepository } from "../../data-access/reservation-repository";
 import { WishRepositoryError } from "../../data-access/wish-repository-error";
 import { WishRepository } from "../../data-access/wish-repository";
+import { ReservationCoordination } from "../reservation-coordination/reservation-coordination";
 import { WishContent } from "../wish-content/wish-content";
 
 type EventWishGroup = {
@@ -30,7 +31,7 @@ type EventWishGroup = {
 
 @Component({
   selector: "app-event-wishes-panel",
-  imports: [WishContent],
+  imports: [ReservationCoordination, WishContent],
   templateUrl: "./event-wishes-panel.html",
   styleUrl: "./event-wishes-panel.css",
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -123,56 +124,30 @@ export class EventWishesPanel implements OnInit {
       return;
     }
 
-    this.reservationErrors.update((errors) => {
-      const updated = new Map(errors);
-      updated.delete(wishId);
-      return updated;
-    });
-    this.reservationPendingWishIds.update(
-      (pendingIds) => new Set(pendingIds).add(wishId),
-    );
+    this.clearReservationError(wishId);
+    this.markPending(wishId);
     this.reservationRepository
       .createReservation(wishId)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => {
-          this.reservationPendingWishIds.update((pendingIds) => {
-            const updated = new Set(pendingIds);
-            updated.delete(wishId);
-            return updated;
-          });
+          this.clearPending(wishId);
         }),
       )
       .subscribe({
         next: (reservation) => {
-          this.wishes.update((wishes) =>
-            wishes.map((wish) => {
-              if (
-                wish.id !== wishId ||
-                wish.purchaseCoordination.kind !== "visible"
-              ) {
-                return wish;
-              }
-
-              return {
-                ...wish,
-                purchaseCoordination: { kind: "visible", reservation },
-              };
-            }),
-          );
+          this.patchReservation(wishId, reservation);
         },
         error: (error: unknown) => {
           const isConflict =
             error instanceof WishRepositoryError &&
             error.status === 409 &&
             error.code === "RESERVATION_ALREADY_EXISTS";
-          this.reservationErrors.update((errors) =>
-            new Map(errors).set(
-              wishId,
-              isConflict
-                ? "Ce souhait vient d'être réservé par quelqu'un d'autre."
-                : "La réservation a échoué. Réessayez.",
-            ),
+          this.setReservationError(
+            wishId,
+            isConflict
+              ? "Ce souhait vient d'être réservé par quelqu'un d'autre."
+              : "La réservation a échoué. Réessayez.",
           );
 
           if (isConflict) {
@@ -182,19 +157,133 @@ export class EventWishesPanel implements OnInit {
       });
   }
 
-  reservationContributorNames(reservation: ReservationSummary): string {
-    const namesByParticipantId = new Map(
-      this.participants().map((participant) => [
-        participant.id,
-        participant.name,
-      ]),
-    );
+  joinReservation(wishId: string, reservationId: string): void {
+    this.addContributor(wishId, reservationId, this.viewerParticipantId());
+  }
 
-    return reservation.contributors
-      .map(
-        (contributor) =>
-          namesByParticipantId.get(contributor.participantId) ?? "Quelqu'un",
+  addContributor(
+    wishId: string,
+    reservationId: string,
+    participantId: string,
+  ): void {
+    if (this.reservationPendingWishIds().has(wishId)) {
+      return;
+    }
+
+    this.clearReservationError(wishId);
+    this.markPending(wishId);
+    this.reservationRepository
+      .addContributor(reservationId, participantId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.clearPending(wishId);
+        }),
       )
-      .join(", ");
+      .subscribe({
+        next: (reservation) => {
+          this.patchReservation(wishId, reservation);
+        },
+        error: (error: unknown) => {
+          this.handleCoordinationError(wishId, error);
+        },
+      });
+  }
+
+  removeContributor(
+    wishId: string,
+    reservationId: string,
+    participantId: string,
+  ): void {
+    if (this.reservationPendingWishIds().has(wishId)) {
+      return;
+    }
+
+    this.clearReservationError(wishId);
+    this.markPending(wishId);
+    this.reservationRepository
+      .removeContributor(reservationId, participantId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.clearPending(wishId);
+        }),
+      )
+      .subscribe({
+        next: (response) => {
+          this.patchReservation(wishId, response.reservation);
+        },
+        error: (error: unknown) => {
+          this.handleCoordinationError(wishId, error);
+        },
+      });
+  }
+
+  private handleCoordinationError(wishId: string, error: unknown): void {
+    const status =
+      error instanceof WishRepositoryError ? error.status : undefined;
+
+    if (status === 409) {
+      this.setReservationError(wishId, "Cette personne participe déjà.");
+      this.refresh();
+      return;
+    }
+
+    if (status === 404) {
+      this.setReservationError(wishId, "Cette réservation n'existe plus.");
+      this.refresh();
+      return;
+    }
+
+    this.setReservationError(wishId, "L'opération a échoué. Réessayez.");
+  }
+
+  private patchReservation(
+    wishId: string,
+    reservation: ReservationSummary | null,
+  ): void {
+    this.wishes.update((wishes) =>
+      wishes.map((wish) => {
+        if (
+          wish.id !== wishId ||
+          wish.purchaseCoordination.kind !== "visible"
+        ) {
+          return wish;
+        }
+
+        return {
+          ...wish,
+          purchaseCoordination: { kind: "visible", reservation },
+        };
+      }),
+    );
+  }
+
+  private markPending(wishId: string): void {
+    this.reservationPendingWishIds.update(
+      (pendingIds) => new Set(pendingIds).add(wishId),
+    );
+  }
+
+  private clearPending(wishId: string): void {
+    this.reservationPendingWishIds.update((pendingIds) => {
+      const updated = new Set(pendingIds);
+      updated.delete(wishId);
+      return updated;
+    });
+  }
+
+  private clearReservationError(wishId: string): void {
+    this.reservationErrors.update((errors) => {
+      const updated = new Map(errors);
+      updated.delete(wishId);
+      return updated;
+    });
+  }
+
+  private setReservationError(wishId: string, message: string): void {
+    this.reservationErrors.update((errors) =>
+      new Map(errors).set(wishId, message),
+    );
   }
 }
