@@ -27,9 +27,9 @@ Three rules:
    Wishes) is enforced inside query functions via predicates and field omission,
    never in the frontend.
 
-Error mapping: `NotFoundError` maps to 404, `BusinessRuleError` maps to 422,
-Fastify validation maps to 400, and everything else maps to 500. The handler
-lives in `server/src/http/api-error-handler.ts`.
+Error mapping: `NotFoundError` maps to 404, `StateConflictError` maps to 409,
+`BusinessRuleError` maps to 422, Fastify validation maps to 400, and everything
+else maps to 500. The handler lives in `server/src/http/api-error-handler.ts`.
 
 Identity: `X-Participant-Id` is untrusted selected-Participant identity. Routes
 pass it into use cases explicitly; Event-scoped use cases verify membership

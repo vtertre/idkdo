@@ -1,9 +1,19 @@
-import { wishes, type Database } from "@idkdo/db";
-import type { EventWish, GetEventWishesResponse } from "@idkdo/shared";
-import { asc, eq } from "drizzle-orm";
+import {
+  reservationContributors,
+  reservations,
+  wishes,
+  type Database,
+} from "@idkdo/db";
+import type {
+  EventWish,
+  GetEventWishesResponse,
+  ReservationSummary,
+} from "@idkdo/shared";
+import { and, asc, eq } from "drizzle-orm";
 
 import { NotFoundError } from "../../errors/not-found-error.js";
 import { getParticipantEventId } from "../participants/get-participant-event-id.js";
+import { toReservationSummary } from "../reservations/to-reservation-summary.js";
 import { canViewPurchaseCoordination } from "./can-view-purchase-coordination.js";
 
 export type GetEventWishesInput = {
@@ -30,6 +40,51 @@ export async function getEventWishes(
     .where(eq(wishes.eventId, input.eventId))
     .orderBy(asc(wishes.createdAt), asc(wishes.id));
 
+  const coordinationRows = await db
+    .select({
+      contributor: {
+        createdAt: reservationContributors.createdAt,
+        participantId: reservationContributors.participantId,
+      },
+      reservation: reservations,
+    })
+    .from(reservations)
+    .innerJoin(
+      wishes,
+      and(
+        eq(wishes.id, reservations.wishId),
+        eq(wishes.eventId, input.eventId),
+      ),
+    )
+    .innerJoin(
+      reservationContributors,
+      eq(reservationContributors.reservationId, reservations.id),
+    );
+  const reservationGroups = new Map<
+    string,
+    {
+      contributors: (typeof coordinationRows)[number]["contributor"][];
+      reservation: (typeof coordinationRows)[number]["reservation"];
+    }
+  >();
+
+  for (const row of coordinationRows) {
+    const group = reservationGroups.get(row.reservation.id) ?? {
+      contributors: [],
+      reservation: row.reservation,
+    };
+    group.contributors.push(row.contributor);
+    reservationGroups.set(row.reservation.id, group);
+  }
+
+  const reservationsByWishId = new Map<string, ReservationSummary>();
+  for (const group of reservationGroups.values()) {
+    reservationsByWishId.set(
+      group.reservation.wishId,
+      toReservationSummary(group.reservation, group.contributors),
+    );
+  }
+
   return {
     wishes: wishRows.map((row): EventWish => {
       const wish = {
@@ -49,7 +104,10 @@ export async function getEventWishes(
       ) {
         return {
           ...wish,
-          purchaseCoordination: { kind: "visible", reservation: null },
+          purchaseCoordination: {
+            kind: "visible",
+            reservation: reservationsByWishId.get(row.id) ?? null,
+          },
         };
       }
 

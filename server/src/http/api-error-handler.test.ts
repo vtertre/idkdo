@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { BusinessRuleError } from "../errors/business-rule-error.js";
 import { NotFoundError } from "../errors/not-found-error.js";
+import { StateConflictError } from "../errors/state-conflict-error.js";
 import { ParticipantNameAlreadyExistsError } from "../features/participants/errors/participant-name-already-exists-error.js";
 import { apiErrorHandler } from "./api-error-handler.js";
 
@@ -39,6 +40,24 @@ describe("apiErrorHandler", () => {
       error: {
         code: "PARTICIPANT_NAME_ALREADY_EXISTS",
         message: "A participant with that name already exists for this event.",
+      },
+    });
+  });
+
+  it("maps state conflicts to 409", () => {
+    const reply = new RecordingReply();
+
+    apiErrorHandler(
+      new StateConflictError("State conflict.", "STATE_CONFLICT"),
+      fakeRequest(),
+      reply.asFastifyReply(),
+    );
+
+    expect(reply.statusCode).toBe(409);
+    expect(reply.body).toEqual({
+      error: {
+        code: "STATE_CONFLICT",
+        message: "State conflict.",
       },
     });
   });

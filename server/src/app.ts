@@ -4,6 +4,7 @@ import { type ZodTypeProvider } from "fastify-type-provider-zod";
 
 import type { ServerEnvironment } from "./configuration/environment.js";
 import { eventsRoute } from "./features/events/events-route.js";
+import { reservationsRoute } from "./features/reservations/reservations-route.js";
 import { wishesRoute } from "./features/wishes/wishes-route.js";
 import { apiErrorHandler } from "./http/api-error-handler.js";
 import { healthRoute } from "./http/health-route.js";
@@ -38,6 +39,7 @@ export function buildApp(options: BuildAppOptions) {
     async (api) => {
       await api.register(healthRoute);
       await api.register(eventsRoute, { db: databaseClient.db });
+      await api.register(reservationsRoute, { db: databaseClient.db });
       await api.register(wishesRoute, { db: databaseClient.db });
     },
     { prefix: "/api" },
