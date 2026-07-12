@@ -83,6 +83,10 @@ export default tseslint.config(
     },
   },
   {
+    files: ["**/*.{js,mjs}"],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
+  {
     files: ["server/src/**/*-route.ts"],
     rules: {
       // Fastify async route plugins register routes without awaiting anything.
