@@ -81,8 +81,9 @@ Run the E2E release gate from the repository root:
 pnpm test:e2e
 ```
 
-This starts Docker Compose PostgreSQL, applies migrations, starts the API, starts
-the Angular dev server, and serves the production PWA build for the smoke test.
+This starts Docker Compose PostgreSQL, applies migrations, builds the shared
+package, starts the API, starts the Angular dev server, and serves the
+production PWA build for the smoke test.
 When `pnpm dev` is already running locally, Playwright reuses the existing API
 and web dev servers.
 
