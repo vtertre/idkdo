@@ -12,7 +12,7 @@
     "db:generate": "pnpm --filter @idkdo/db run db:generate",
     "db:logs": "docker compose logs -f postgres",
     "db:migrate": "pnpm --filter @idkdo/db run db:migrate",
-    "db:up": "docker compose up -d postgres",
+    "db:up": "docker compose up -d --wait postgres",
     "dev": "pnpm -r --parallel --if-present run dev",
     "lint": "node scripts/verify-workspace-scripts.mjs lint && pnpm -r run lint",
     "test": "node scripts/verify-workspace-scripts.mjs test && pnpm -r --filter '!@idkdo/e2e' run test",
