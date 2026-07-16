@@ -1,4 +1,12 @@
 export {
+  addContributorRequestBodySchema,
+  type AddContributorRequestBody,
+} from "./validators/add-contributor-request-body-schema.js";
+export {
+  addContributorResponseSchema,
+  type AddContributorResponse,
+} from "./validators/add-contributor-response-schema.js";
+export {
   apiErrorResponseSchema,
   type ApiErrorResponse,
 } from "./validators/api-error-response-schema.js";
@@ -83,6 +91,18 @@ export {
   reservationContributorSummarySchema,
   type ReservationContributorSummary,
 } from "./validators/reservation-contributor-summary-schema.js";
+export {
+  reservationContributorRouteParamsSchema,
+  type ReservationContributorRouteParams,
+} from "./validators/reservation-contributor-route-params-schema.js";
+export {
+  removeContributorResponseSchema,
+  type RemoveContributorResponse,
+} from "./validators/remove-contributor-response-schema.js";
+export {
+  reservationRouteParamsSchema,
+  type ReservationRouteParams,
+} from "./validators/reservation-route-params-schema.js";
 export {
   reservationSummarySchema,
   type ReservationSummary,

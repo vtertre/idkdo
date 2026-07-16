@@ -85,4 +85,74 @@ describe("ReservationRepository", () => {
       message: "Le serveur a renvoyé une réponse inattendue. Réessayez.",
     });
   });
+
+  it("adds a Contributor with the exact API request", async () => {
+    const participantId = "2084efff-63b5-4a2d-b5f5-b1a25067cc86";
+    const result = firstValueFrom(
+      repository.addContributor(reservationResponse.id, participantId),
+    );
+    const request = http.expectOne(
+      `/api/reservations/${reservationResponse.id}/contributors`,
+    );
+
+    expect(request.request.method).toBe("POST");
+    expect(request.request.body).toEqual({ participantId });
+    request.flush(reservationResponse);
+
+    await expect(result).resolves.toEqual(reservationResponse);
+  });
+
+  it("normalizes an add conflict with its status and code", async () => {
+    const participantId = "2084efff-63b5-4a2d-b5f5-b1a25067cc86";
+    const result = firstValueFrom(
+      repository.addContributor(reservationResponse.id, participantId),
+    );
+    http
+      .expectOne(`/api/reservations/${reservationResponse.id}/contributors`)
+      .flush(
+        {
+          error: {
+            code: "CONTRIBUTOR_ALREADY_EXISTS",
+            message: "This participant already contributes to the reservation.",
+          },
+        },
+        { status: 409, statusText: "Conflict" },
+      );
+
+    await expect(result).rejects.toEqual(
+      expect.objectContaining({
+        code: "CONTRIBUTOR_ALREADY_EXISTS",
+        status: 409,
+      }),
+    );
+  });
+
+  it("removes a Contributor with the exact API request", async () => {
+    const participantId = reservationResponse.contributors[0]!.participantId;
+    const result = firstValueFrom(
+      repository.removeContributor(reservationResponse.id, participantId),
+    );
+    const request = http.expectOne(
+      `/api/reservations/${reservationResponse.id}/contributors/${participantId}`,
+    );
+
+    expect(request.request.method).toBe("DELETE");
+    request.flush({ reservation: reservationResponse });
+
+    await expect(result).resolves.toEqual({ reservation: reservationResponse });
+  });
+
+  it("parses a null reservation from a remove response", async () => {
+    const participantId = reservationResponse.contributors[0]!.participantId;
+    const result = firstValueFrom(
+      repository.removeContributor(reservationResponse.id, participantId),
+    );
+    http
+      .expectOne(
+        `/api/reservations/${reservationResponse.id}/contributors/${participantId}`,
+      )
+      .flush({ reservation: null });
+
+    await expect(result).resolves.toEqual({ reservation: null });
+  });
 });

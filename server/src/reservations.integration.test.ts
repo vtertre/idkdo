@@ -9,16 +9,20 @@ import {
   type DatabaseClient,
 } from "@idkdo/db";
 import {
+  addContributorResponseSchema,
   createEventResponseSchema,
   createParticipantResponseSchema,
   createReservationResponseSchema,
   createWishResponseSchema,
   getEventWishesResponseSchema,
   participantIdHeaderName,
+  removeContributorResponseSchema,
+  type AddContributorResponse,
   type CreateEventResponse,
   type CreateParticipantResponse,
   type CreateReservationResponse,
   type CreateWishResponse,
+  type RemoveContributorResponse,
 } from "@idkdo/shared";
 import {
   PostgreSqlContainer,
@@ -37,6 +41,7 @@ import {
 
 import { buildApp } from "./app.js";
 import type { ServerEnvironment } from "./configuration/environment.js";
+import { removeContributor } from "./features/reservations/remove-contributor.js";
 
 describe("Reservations integration anti-spoil matrix", () => {
   const context = new ReservationsIntegrationContext();
@@ -60,6 +65,93 @@ describe("Reservations integration anti-spoil matrix", () => {
     await assertHiddenMembershipFailures(app, fixture);
     await deleteAndAssertCascade(app, context, fixture);
   });
+
+  it("runs the Contributor lifecycle over HTTP", async () => {
+    const app = context.openApp();
+    const fixture = await createFixture(app);
+    const reservation = await createAndAssertReservation(
+      app,
+      context,
+      fixture,
+    );
+
+    const joined = await addContributorRequest(app, {
+      actorId: fixture.carol.id,
+      participantId: fixture.carol.id,
+      reservationId: reservation.id,
+    });
+    expect(joined.statusCode).toBe(200);
+    const joinedReservation = addContributorResponseSchema.parse(
+      parseBody(joined.body),
+    );
+    expect(contributorIds(joinedReservation)).toEqual([
+      fixture.bob.id,
+      fixture.carol.id,
+    ]);
+
+    const withDave = await addContributorRequest(app, {
+      actorId: fixture.carol.id,
+      participantId: fixture.dave.id,
+      reservationId: reservation.id,
+    });
+    expect(withDave.statusCode).toBe(200);
+    const daveReservation = addContributorResponseSchema.parse(
+      parseBody(withDave.body),
+    );
+    expect(contributorIds(daveReservation)).toEqual([
+      fixture.bob.id,
+      fixture.carol.id,
+      fixture.dave.id,
+    ]);
+
+    await assertContributorFailures(app, fixture, reservation.id);
+    await assertContributorAntiSpoil(app, fixture, reservation.id);
+    await assertContributorRemovals(app, context, fixture, reservation.id);
+  });
+
+  it("deletes the Reservation when the last two Contributors are removed concurrently", async () => {
+    const app = context.openApp();
+    const fixture = await createFixture(app);
+    const reservation = await createAndAssertReservation(app, context, fixture);
+
+    const joined = await addContributorRequest(app, {
+      actorId: fixture.carol.id,
+      participantId: fixture.carol.id,
+      reservationId: reservation.id,
+    });
+    expect(joined.statusCode).toBe(200);
+
+    const concurrentClient = createDatabaseClient({
+      databaseUrl: context.databaseUrl(),
+      maxConnections: 2,
+    });
+
+    try {
+      const results = await Promise.all([
+        removeContributor(concurrentClient.db, {
+          actorParticipantId: fixture.bob.id,
+          participantId: fixture.bob.id,
+          reservationId: reservation.id,
+        }),
+        removeContributor(concurrentClient.db, {
+          actorParticipantId: fixture.carol.id,
+          participantId: fixture.carol.id,
+          reservationId: reservation.id,
+        }),
+      ]);
+
+      expect(results.filter((result) => result === null)).toHaveLength(1);
+    } finally {
+      await concurrentClient.close();
+    }
+
+    await expect(
+      context.databaseClient.db.select().from(reservations),
+    ).resolves.toEqual([]);
+    await expect(
+      context.databaseClient.db.select().from(reservationContributors),
+    ).resolves.toEqual([]);
+  });
 });
 
 type Fixture = {
@@ -68,6 +160,7 @@ type Fixture = {
   readonly aliceUnreservedWish: CreateWishResponse;
   readonly bob: CreateParticipantResponse;
   readonly carol: CreateParticipantResponse;
+  readonly dave: CreateParticipantResponse;
   readonly event: CreateEventResponse;
   readonly mallory: CreateParticipantResponse;
 };
@@ -229,6 +322,7 @@ async function createFixture(app: FastifyInstance): Promise<Fixture> {
   const alice = await createParticipant(app, event.id, "Alice");
   const bob = await createParticipant(app, event.id, "Bob");
   const carol = await createParticipant(app, event.id, "Carol");
+  const dave = await createParticipant(app, event.id, "Dave");
   const otherEvent = await createEvent(app, "Birthday 2026");
   const mallory = await createParticipant(app, otherEvent.id, "Mallory");
   const aliceReservedWish = await createWish(app, alice.id, "Livre");
@@ -240,9 +334,241 @@ async function createFixture(app: FastifyInstance): Promise<Fixture> {
     aliceUnreservedWish,
     bob,
     carol,
+    dave,
     event,
     mallory,
   };
+}
+
+async function assertContributorFailures(
+  app: FastifyInstance,
+  fixture: Fixture,
+  reservationId: string,
+): Promise<void> {
+  const duplicateResponse = await addContributorRequest(app, {
+    actorId: fixture.bob.id,
+    participantId: fixture.carol.id,
+    reservationId,
+  });
+  expect(duplicateResponse.statusCode).toBe(409);
+  expect(parseBody(duplicateResponse.body)).toEqual({
+    error: {
+      code: "CONTRIBUTOR_ALREADY_EXISTS",
+      message: "This participant already contributes to the reservation.",
+    },
+  });
+
+  const wisherTargetResponse = await addContributorRequest(app, {
+    actorId: fixture.bob.id,
+    participantId: fixture.alice.id,
+    reservationId,
+  });
+  expect(wisherTargetResponse.statusCode).toBe(422);
+  expect(parseBody(wisherTargetResponse.body)).toEqual({
+    error: {
+      code: "CANNOT_ADD_WISHER_AS_CONTRIBUTOR",
+      message: "The wisher cannot contribute to their own wish.",
+    },
+  });
+
+  const malloryPostResponse = await addContributorRequest(app, {
+    actorId: fixture.mallory.id,
+    participantId: fixture.mallory.id,
+    reservationId,
+  });
+  expect(malloryPostResponse.statusCode).toBe(404);
+
+  const malloryDeleteResponse = await removeContributorRequest(app, {
+    actorId: fixture.mallory.id,
+    participantId: fixture.bob.id,
+    reservationId,
+  });
+  expect(malloryDeleteResponse.statusCode).toBe(404);
+
+  const missingHeaderResponse = await app.inject({
+    method: "POST",
+    payload: { participantId: fixture.carol.id },
+    url: `/api/reservations/${reservationId}/contributors`,
+  });
+  expect(missingHeaderResponse.statusCode).toBe(400);
+}
+
+async function assertContributorAntiSpoil(
+  app: FastifyInstance,
+  fixture: Fixture,
+  reservationId: string,
+): Promise<void> {
+  const unknownPostResponse = await addContributorRequest(app, {
+    actorId: fixture.bob.id,
+    participantId: fixture.bob.id,
+    reservationId: unknownReservationId,
+  });
+  const alicePostResponse = await addContributorRequest(app, {
+    actorId: fixture.alice.id,
+    participantId: fixture.alice.id,
+    reservationId,
+  });
+  expect(alicePostResponse.statusCode).toBe(404);
+  expect(alicePostResponse.body).toBe(unknownPostResponse.body);
+
+  const unknownDeleteResponse = await removeContributorRequest(app, {
+    actorId: fixture.bob.id,
+    participantId: fixture.bob.id,
+    reservationId: unknownReservationId,
+  });
+  const aliceDeleteResponse = await removeContributorRequest(app, {
+    actorId: fixture.alice.id,
+    participantId: fixture.bob.id,
+    reservationId,
+  });
+  expect(aliceDeleteResponse.statusCode).toBe(404);
+  expect(aliceDeleteResponse.body).toBe(unknownDeleteResponse.body);
+
+  const bobViewResponse = await app.inject({
+    headers: { [participantIdHeaderName]: fixture.bob.id },
+    method: "GET",
+    url: `/api/events/${fixture.event.id}/wishes`,
+  });
+  const bobView = getEventWishesResponseSchema.parse(
+    parseBody(bobViewResponse.body),
+  );
+  expect(
+    bobView.wishes.find((wish) => wish.id === fixture.aliceReservedWish.id)
+      ?.purchaseCoordination.kind,
+  ).toBe("visible");
+
+  const aliceViewResponse = await app.inject({
+    headers: { [participantIdHeaderName]: fixture.alice.id },
+    method: "GET",
+    url: `/api/events/${fixture.event.id}/wishes`,
+  });
+  const aliceView = getEventWishesResponseSchema.parse(
+    parseBody(aliceViewResponse.body),
+  );
+  const ownWish = aliceView.wishes.find(
+    (wish) => wish.id === fixture.aliceReservedWish.id,
+  );
+  expect(ownWish?.purchaseCoordination).toEqual({ kind: "hidden" });
+  expect(aliceViewResponse.body).not.toContain(reservationId);
+  expect(aliceViewResponse.body).not.toContain(fixture.bob.id);
+}
+
+async function assertContributorRemovals(
+  app: FastifyInstance,
+  context: ReservationsIntegrationContext,
+  fixture: Fixture,
+  reservationId: string,
+): Promise<void> {
+  const removeDaveResponse = await removeContributorRequest(app, {
+    actorId: fixture.bob.id,
+    participantId: fixture.dave.id,
+    reservationId,
+  });
+  expect(removeDaveResponse.statusCode).toBe(200);
+  const withoutDave = removeContributorResponseSchema.parse(
+    parseBody(removeDaveResponse.body),
+  );
+  expect(responseContributorIds(withoutDave)).toEqual([
+    fixture.bob.id,
+    fixture.carol.id,
+  ]);
+
+  const removeCarolResponse = await removeContributorRequest(app, {
+    actorId: fixture.carol.id,
+    participantId: fixture.carol.id,
+    reservationId,
+  });
+  expect(removeCarolResponse.statusCode).toBe(200);
+  expect(
+    responseContributorIds(
+      removeContributorResponseSchema.parse(parseBody(removeCarolResponse.body)),
+    ),
+  ).toEqual([fixture.bob.id]);
+
+  const removeBobResponse = await removeContributorRequest(app, {
+    actorId: fixture.bob.id,
+    participantId: fixture.bob.id,
+    reservationId,
+  });
+  expect(removeBobResponse.statusCode).toBe(200);
+  expect(removeContributorResponseSchema.parse(parseBody(removeBobResponse.body)))
+    .toEqual({ reservation: null });
+  await expect(
+    context.databaseClient.db.select().from(reservations),
+  ).resolves.toHaveLength(0);
+  await expect(
+    context.databaseClient.db.select().from(reservationContributors),
+  ).resolves.toHaveLength(0);
+
+  const carolViewResponse = await app.inject({
+    headers: { [participantIdHeaderName]: fixture.carol.id },
+    method: "GET",
+    url: `/api/events/${fixture.event.id}/wishes`,
+  });
+  const carolView = getEventWishesResponseSchema.parse(
+    parseBody(carolViewResponse.body),
+  );
+  expect(
+    carolView.wishes.find((wish) => wish.id === fixture.aliceReservedWish.id)
+      ?.purchaseCoordination,
+  ).toEqual({ kind: "visible", reservation: null });
+
+  const deletedReservationResponse = await removeContributorRequest(app, {
+    actorId: fixture.bob.id,
+    participantId: fixture.bob.id,
+    reservationId,
+  });
+  expect(deletedReservationResponse.statusCode).toBe(404);
+
+  const reReserveResponse = await app.inject({
+    headers: { [participantIdHeaderName]: fixture.carol.id },
+    method: "POST",
+    url: `/api/wishes/${fixture.aliceReservedWish.id}/reservation`,
+  });
+  expect(reReserveResponse.statusCode).toBe(201);
+}
+
+function addContributorRequest(
+  app: FastifyInstance,
+  input: {
+    readonly actorId: string;
+    readonly participantId: string;
+    readonly reservationId: string;
+  },
+) {
+  return app.inject({
+    headers: { [participantIdHeaderName]: input.actorId },
+    method: "POST",
+    payload: { participantId: input.participantId },
+    url: `/api/reservations/${input.reservationId}/contributors`,
+  });
+}
+
+function removeContributorRequest(
+  app: FastifyInstance,
+  input: {
+    readonly actorId: string;
+    readonly participantId: string;
+    readonly reservationId: string;
+  },
+) {
+  return app.inject({
+    headers: { [participantIdHeaderName]: input.actorId },
+    method: "DELETE",
+    url: `/api/reservations/${input.reservationId}/contributors/${input.participantId}`,
+  });
+}
+
+function contributorIds(reservation: AddContributorResponse): readonly string[] {
+  return reservation.contributors.map((contributor) => contributor.participantId);
+}
+
+function responseContributorIds(
+  response: RemoveContributorResponse,
+): readonly string[] {
+  return response.reservation?.contributors.map(
+    (contributor) => contributor.participantId,
+  ) ?? [];
 }
 
 async function createEvent(
@@ -324,6 +650,10 @@ class ReservationsIntegrationContext {
     await this.databaseClient.db.delete(events);
   }
 
+  databaseUrl(): string {
+    return this.testEnvironment.databaseUrl;
+  }
+
   openApp(): FastifyInstance {
     this.app = buildApp({
       databaseClient: this.databaseClient,
@@ -344,3 +674,4 @@ class ReservationsIntegrationContext {
 }
 
 const unknownWishId = "00000000-0000-4000-8000-000000000999";
+const unknownReservationId = "00000000-0000-4000-8000-000000000998";

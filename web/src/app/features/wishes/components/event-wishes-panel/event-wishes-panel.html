@@ -43,9 +43,22 @@
                   @case ("visible") {
                     <div class="purchase-coordination">
                       @if (wish.purchaseCoordination.reservation; as reservation) {
-                        <p class="reserved">
-                          Réservé par {{ reservationContributorNames(reservation) }}
-                        </p>
+                        <app-reservation-coordination
+                          [reservation]="reservation"
+                          [viewerParticipantId]="viewerParticipantId()"
+                          [participants]="participants()"
+                          [wisherId]="wish.wisherId"
+                          [busy]="reservationPendingWishIds().has(wish.id)"
+                          (joinRequested)="
+                            joinReservation(wish.id, reservation.id)
+                          "
+                          (addRequested)="
+                            addContributor(wish.id, reservation.id, $event)
+                          "
+                          (removeRequested)="
+                            removeContributor(wish.id, reservation.id, $event)
+                          "
+                        />
                       } @else {
                         <button
                           class="reserve"
