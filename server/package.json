@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch --conditions=development src/main.ts",
-    "start": "tsx src/main.ts",
+    "start": "tsx --conditions=development src/main.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0 --format ../scripts/eslint-agent-formatter.mjs",
     "test": "vitest run",
