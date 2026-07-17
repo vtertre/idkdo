@@ -17,6 +17,8 @@ idkdo is a pnpm workspace with these runtime components:
 
 - `web/` - Angular Progressive Web App.
 - `server/` - Fastify REST API and backend application.
+- `e2e/` - Playwright browser regression suite and PWA smoke release gate; not
+  a product runtime component.
 - `packages/db/` - Drizzle schema, migrations, and database client helpers.
 - `packages/shared/` - shared API contracts, schemas, types, constants, and path
   helpers when useful.
@@ -104,8 +106,9 @@ Purchase Coordination data.
   response schemas directly rather than defining server-local API wire schemas.
 - HTTP errors use the API contract in `docs/SPEC-implementation.md`.
 - PostgreSQL is the persistence target; Drizzle owns schema and migrations.
-- Tests and future structural checks should enforce dependency direction and
-  anti-spoil behavior.
+- Tests and structural checks should enforce dependency direction, anti-spoil
+  behavior, the reservation lifecycle, core browser workflow, and PWA cache
+  policy.
 
 ## Design Docs
 

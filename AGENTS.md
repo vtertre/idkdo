@@ -27,6 +27,7 @@ Before making changes, read in this order:
 
 - `docs/`: product, implementation, and design docs
 - `ARCHITECTURE.md`: top-level technical map and entry point to detailed design docs
+- `e2e/`: Playwright browser regression suite and PWA smoke release gate
 - `server/`: Fastify REST API and backend application
 - `web/`: Angular Progressive Web App
 - `packages/db/`: Drizzle schema, migrations, and database helpers
@@ -61,7 +62,8 @@ Use Conventional Commits for commit messages.
 ## 7. Database Change Workflow
 
 Database guidance lives in `docs/DATABASE.md`. After Drizzle schema changes,
-run `pnpm db:generate` and commit the generated migration files.
+edit `packages/db/src/schema.ts`, run `pnpm db:generate`, commit the generated
+migration files, and apply them locally with `pnpm db:migrate`.
 
 ## 8. Verification Before Hand-off
 
@@ -88,7 +90,10 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
+pnpm test:e2e
 ```
+
+`pnpm test:e2e` needs Docker and installed Playwright Chromium browsers.
 
 If anything cannot be run, explicitly report what was not run and why.
 

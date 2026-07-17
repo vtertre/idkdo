@@ -66,6 +66,33 @@ For interactive server test watch mode:
 pnpm --filter @idkdo/server test:watch
 ```
 
+## End-to-end Tests
+
+The Playwright release-gate suite requires Docker, local PostgreSQL, and a
+one-time Chromium browser install:
+
+```sh
+pnpm --filter @idkdo/e2e exec playwright install chromium
+```
+
+Run the E2E release gate from the repository root:
+
+```sh
+pnpm test:e2e
+```
+
+This starts Docker Compose PostgreSQL, applies migrations, builds the shared
+package, starts the API, starts the Angular dev server, and serves the
+production PWA build for the smoke test.
+When `pnpm dev` is already running locally, Playwright reuses the existing API
+and web dev servers.
+
+For interactive debugging:
+
+```sh
+pnpm --filter @idkdo/e2e run test:ui
+```
+
 Run this full check before PR-ready handoff, or when narrower checks do not
 cover the risk:
 
@@ -74,4 +101,5 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
+pnpm test:e2e
 ```

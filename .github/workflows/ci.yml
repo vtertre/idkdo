@@ -59,3 +59,41 @@ jobs:
 
       - name: Verify docs and diff
         run: pnpm verify
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.17"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @idkdo/e2e exec playwright install --with-deps chromium
+
+      - name: Write test environment
+        run: echo "DATABASE_URL=postgres://idkdo:idkdo@localhost:5432/idkdo" > .env
+
+      - name: Run E2E release gate
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          if-no-files-found: ignore
