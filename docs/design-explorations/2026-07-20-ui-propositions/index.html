@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>idkdo — propositions de design (2026-07-20)</title>
+<link rel="stylesheet" href="viewer.css">
+<style>
+  .g-wrap { max-width: 1100px; margin: 0 auto; }
+  .g-wrap > header h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  .g-wrap > header p { color: #57534c; max-width: 70ch; margin: 0 0 8px; }
+  .dirs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin: 34px 0; }
+  .dir {
+    background: #fff; border: 1px solid #d8d4cc; border-radius: 14px;
+    padding: 22px 24px; text-decoration: none; display: block;
+    transition: transform 0.12s ease;
+  }
+  .dir:hover { transform: translateY(-2px); }
+  .dir .num { font-size: 12px; color: #8a857c; letter-spacing: 0.1em; }
+  .dir h2 { margin: 6px 0 8px; font-size: 22px; }
+  .dir p { margin: 0; font-size: 14px; color: #57534c; }
+  .dir .swatches { display: flex; gap: 6px; margin-top: 14px; }
+  .dir .swatches i { width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.12); }
+  table { border-collapse: collapse; width: 100%; background: #fff; border: 1px solid #d8d4cc; border-radius: 12px; overflow: hidden; font-size: 14px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #eceae5; vertical-align: top; }
+  th { background: #f4f2ee; font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: #77726a; }
+  tr:last-child td { border-bottom: 0; }
+  .screens-note { margin-top: 30px; font-size: 14px; color: #57534c; }
+  .lead-wip { border-left: 3px solid #c05b3c; padding-left: 14px; }
+  .dir.wip { border-color: #c8a97f; background: linear-gradient(180deg, #fffaf0, #fff 70px); }
+  .dir.wip .num { color: #a8712c; font-weight: 700; }
+  .row-wip td { background: #fffaf0; }
+  .tag-wip { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; color: #a8712c; }
+</style>
+</head>
+<body>
+<div class="g-wrap">
+  <header>
+    <h1>idkdo — directions de design</h1>
+    <p>Cinq archétypes volontairement opposés pour l'app de coordination de cadeaux, plus une
+    sixième direction de travail. Même scénario (« Noël 2026 » — Mamie, Vincent, Chloé, Baptiste,
+    Élise), même liste de 8 écrans V1, même règle anti-spoil ; seule la philosophie change. Chaque
+    écran est conçu mobile-first et rendu à 390 px et 1280 px.</p>
+    <p><strong>Le repère commun exigé partout :</strong> où je suis, dans quel événement, quelle liste
+    je regarde, et qui je suis (participant sélectionné) — chaque direction y répond avec son propre
+    modèle, décrit sur sa page.</p>
+    <p class="lead-wip"><strong>→ 06 Atelier est la direction retenue</strong>, dérivée de 01 Flanelle
+    et affinée à partir d'un premier tour de retours (icônes Lucide, événement transformé en plan de
+    travail, vue offreur densifiée, bouton d'entrée corrigé). Les directions 01 à 05 restent figées
+    comme points de comparaison.</p>
+  </header>
+
+  <div class="dirs">
+    <a class="dir" href="01-flanelle/index.html">
+      <span class="num">01</span>
+      <h2>Flanelle</h2>
+      <p>La chaleur d'un Noël en famille. Papier crème, terre cuite et vert sapin ; chaque souhait est une étiquette-cadeau.</p>
+      <div class="swatches"><i style="background:#f6eee3"></i><i style="background:#c05b3c"></i><i style="background:#57705a"></i><i style="background:#d9a441"></i></div>
+    </a>
+    <a class="dir" href="02-confetti/index.html">
+      <span class="num">02</span>
+      <h2>Confetti</h2>
+      <p>La fête avant l'heure. Nuit étoilée, couleurs vives, tutoiement ; réserver un cadeau est une petite célébration.</p>
+      <div class="swatches"><i style="background:#211d52"></i><i style="background:#7c6cf6"></i><i style="background:#ff5d8f"></i><i style="background:#ffc53d"></i></div>
+    </a>
+    <a class="dir" href="03-ardoise/index.html">
+      <span class="num">03</span>
+      <h2>Ardoise</h2>
+      <p>L'outil qui s'efface. Sobre, dense, un seul accent ; le statut de chaque souhait se lit en deux secondes.</p>
+      <div class="swatches"><i style="background:#fbfaf8"></i><i style="background:#1c1917"></i><i style="background:#047857"></i><i style="background:#e7e2da"></i></div>
+    </a>
+    <a class="dir" href="04-gazette/index.html">
+      <span class="num">04</span>
+      <h2>Gazette</h2>
+      <p>Le catalogue de famille. Maquette éditoriale, sommaire numéroté, filets et petites capitales ; l'événement devient une édition.</p>
+      <div class="swatches"><i style="background:#f7f5f0"></i><i style="background:#1a1815"></i><i style="background:#7a2e2e"></i><i style="background:#b49b57"></i></div>
+    </a>
+    <a class="dir" href="05-vitamine/index.html">
+      <span class="num">05</span>
+      <h2>Vitamine</h2>
+      <p>L'énergie du cadeau. Bordures franches, ombres dures, stickers d'état tamponnés ; impossible de rater un bouton.</p>
+      <div class="swatches"><i style="background:#ffd43b"></i><i style="background:#7048e8"></i><i style="background:#63e6be"></i><i style="background:#111111"></i></div>
+    </a>
+    <a class="dir wip" href="06-atelier/index.html">
+      <span class="num">06 · direction retenue</span>
+      <h2>Atelier</h2>
+      <p>Flanelle, affinée. La même chaleur, mais l'événement devient un plan de travail : tout se voit et tout s'agit sur une page. Icônes Lucide, zéro emoji.</p>
+      <div class="swatches"><i style="background:#f6eee3"></i><i style="background:#c05b3c"></i><i style="background:#4f6853"></i><i style="background:#b98726"></i></div>
+    </a>
+  </div>
+
+  <table>
+    <thead><tr><th>Direction</th><th>Philosophie</th><th>Modèle de navigation &amp; repères</th><th>Trait marquant</th></tr></thead>
+    <tbody>
+      <tr><td><strong>01 Flanelle</strong></td>
+        <td>Chaleur domestique : la douceur d'un salon en décembre, artisanat plutôt que logiciel.</td>
+        <td>Onglets bas « Les listes / Ma liste » ; en-tête permanent événement + pastille identité « Vous êtes Vincent ».</td>
+        <td>Le souhait est une étiquette-cadeau accrochée, avec son œillet.</td></tr>
+      <tr><td><strong>02 Confetti</strong></td>
+        <td>Gifting festif : l'app fait partie du cadeau, couleurs de fête et micro-célébrations.</td>
+        <td>Barre flottante en pilule + bouton « + » ; bandeau d'événement en dégradé avec bulle avatar de l'identité.</td>
+        <td>Les états de réservation sont des fanions de fête (« C'est pris ! 🎉 »).</td></tr>
+      <tr><td><strong>03 Ardoise</strong></td>
+        <td>Utilitaire minimal : densité, hiérarchie typographique, zéro décoration.</td>
+        <td>Fil d'Ariane permanent « Noël 2026 › … » ; sidebar des participants sur desktop, segmented control sur mobile ; identité = sélecteur en haut à droite.</td>
+        <td>Colonne de statut scannable : ○ libre · ● pris · ◐ à plusieurs.</td></tr>
+      <tr><td><strong>04 Gazette</strong></td>
+        <td>Éditorial raffiné : l'événement est une édition imprimée, les listes un catalogue.</td>
+        <td>Masthead centré + filets ; sommaire numéroté des participants ; identité en ours de journal (« Vous lisez en tant que Vincent »).</td>
+        <td>Le sommaire à points de conduite, comme une table des matières.</td></tr>
+      <tr><td><strong>05 Vitamine</strong></td>
+        <td>Pop expressif : contrastes francs, gros corps, énergie néo-brutaliste maîtrisée.</td>
+        <td>Deux blocs-onglets géants en bas ; bandeau noir avec nom d'événement surligné jaune ; chip identité bordée « Tu es Vincent ».</td>
+        <td>Stickers d'état tamponnés en biais sur les cartes (« PRIS ✔ »).</td></tr>
+      <tr class="row-wip"><td><strong>06 Atelier</strong><br><span class="tag-wip">direction retenue</span></td>
+        <td>Flanelle affinée : la chaleur domestique conservée, mais au service d'un outil qu'on manipule — densité et action directe plutôt que contemplation.</td>
+        <td>Barre latérale de participants (desktop) + rail de pastilles (mobile) ; fil d'Ariane « Noël 2026 › … » ; pastille identité « VOUS ÊTES / Vincent » ; deux onglets en barre basse.</td>
+        <td>L'événement est un plan de travail : toutes les listes dépliées, réservation en ligne, sans changer d'écran. Icônes Lucide, aucun emoji.</td></tr>
+    </tbody>
+  </table>
+
+  <p class="screens-note"><strong>Écrans couverts (identiques dans les 5 directions) :</strong>
+  01 Créer un événement · 02 Entrée &amp; choix du participant · 03 L'événement (toutes les listes) ·
+  04 Ma liste (vue propriétaire, anti-spoil) · 05 Ajouter/modifier un souhait ·
+  06 La liste de Chloé (vue offreur) · 07 Coordination d'un souhait · 08 Événement introuvable.</p>
+</div>
+</body>
+</html>

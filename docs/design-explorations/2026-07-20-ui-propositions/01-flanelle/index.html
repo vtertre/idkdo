@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>01 — Flanelle</title><link rel="stylesheet" href="../viewer.css">
+<style>
+.v-head { max-width: 900px; }
+.doc { max-width: 900px; margin: 0 auto; }
+.doc h2 { font-size: 17px; margin: 30px 0 10px; }
+.doc p { max-width: 72ch; color: #3d3a34; }
+.tokens { display: flex; flex-wrap: wrap; gap: 10px; }
+.tok { background: #fff; border: 1px solid #d8d4cc; border-radius: 10px; padding: 10px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+.tok i { width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.12); }
+.doc ul { padding-left: 20px; } .doc li { margin: 6px 0; max-width: 75ch; }
+.screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; padding: 0; list-style: none; }
+.screens a { display: block; background: #fff; border: 1px solid #d8d4cc; border-radius: 10px; padding: 12px 15px; text-decoration: none; font-size: 14px; }
+.screens .n { color: #8a857c; font-size: 12px; display: block; }
+</style></head>
+<body>
+<header class="v-head">
+  <nav><a href="../index.html">← Galerie</a></nav>
+  <h1>01 — Flanelle</h1>
+  <p><strong>La chaleur d'un Noël en famille.</strong> Un objet domestique, pas un logiciel.</p>
+</header>
+<div class="doc">
+  <h2>Philosophie</h2>
+  <p>Flanelle traite idkdo comme un rituel d'hiver : papier crème, encre brune, terre cuite et vert
+  sapin, serif à empattements doux pour les titres. Chaque souhait est une étiquette-cadeau (avec son
+  œillet perforé) accrochée à la liste de quelqu'un. Le ton vouvoie, rassure et parle la langue de la
+  table familiale — « Je m'en occupe », « Encore libre ». L'anti-spoil est un engagement affiché :
+  « Surprise garantie », écrit noir sur blanc sur votre propre liste.</p>
+
+  <h2>Design tokens</h2>
+  <div class="tokens">
+    <span class="tok"><i style="background:#f6eee3"></i>fond crème #F6EEE3</span>
+    <span class="tok"><i style="background:#fffdf8"></i>surface #FFFDF8</span>
+    <span class="tok"><i style="background:#3b2e25"></i>encre #3B2E25</span>
+    <span class="tok"><i style="background:#c05b3c"></i>terre cuite #C05B3C (action)</span>
+    <span class="tok"><i style="background:#57705a"></i>sapin #57705A (réservé)</span>
+    <span class="tok"><i style="background:#d9a441"></i>doré #D9A441 (partage)</span>
+  </div>
+  <p>Type : Fraunces (titres) + Nunito Sans (texte). Radius 18 px, ombres diffuses très légères,
+  boutons pilule pleine largeur sur mobile, espacement 18/20 px généreux.</p>
+
+  <h2>Navigation &amp; orientation</h2>
+  <ul>
+    <li><strong>Quel événement :</strong> en-tête permanent « 🎄 Noël 2026 · 5 participants » sur chaque écran.</li>
+    <li><strong>Qui je suis :</strong> pastille identité « avatar + Vincent » toujours en haut à droite ; c'est aussi le bouton pour changer de participant.</li>
+    <li><strong>Où je suis :</strong> deux onglets seulement — « Les listes » / « Ma liste » — en barre basse sur mobile, dans l'en-tête sur desktop.</li>
+    <li><strong>Quelle liste :</strong> chaque liste s'ouvre sur un grand titre avec avatar (« La liste de Chloé ») et un retour « ← Toutes les listes ».</li>
+  </ul>
+
+  <h2>Écrans</h2>
+  <ul class="screens">
+    <li><a href="s-creation.html"><span class="n">01</span>Créer un événement</a></li>
+    <li><a href="s-entree.html"><span class="n">02</span>Entrée et choix du participant</a></li>
+    <li><a href="s-accueil.html"><span class="n">03</span>L'événement (toutes les listes)</a></li>
+    <li><a href="s-ma-liste.html"><span class="n">04</span>Ma liste (vue propriétaire)</a></li>
+    <li><a href="s-souhait.html"><span class="n">05</span>Ajouter / modifier un souhait</a></li>
+    <li><a href="s-liste-chloe.html"><span class="n">06</span>La liste de Chloé (vue offreur)</a></li>
+    <li><a href="s-coordination.html"><span class="n">07</span>Coordination d'un souhait</a></li>
+    <li><a href="s-indisponible.html"><span class="n">08</span>Événement introuvable</a></li>
+  </ul>
+</div>
+</body>
+</html>

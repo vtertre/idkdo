@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Archivo:wght@500;600&display=swap');
+
+/* ————— Gazette — le catalogue de famille ————— */
+:root {
+  --paper: #f7f5f0;
+  --ink: #1a1815;
+  --muted: #6e6758;
+  --rule: #d8d2c4;
+  --oxblood: #7a2e2e;
+  --gold: #b49b57;
+  --display: "Playfair Display", Georgia, serif;
+  --body: "Lora", Georgia, serif;
+  --label: "Archivo", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 15.5px/1.65 var(--body);
+  min-height: 100vh;
+}
+a { color: var(--oxblood); }
+h1, h2, h3 { font-family: var(--display); font-weight: 500; margin: 0; }
+
+.sheet { max-width: 720px; margin: 0 auto; padding: 26px 22px 80px; }
+
+/* ————— Labels (small caps) ————— */
+.lab {
+  font-family: var(--label); font-size: 10.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.16em;
+}
+
+/* ————— Masthead ————— */
+.masthead { text-align: center; border-top: 3px double var(--ink); padding-top: 14px; }
+.masthead .eyebrow { color: var(--muted); }
+.masthead h1 { font-size: 44px; line-height: 1.05; margin: 8px 0 2px; letter-spacing: -0.01em; }
+.masthead .byline { font-style: italic; color: var(--muted); font-size: 14px; margin: 6px 0 0; }
+.masthead .byline a { color: var(--oxblood); }
+.mastnav {
+  display: flex; justify-content: center; gap: 26px; flex-wrap: wrap;
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  margin-top: 16px; padding: 10px 0;
+}
+.mastnav a { text-decoration: none; color: var(--ink); padding: 4px 2px; }
+.mastnav a.on { color: var(--oxblood); border-bottom: 2px solid var(--oxblood); }
+
+/* ————— Sections ————— */
+.section-head {
+  display: flex; align-items: center; gap: 14px; margin: 34px 0 14px; color: var(--muted);
+}
+.section-head::before, .section-head::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+.kicker { color: var(--oxblood); }
+.h2 { font-size: 27px; margin: 4px 0 6px; }
+.lede { color: var(--muted); font-style: italic; margin: 0 0 18px; }
+
+/* ————— Sommaire ————— */
+.toc { margin: 0; padding: 0; list-style: none; }
+.toc li { display: flex; align-items: baseline; padding: 11px 0; }
+.toc .num { font-family: var(--display); color: var(--gold); width: 34px; font-size: 17px; }
+.toc a.name { font-family: var(--display); font-size: 21px; text-decoration: none; color: var(--ink); }
+.toc a.name:hover { color: var(--oxblood); }
+.toc .lead { flex: 1; border-bottom: 1px dotted #b8b0a0; margin: 0 10px; transform: translateY(-4px); }
+.toc .count { color: var(--muted); font-size: 13.5px; white-space: nowrap; text-align: right; }
+.toc .count .res { display: block; color: var(--oxblood); }
+.toc .you-note { font-style: italic; color: var(--gold); font-size: 13px; margin-left: 8px; }
+
+/* ————— Entries (wishes) ————— */
+.entry { border-top: 1px solid var(--rule); padding: 20px 0 18px; position: relative; }
+.entry:last-child { border-bottom: 1px solid var(--rule); }
+.entry .no { color: var(--oxblood); margin-bottom: 6px; display: block; }
+.wish-content { margin: 0; white-space: pre-line; font-size: 16.5px; }
+.wl { color: var(--oxblood); word-break: break-all; }
+.entry .coord {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-top: 12px;
+}
+.coord .st { color: var(--oxblood); }
+.coord .st.free { color: var(--muted); }
+.coord .st.gold { color: var(--gold); }
+.entry .actions { display: flex; gap: 14px; margin-top: 12px; }
+
+/* ————— Buttons ————— */
+.btnl {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--label); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.14em; text-decoration: none;
+  color: var(--ink); background: transparent; border: 1px solid var(--ink);
+  padding: 12px 20px; min-height: 42px; cursor: pointer;
+}
+.btnl.primary { background: var(--oxblood); border-color: var(--oxblood); color: #f7f5f0; }
+.btnl.gold { border-color: var(--gold); color: var(--gold); }
+.btnl.block { width: 100%; }
+.textlink {
+  font-family: var(--label); font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--oxblood); text-decoration: none;
+  border-bottom: 1px solid var(--oxblood); padding: 6px 0; cursor: pointer;
+  background: none; border-top: 0; border-left: 0; border-right: 0;
+}
+.textlink.muted { color: var(--muted); border-color: var(--rule); }
+
+/* ————— Notes / encadrés ————— */
+.aside-note {
+  border: 1px solid var(--rule); padding: 14px 18px; margin: 18px 0;
+  font-style: italic; color: var(--muted); font-size: 14px; text-align: center;
+}
+.aside-note .lab { display: block; font-style: normal; color: var(--oxblood); margin-bottom: 4px; }
+
+.linkline {
+  display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+  border: 1px solid var(--rule); border-left: 4px solid var(--gold);
+  padding: 12px 16px; margin: 16px 0; font-size: 14px;
+}
+.linkline code { font-family: ui-monospace, monospace; font-size: 13px; }
+
+/* ————— Contributors ————— */
+.contribs { border-top: 1px solid var(--rule); }
+.contrib { display: flex; align-items: baseline; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--rule); }
+.contrib .who { font-family: var(--display); font-size: 19px; }
+.contrib .you-tag { font-style: italic; color: var(--muted); font-size: 13.5px; }
+.contrib .remove { margin-left: auto; }
+.add-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.hint { font-style: italic; color: var(--muted); font-size: 13.5px; margin-top: 10px; }
+
+/* ————— Forms ————— */
+.field { display: block; margin: 18px 0; }
+.field .lab { display: block; margin-bottom: 8px; color: var(--muted); }
+input[type=text], textarea {
+  width: 100%; font: 15.5px/1.6 var(--body); color: var(--ink);
+  background: #fdfcfa; border: 1px solid var(--rule); padding: 12px 14px; outline: none;
+}
+input:focus, textarea:focus { border-color: var(--gold); }
+textarea { min-height: 150px; resize: vertical; }
+
+/* ————— Standalone ————— */
+.frontpage { text-align: center; padding-top: 20px; }
+.frontpage .ornament { color: var(--gold); font-size: 20px; letter-spacing: 0.4em; margin: 16px 0; }
+.tagline { font-style: italic; color: var(--muted); margin: 4px 0 0; }
+.folio {
+  display: flex; justify-content: space-between; color: var(--muted);
+  border-top: 1px solid var(--rule); margin-top: 44px; padding-top: 10px;
+}
+
+/* ————— Desktop ————— */
+@media (min-width: 900px) {
+  .sheet { max-width: 860px; padding: 40px 24px 100px; }
+  .masthead h1 { font-size: 64px; }
+  .entry { padding-left: 64px; }
+  .entry .no { position: absolute; left: 0; top: 22px; }
+  .cols-2 { column-count: 2; column-gap: 48px; column-rule: 1px solid var(--rule); }
+  .cols-2 .entry, .cols-2 li { break-inside: avoid; }
+}

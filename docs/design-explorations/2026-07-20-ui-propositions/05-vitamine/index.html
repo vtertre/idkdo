@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>05 — Vitamine</title><link rel="stylesheet" href="../viewer.css">
+<style>
+.v-head { max-width: 900px; }
+.doc { max-width: 900px; margin: 0 auto; }
+.doc h2 { font-size: 17px; margin: 30px 0 10px; }
+.doc p { max-width: 72ch; color: #3d3a34; }
+.tokens { display: flex; flex-wrap: wrap; gap: 10px; }
+.tok { background: #fff; border: 1px solid #d8d4cc; border-radius: 10px; padding: 10px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+.tok i { width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.12); }
+.doc ul { padding-left: 20px; } .doc li { margin: 6px 0; max-width: 75ch; }
+.screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; padding: 0; list-style: none; }
+.screens a { display: block; background: #fff; border: 1px solid #d8d4cc; border-radius: 10px; padding: 12px 15px; text-decoration: none; font-size: 14px; }
+.screens .n { color: #8a857c; font-size: 12px; display: block; }
+</style></head>
+<body>
+<header class="v-head">
+  <nav><a href="../index.html">← Galerie</a></nav>
+  <h1>05 — Vitamine</h1>
+  <p><strong>L'énergie du cadeau.</strong> Pop assumé, lisibilité maximale.</p>
+</header>
+<div class="doc">
+  <h2>Philosophie</h2>
+  <p>Vitamine est la direction expressive : bordures noires de 3 px, ombres dures décalées, jaune
+  soleil, violet électrique et menthe sur fond os. Les états de réservation sont des stickers
+  tamponnés en biais sur le coin des cartes (« PRIS ✔ », « EN ÉQUIPE », « LIBRE » en pointillés) —
+  impossibles à manquer, comme les boutons. Le tutoiement est direct (« À qui tu offres cette
+  année ? », « Motus »), et l'anti-spoil est un tampon « TOP SECRET ». C'est aussi la direction la
+  plus accessible en contraste : tout est noir sur couleur franche.</p>
+
+  <h2>Design tokens</h2>
+  <div class="tokens">
+    <span class="tok"><i style="background:#f5f2ea"></i>fond os #F5F2EA</span>
+    <span class="tok"><i style="background:#111111"></i>encre #111111 (bordures 3 px)</span>
+    <span class="tok"><i style="background:#ffd43b"></i>jaune #FFD43B (action)</span>
+    <span class="tok"><i style="background:#7048e8"></i>violet #7048E8 (équipe/liens)</span>
+    <span class="tok"><i style="background:#63e6be"></i>menthe #63E6BE (pris)</span>
+    <span class="tok"><i style="background:#ff6b6b"></i>corail #FF6B6B (danger)</span>
+  </div>
+  <p>Type : Archivo Black (titres, capitales) + Space Grotesk (texte). Radius 10 px, ombre dure
+  5×5 px, boutons qui « s'enfoncent » au clic, surlignages pivotés de −1,5°.</p>
+
+  <h2>Navigation &amp; orientation</h2>
+  <ul>
+    <li><strong>Quel événement :</strong> bandeau noir permanent avec « NOËL 2026 » surligné jaune, légèrement penché.</li>
+    <li><strong>Qui je suis :</strong> chip bordée « Tu es Vincent » dans le bandeau — libellé volontairement littéral ; clic = changer.</li>
+    <li><strong>Où je suis :</strong> deux blocs-onglets géants en bas sur mobile (« LES LISTES / MA LISTE »), blocs dans le bandeau sur desktop.</li>
+    <li><strong>Quelle liste :</strong> titre surligné menthe (« La liste de CHLOÉ ») + retour souligné jaune « ← Toutes les listes ».</li>
+  </ul>
+
+  <h2>Écrans</h2>
+  <ul class="screens">
+    <li><a href="s-creation.html"><span class="n">01</span>Créer un événement</a></li>
+    <li><a href="s-entree.html"><span class="n">02</span>Entrée et choix du participant</a></li>
+    <li><a href="s-accueil.html"><span class="n">03</span>L'événement (toutes les listes)</a></li>
+    <li><a href="s-ma-liste.html"><span class="n">04</span>Ma liste (vue propriétaire)</a></li>
+    <li><a href="s-souhait.html"><span class="n">05</span>Ajouter / modifier un souhait</a></li>
+    <li><a href="s-liste-chloe.html"><span class="n">06</span>La liste de Chloé (vue offreur)</a></li>
+    <li><a href="s-coordination.html"><span class="n">07</span>Coordination d'un souhait</a></li>
+    <li><a href="s-indisponible.html"><span class="n">08</span>Événement introuvable</a></li>
+  </ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,429 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Nunito+Sans:wght@400;600;700;800&display=swap');
+
+/* ————— Atelier — Flanelle, affinée —————
+   Même langage chaud que Flanelle. Trois changements de fond :
+   icônes Lucide (zéro emoji), un plan de travail unique sur l'événement,
+   et des souhaits en lignes denses plutôt qu'en grosses cartes.        */
+:root {
+  --bg: #f6eee3;
+  --surface: #fffdf8;
+  --ink: #3b2e25;
+  --muted: #8a7867;
+  --line: #e7dbc9;
+  --line-soft: #f0e6d7;
+  --terracotta: #c05b3c;
+  --terracotta-deep: #a34a2f;
+  --pine: #4f6853;
+  --pine-soft: #e6ecdf;
+  --gold: #b98726;
+  --gold-soft: #f7ead0;
+  --r: 16px;
+  --shadow: 0 2px 12px rgba(59, 46, 37, 0.07);
+  --display: "Fraunces", Georgia, serif;
+  --body: "Nunito Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.55 var(--body);
+  min-height: 100vh;
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.01em; }
+a { color: var(--terracotta); }
+.sprite { display: none; }
+
+/* ————— Icônes Lucide ————— */
+.i {
+  width: 18px; height: 18px; flex: none;
+  fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.i-sm { width: 15px; height: 15px; }
+.i-lg { width: 22px; height: 22px; }
+.i-xl { width: 40px; height: 40px; stroke-width: 1.5; }
+
+/* ————— Avatars ————— */
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%; display: inline-flex;
+  align-items: center; justify-content: center;
+  font-weight: 800; font-size: 13px; color: #fff; flex: none;
+}
+.avatar.mini { width: 22px; height: 22px; font-size: 10px; }
+.avatar.lg { width: 46px; height: 46px; font-size: 19px; }
+.a-v { background: #c05b3c; }
+.a-c { background: #57705a; }
+.a-m { background: #8c6bab; }
+.a-b { background: #4d7a99; }
+.a-e { background: #c78f2d; }
+
+/* ————— Plan de travail : sidebar + main ————— */
+.layout { display: flex; min-height: 100vh; }
+.side { display: none; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 5;
+}
+.event { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.event .mark { color: var(--pine); }
+.event strong { font-family: var(--display); font-size: 17px; display: block; line-height: 1.15; }
+.event .sub { font-size: 12.5px; color: var(--muted); }
+.crumbs { display: none; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 700; color: var(--muted); min-width: 0; }
+.crumbs a { text-decoration: none; color: var(--muted); }
+.crumbs a:hover { color: var(--ink); }
+.crumbs .here { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crumbs .i { color: var(--line); }
+.me {
+  display: flex; align-items: center; gap: 7px; text-decoration: none; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 99px;
+  padding: 4px 10px 4px 4px; font-weight: 700; font-size: 14px; min-height: 40px;
+}
+.me .idbox { display: flex; flex-direction: column; line-height: 1.15; }
+.me .lbl { display: none; font-size: 10.5px; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; }
+.me .nm { font-size: 14.5px; }
+.me .i { color: var(--muted); }
+
+/* libellés d'action : court sur mobile, complet sur desktop */
+.lbl-long { display: none; }
+
+/* Rail de participants (mobile) */
+.rail {
+  display: flex; gap: 8px; overflow-x: auto; padding: 10px 18px;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+  position: sticky; top: 64px; z-index: 4;
+  scrollbar-width: none;
+}
+.rail::-webkit-scrollbar { display: none; }
+.rail a {
+  display: inline-flex; align-items: center; gap: 7px; flex: none;
+  text-decoration: none; color: var(--ink); font-weight: 700; font-size: 13.5px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 99px;
+  padding: 5px 12px 5px 5px; min-height: 36px;
+}
+.rail a.on { background: var(--gold-soft); border-color: #e8d3a8; }
+.rail a .n { color: var(--muted); font-size: 12.5px; font-weight: 800; }
+
+.page { padding: 18px 18px 96px; width: 100%; max-width: 1180px; margin: 0 auto; }
+.pagehead { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.h1 { font-size: 26px; margin: 0; }
+.stat { color: var(--muted); font-size: 14px; font-weight: 700; padding-bottom: 3px; }
+.lede { color: var(--muted); margin: 4px 0 18px; font-size: 14.5px; }
+.back {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 14px;
+  font-weight: 700; text-decoration: none; margin-bottom: 10px;
+}
+
+/* ————— Barre d'onglets (mobile) ————— */
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 6;
+  display: flex;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding: 7px 10px calc(9px + env(safe-area-inset-bottom));
+}
+.tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  text-decoration: none; color: var(--muted);
+  font-size: 12px; font-weight: 800; padding: 6px 0 4px; border-radius: 13px;
+}
+.tab.active { color: var(--terracotta); background: #f9efe0; }
+
+/* ————— Cartes & boutons ————— */
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r); box-shadow: var(--shadow); padding: 18px;
+}
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  font: 800 15px/1 var(--body); border-radius: 99px; cursor: pointer;
+  padding: 13px 20px; min-height: 46px; border: 1px solid transparent;
+  text-decoration: none; white-space: nowrap;
+}
+.btn.primary { background: var(--terracotta); color: #fff; box-shadow: 0 2px 0 var(--terracotta-deep); }
+.btn.outline { background: var(--surface); border-color: #d9c7ae; color: var(--ink); }
+.btn.soft { background: var(--pine-soft); color: var(--pine); }
+.btn.sm { min-height: 38px; padding: 9px 15px; font-size: 13.5px; border-radius: 99px; }
+.btn.block { width: 100%; }
+.danger-link { color: #a33a2e; font-weight: 700; font-size: 14.5px; display: inline-flex; align-items: center; gap: 6px; }
+
+/* ————— Bloc partage ————— */
+.share { background: linear-gradient(135deg, #fdf6e9, #f7ead0); border: 1px solid #ecd9b4; }
+.share h2 { margin: 0 0 4px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+.share p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+.link-pill {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--surface); border: 1px dashed #d9bd8b;
+  border-radius: 13px; padding: 8px 8px 8px 13px; font-weight: 700; font-size: 14.5px;
+}
+.link-pill .url { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.link-pill .copy {
+  margin-left: auto; background: var(--gold); border: 0; color: #fff;
+  font: 800 13px var(--body); display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 99px; padding: 9px 14px; cursor: pointer; min-height: 38px;
+}
+
+/* ————— Le plan de travail : blocs de liste ————— */
+.board { display: grid; gap: 16px; }
+.listblock {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden;
+}
+.listblock.mine { border-color: #e2cfae; background: linear-gradient(180deg, #fffaf0, var(--surface) 90px); }
+.lb-head {
+  display: flex; align-items: center; gap: 11px;
+  padding: 13px 16px; border-bottom: 1px solid var(--line-soft);
+}
+.lb-head .who { min-width: 0; }
+.lb-head strong { font-family: var(--display); font-size: 17.5px; display: block; line-height: 1.2; }
+.lb-head .meta { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+.lb-head .go {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13.5px; font-weight: 800; text-decoration: none; color: var(--terracotta);
+  padding: 6px 4px 6px 10px; min-height: 38px;
+}
+.lb-head .hushed {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 700; color: var(--pine);
+  background: var(--pine-soft); border-radius: 99px; padding: 6px 12px;
+}
+
+/* ————— Souhaits en lignes denses (étiquette conservée : l'œillet) ————— */
+.rows { list-style: none; margin: 0; padding: 0; }
+.row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.row:last-child { border-bottom: 0; }
+.row .txt { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 14.5px; line-height: 1.4; }
+.row .wl { font-weight: 700; word-break: break-word; }
+.row .price { color: var(--muted); font-weight: 700; white-space: nowrap; }
+/* état + action sur une même ligne, sous le texte (mobile) */
+.row .foot { flex: 1 1 100%; display: flex; align-items: center; gap: 10px; }
+.row .foot .btn { margin-left: auto; }
+.row .act { display: flex; align-items: center; gap: 6px; flex: none; margin-left: auto; }
+.iconbtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+  background: transparent; border: 1px solid var(--line); color: var(--muted);
+  text-decoration: none;
+}
+.iconbtn:hover { color: var(--ink); background: var(--bg); }
+
+/* état sur une seule ligne, sous le texte */
+.state {
+  display: inline-flex; align-items: center; gap: 7px; flex-wrap: nowrap;
+  font-size: 13px; font-weight: 700; white-space: nowrap;
+}
+.state.taken { color: var(--pine); }
+
+/* ————— Repère de statut : le relief —————
+   Pas de glyphe en début de ligne : ce sont les souhaits encore LIBRES qui
+   doivent ressortir, puisque eux seuls appellent une action. Un souhait déjà
+   pris recule (fond très légèrement teinté, texte adouci) derrière un filet
+   sapin sur son bord gauche. Rien à décoder, aucune légende, et aucun risque
+   de confusion avec une case à cocher. Le nombre de contributeurs reste dit
+   par la pile d'avatars — jamais par un taux de remplissage.
+   Les corps .ind-a / .ind-b sont les variantes écartées, laissées pour mémoire. */
+body:not(.ind-a):not(.ind-b) .row:has(.state.taken) {
+  background: linear-gradient(90deg, rgba(79, 104, 83, 0.08), rgba(79, 104, 83, 0.015));
+  box-shadow: inset 3px 0 0 var(--pine);
+}
+body:not(.ind-a):not(.ind-b) .row:has(.state.taken) .txt,
+body:not(.ind-a):not(.ind-b) .row:has(.state.taken) .wl { color: #715f50; }
+/* pile d'avatars — robuste aux noms longs et au nombre de contributeurs */
+.stack { display: inline-flex; align-items: center; padding-left: 6px; }
+.stack .avatar.mini { margin-left: -6px; box-shadow: 0 0 0 2px var(--surface); }
+.stack .avatar.mini:first-child { margin-left: 0; }
+.stack .more {
+  margin-left: -6px; z-index: 1; width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 800; color: var(--muted);
+  background: var(--bg); box-shadow: 0 0 0 2px var(--surface); border: 1px solid var(--line);
+}
+/* « vous » : liseré terre cuite autour de votre avatar */
+.avatar.you { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--terracotta); }
+
+.listhead { display: flex; align-items: center; gap: 13px; margin-bottom: 14px; }
+.listhead .h1 { margin: 0; }
+.listhead .stat { display: block; padding: 0; margin: 2px 0 0; }
+
+.row-add { padding-left: 14px; }
+.board-aside { display: block; margin-top: 16px; }
+
+.note {
+  display: flex; gap: 11px; align-items: flex-start;
+  background: var(--pine-soft); border: 1px solid #d3decb; border-radius: 13px;
+  padding: 12px 15px; font-size: 13.5px; color: #46564a; margin: 0 0 16px;
+}
+.note .i { color: var(--pine); margin-top: 2px; }
+
+/* ————— Coordination ————— */
+.owner-line { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 16px; color: var(--muted); font-size: 14px; font-weight: 700; }
+.owner-line .txt { flex: 1; min-width: 0; }
+.owner-line .i { vertical-align: -3px; }
+.status-big {
+  display: flex; align-items: center; gap: 9px; font-family: var(--display);
+  font-size: 19px; color: var(--pine); margin: 20px 0 10px;
+}
+.contribs { display: grid; gap: 9px; }
+.contrib { display: flex; align-items: center; gap: 11px; padding: 11px 13px; }
+.contrib strong { font-size: 15px; }
+.contrib .you-tag { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+.contrib .remove { margin-left: auto; }
+.add-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.add-chip {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  background: var(--surface); border: 1px dashed #d9c7ae; border-radius: 99px;
+  padding: 6px 15px 6px 6px; font: 700 14px var(--body); color: var(--ink); min-height: 42px;
+}
+.section-label {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+  font-weight: 800; color: var(--muted); margin: 20px 0 9px;
+}
+.hint { font-size: 13px; color: var(--muted); margin-top: 7px; }
+
+/* ————— Formulaires ————— */
+.field { display: block; margin-bottom: 14px; }
+.field span { display: block; font-weight: 800; font-size: 14px; margin-bottom: 6px; }
+input[type=text], textarea {
+  width: 100%; font: 15.5px/1.5 var(--body); color: var(--ink);
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 13px;
+  padding: 12px 14px; outline: none;
+}
+input[type=text]:focus, textarea:focus { border-color: var(--terracotta); }
+textarea { min-height: 140px; resize: vertical; }
+
+/* ————— Pages hors événement ————— */
+.solo { display: flex; flex-direction: column; align-items: center; padding: 36px 20px 60px; }
+.solo .inner { width: 100%; max-width: 460px; }
+.wordmark { font-family: var(--display); font-weight: 700; font-size: 25px; display: flex; align-items: center; gap: 9px; }
+.wordmark em { color: var(--terracotta); font-style: normal; }
+.wordmark .i { color: var(--terracotta); }
+.solo .tagline { color: var(--muted); margin: 4px 0 26px; }
+.solo-head { text-align: center; margin: 26px 0 20px; }
+.solo-head h1 { font-family: var(--display); }
+/* pastille-monogramme neutre de l'événement (générique, pas saisonnière) */
+.event-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 54px; height: 54px; border-radius: 16px;
+  background: var(--pine-soft); color: var(--pine);
+  font-family: var(--display); font-weight: 600; font-size: 26px;
+}
+.divider {
+  display: flex; align-items: center; gap: 13px; color: var(--muted);
+  font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+  margin: 20px 0;
+}
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.choose { display: grid; gap: 8px; }
+.pick {
+  display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 13px;
+  padding: 10px 14px; min-height: 58px;
+}
+.pick:hover { border-color: #d9c7ae; }
+.pick .who { min-width: 0; flex: 1; }
+.pick strong { font-family: var(--display); font-size: 17px; display: block; line-height: 1.2; }
+.pick .meta { font-size: 13px; color: var(--muted); }
+.pick .i { color: var(--muted); }
+.trust { text-align: center; font-size: 13px; color: var(--muted); margin-top: 18px; }
+
+/* ————— Desktop ————— */
+@media (min-width: 900px) {
+  .side {
+    display: flex; flex-direction: column; gap: 4px; flex: none;
+    width: 262px; padding: 20px 14px;
+    background: var(--surface); border-right: 1px solid var(--line);
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  .side .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 14px; }
+  .side .brand .mark { color: var(--pine); }
+  .side .brand strong { font-family: var(--display); font-size: 19px; display: block; line-height: 1.15; }
+  .side .brand .sub { font-size: 12.5px; color: var(--muted); }
+  .snav { display: grid; gap: 2px; }
+  .snav a {
+    display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink);
+    font-weight: 700; font-size: 14.5px; border-radius: 11px; padding: 9px 11px; min-height: 42px;
+  }
+  .snav a:hover { background: var(--bg); }
+  .snav a.on { background: var(--gold-soft); color: var(--ink); }
+  .snav a .i { color: var(--muted); }
+  .snav a.on .i { color: var(--gold); }
+  .snav a .n { margin-left: auto; font-size: 12.5px; font-weight: 800; color: var(--muted); }
+  .side .group {
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 800; color: var(--muted); padding: 18px 11px 7px;
+  }
+  .side .sidefoot { margin-top: auto; padding: 14px 10px 0; }
+
+  .rail { display: none; }
+  .tabbar { display: none; }
+  .topbar { padding: 14px 28px; }
+  .topbar .event { display: none; }
+  .crumbs { display: flex; }
+  .me .lbl { display: block; }
+  .page { padding: 26px 28px 48px; }
+  .h1 { font-size: 31px; }
+  .board-grid { display: grid; grid-template-columns: minmax(0, 1fr) 296px; gap: 24px; align-items: start; }
+  .board-aside { margin-top: 0; position: sticky; top: 92px; }
+  .lbl-short { display: none; }
+  .lbl-long { display: inline; }
+  .row { flex-wrap: nowrap; gap: 16px; padding: 11px 16px; }
+  .row .txt { flex: 1; font-size: 15px; }
+  .row .foot { flex: 0 0 auto; min-width: 296px; justify-content: flex-end; }
+  .row .foot .state { flex: 1; justify-content: flex-end; }
+  .narrow { max-width: 760px; }
+  .solo .inner { max-width: 500px; }
+  .solo { padding-top: 60px; }
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+   VARIANTES À L'ESSAI — repère de statut en début de ligne
+   Chaque variante est portée par une classe sur <body> et n'affecte que
+   son propre écran. Règle commune : « libre » n'a jamais de marque, et
+   la liste du propriétaire (.mine) n'en reçoit aucune non plus (anti-spoil).
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* ————— A · La tranche —————
+   Une barre verticale en bordure de ligne. Le nombre de contributeurs se
+   lit au nombre de segments, jamais à un taux de remplissage. Un rectangle
+   ne peut pas être confondu avec un bouton radio. */
+.ind-a .row { position: relative; padding-left: 32px; }
+.ind-a .row:has(.state.taken)::before {
+  content: ""; position: absolute; left: 15px; top: 11px; bottom: 11px; width: 4px;
+  border-radius: 99px; background: var(--pine);
+}
+/* 2 contributeurs → la barre se scinde en deux */
+.ind-a .row:has(.stack .avatar.mini:nth-child(2))::before {
+  background: linear-gradient(var(--pine) 0 calc(50% - 2.5px),
+    transparent calc(50% - 2.5px) calc(50% + 2.5px), var(--pine) calc(50% + 2.5px) 100%);
+}
+/* 3 contributeurs ou plus → trois segments, puis on plafonne */
+.ind-a .row:has(.stack .avatar.mini:nth-child(3))::before {
+  background: linear-gradient(var(--pine) 0 calc(33.3% - 2.5px),
+    transparent calc(33.3% - 2.5px) calc(33.3% + 2.5px),
+    var(--pine) calc(33.3% + 2.5px) calc(66.6% - 2.5px),
+    transparent calc(66.6% - 2.5px) calc(66.6% + 2.5px),
+    var(--pine) calc(66.6% + 2.5px) 100%);
+}
+
+/* ————— B · Les visages —————
+   Pas de code à apprendre : les avatars des contributeurs quittent le pied
+   de ligne et deviennent eux-mêmes le repère. Le nombre de visages dit le
+   nombre de personnes. Libre = rien, le bord gauche reste ouvert. */
+.ind-b .row { position: relative; padding-left: 52px; }
+.ind-b .row .ind { position: absolute; left: 13px; top: 11px; display: inline-flex; }
+.ind-b .row .ind .stack { padding-left: 0; }
+.ind-b .row .ind .avatar.mini { width: 20px; height: 20px; font-size: 9.5px; margin-left: -7px; }
+.ind-b .row .ind .stack .avatar.mini:first-child { margin-left: 0; }
+
+/* ————— C · Le relief — RETENU —————
+   Devenu le traitement par défaut de toutes les lignes de souhait : la règle
+   vit maintenant plus haut, avec les états (chercher « Repère de statut »).
+   Elle s'applique donc à l'écran principal et à la liste de Chloé. */

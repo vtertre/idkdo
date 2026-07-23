@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>03 — Ardoise</title><link rel="stylesheet" href="../viewer.css">
+<style>
+.v-head { max-width: 900px; }
+.doc { max-width: 900px; margin: 0 auto; }
+.doc h2 { font-size: 17px; margin: 30px 0 10px; }
+.doc p { max-width: 72ch; color: #3d3a34; }
+.tokens { display: flex; flex-wrap: wrap; gap: 10px; }
+.tok { background: #fff; border: 1px solid #d8d4cc; border-radius: 10px; padding: 10px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+.tok i { width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.12); }
+.doc ul { padding-left: 20px; } .doc li { margin: 6px 0; max-width: 75ch; }
+.screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; padding: 0; list-style: none; }
+.screens a { display: block; background: #fff; border: 1px solid #d8d4cc; border-radius: 10px; padding: 12px 15px; text-decoration: none; font-size: 14px; }
+.screens .n { color: #8a857c; font-size: 12px; display: block; }
+</style></head>
+<body>
+<header class="v-head">
+  <nav><a href="../index.html">← Galerie</a></nav>
+  <h1>03 — Ardoise</h1>
+  <p><strong>L'outil qui s'efface.</strong> Le statut d'abord, zéro décor.</p>
+</header>
+<div class="doc">
+  <h2>Philosophie</h2>
+  <p>Ardoise parie que la meilleure expérience est celle qu'on ne remarque pas : blanc cassé chaud,
+  filets 1 px, densité maîtrisée, un seul accent vert pour tout ce qui est « pris en charge ». La
+  réponse à « est-ce que quelqu'un s'en occupe ? » tient dans une colonne de glyphes — ● pris,
+  ◐ à plusieurs, ○ libre — scannable en deux secondes, avec légende. Le desktop assume le deux-volets
+  (sidebar des participants + contenu), le mobile compresse en segmented control. Le ton est neutre
+  et précis, sans exclamation.</p>
+
+  <h2>Design tokens</h2>
+  <div class="tokens">
+    <span class="tok"><i style="background:#fbfaf8"></i>fond #FBFAF8</span>
+    <span class="tok"><i style="background:#ffffff"></i>surface #FFFFFF</span>
+    <span class="tok"><i style="background:#1c1917"></i>encre #1C1917</span>
+    <span class="tok"><i style="background:#047857"></i>accent unique #047857</span>
+    <span class="tok"><i style="background:#e7e2da"></i>filets #E7E2DA</span>
+  </div>
+  <p>Type : Inter partout, chiffres tabulaires ; corps 13–14 px. Radius 8 px, aucune ombre,
+  bordures 1 px, focus ring vert. Espacement compact (lignes 12 px), listes plutôt que cartes.</p>
+
+  <h2>Navigation &amp; orientation</h2>
+  <ul>
+    <li><strong>Où je suis :</strong> fil d'Ariane permanent « Noël 2026 › Liste de Chloé › Coordination » dans la barre du haut.</li>
+    <li><strong>Quel événement :</strong> racine du fil d'Ariane + en-tête de la sidebar (nom, compteurs).</li>
+    <li><strong>Quelle liste :</strong> entrée active surlignée dans la sidebar des participants (desktop) et titre de page avec compteurs.</li>
+    <li><strong>Qui je suis :</strong> sélecteur « V · Vincent ▾ » en haut à droite ; « Vincent (vous) » est marqué dans toutes les listes.</li>
+  </ul>
+
+  <h2>Écrans</h2>
+  <ul class="screens">
+    <li><a href="s-creation.html"><span class="n">01</span>Créer un événement</a></li>
+    <li><a href="s-entree.html"><span class="n">02</span>Entrée et choix du participant</a></li>
+    <li><a href="s-accueil.html"><span class="n">03</span>L'événement (toutes les listes)</a></li>
+    <li><a href="s-ma-liste.html"><span class="n">04</span>Ma liste (vue propriétaire)</a></li>
+    <li><a href="s-souhait.html"><span class="n">05</span>Ajouter / modifier un souhait</a></li>
+    <li><a href="s-liste-chloe.html"><span class="n">06</span>La liste de Chloé (vue offreur)</a></li>
+    <li><a href="s-coordination.html"><span class="n">07</span>Coordination d'un souhait</a></li>
+    <li><a href="s-indisponible.html"><span class="n">08</span>Événement introuvable</a></li>
+  </ul>
+</div>
+</body>
+</html>
