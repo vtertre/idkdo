@@ -1,0 +1,53 @@
+/* Shared chrome for mockup viewer pages (not part of any design direction). */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 28px 36px 80px;
+  background: #e9e7e2;
+  color: #26241f;
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+a { color: #26241f; }
+.v-head { max-width: 1280px; margin: 0 auto 28px; }
+.v-head nav { font-size: 13px; color: #77726a; }
+.v-head nav a { color: #77726a; }
+.v-head h1 { margin: 10px 0 4px; font-size: 26px; letter-spacing: -0.01em; }
+.v-head > p { margin: 0; color: #57534c; max-width: 62ch; }
+.v-screens { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+.v-screens a {
+  font-size: 12.5px; text-decoration: none; color: #57534c;
+  background: #fff; border: 1px solid #d8d4cc; border-radius: 99px; padding: 4px 11px;
+}
+.v-screens a.on { background: #26241f; color: #fff; border-color: #26241f; }
+.v-frames {
+  max-width: 1280px; margin: 0 auto;
+  display: flex; flex-wrap: wrap; gap: 44px; align-items: flex-start;
+}
+figure { margin: 0; }
+figcaption {
+  font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.09em;
+  color: #8a857c; margin-bottom: 12px;
+}
+.phone .shell {
+  width: 390px; height: 800px; background: #fff;
+  border: 11px solid #17171a; border-radius: 46px; overflow: hidden;
+  box-shadow: 0 24px 48px rgba(20, 18, 14, 0.22);
+}
+.phone iframe { width: 368px; height: 778px; border: 0; display: block; }
+.desk .fit { width: 780px; height: 528px; overflow: hidden; }
+.desk .shell {
+  width: 1300px; background: #fff; border-radius: 14px; overflow: hidden;
+  box-shadow: 0 24px 48px rgba(20, 18, 14, 0.22);
+  transform: scale(0.6); transform-origin: top left;
+}
+.desk .bbar {
+  height: 40px; background: #e3e1dc; display: flex; align-items: center;
+  gap: 7px; padding: 0 16px;
+}
+.desk .bbar i { width: 11px; height: 11px; border-radius: 50%; background: #c9c5bd; }
+.desk .bbar span {
+  margin-left: 14px; background: #f4f2ee; border-radius: 7px;
+  font-size: 13px; color: #8a857c; padding: 4px 14px;
+}
+.desk iframe { width: 1300px; height: 800px; border: 0; display: block; }
+@media (max-width: 1240px) { .v-frames { gap: 28px; } }

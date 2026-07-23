@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>02 — Confetti</title><link rel="stylesheet" href="../viewer.css">
+<style>
+.v-head { max-width: 900px; }
+.doc { max-width: 900px; margin: 0 auto; }
+.doc h2 { font-size: 17px; margin: 30px 0 10px; }
+.doc p { max-width: 72ch; color: #3d3a34; }
+.tokens { display: flex; flex-wrap: wrap; gap: 10px; }
+.tok { background: #fff; border: 1px solid #d8d4cc; border-radius: 10px; padding: 10px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+.tok i { width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.12); }
+.doc ul { padding-left: 20px; } .doc li { margin: 6px 0; max-width: 75ch; }
+.screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; padding: 0; list-style: none; }
+.screens a { display: block; background: #fff; border: 1px solid #d8d4cc; border-radius: 10px; padding: 12px 15px; text-decoration: none; font-size: 14px; }
+.screens .n { color: #8a857c; font-size: 12px; display: block; }
+</style></head>
+<body>
+<header class="v-head">
+  <nav><a href="../index.html">← Galerie</a></nav>
+  <h1>02 — Confetti</h1>
+  <p><strong>La fête avant l'heure.</strong> L'app fait partie du cadeau.</p>
+</header>
+<div class="doc">
+  <h2>Philosophie</h2>
+  <p>Confetti prend le parti du gifting joyeux : nuit étoilée semée de confettis, bandeau d'événement
+  en dégradé violet-rose, cartes blanches qui claquent sur le fond sombre, tutoiement complice.
+  Réserver un cadeau est une micro-célébration : les états sont des fanions (« 🎁 C'est pris ! »,
+  « 🤝 En équipe », « ✨ Encore libre ») et la coordination s'appelle « mission cadeau ». L'anti-spoil
+  devient un jeu : « Chuuut… tu ne le sauras jamais ».</p>
+
+  <h2>Design tokens</h2>
+  <div class="tokens">
+    <span class="tok"><i style="background:#211d52"></i>nuit #211D52</span>
+    <span class="tok"><i style="background:#7c6cf6"></i>violet #7C6CF6 (nav)</span>
+    <span class="tok"><i style="background:#ff5d8f"></i>rose #FF5D8F (action)</span>
+    <span class="tok"><i style="background:#ffc53d"></i>ambre #FFC53D (équipe/partage)</span>
+    <span class="tok"><i style="background:#2dd4bf"></i>menthe #2DD4BF (pris)</span>
+  </div>
+  <p>Type : Baloo 2 (titres ronds) + Nunito (texte). Radius 22 px, ombres colorées « glow »,
+  badges légèrement inclinés, barre de navigation flottante en pilule avec bouton « + » central.</p>
+
+  <h2>Navigation &amp; orientation</h2>
+  <ul>
+    <li><strong>Quel événement :</strong> bandeau héros en dégradé avec « 🎉 Noël 2026 » sur tous les écrans de l'app.</li>
+    <li><strong>Qui je suis :</strong> bulle avatar « Vincent ▾ » ancrée dans le bandeau, qui ouvre le changement d'identité.</li>
+    <li><strong>Où je suis :</strong> pilule flottante « 🎁 Les listes · + · 📝 Ma liste » (en bas sur mobile, dockée sous le bandeau sur desktop).</li>
+    <li><strong>Quelle liste :</strong> avatar + titre « La liste de Chloé » et fil de retour « ← Toutes les listes ».</li>
+  </ul>
+
+  <h2>Écrans</h2>
+  <ul class="screens">
+    <li><a href="s-creation.html"><span class="n">01</span>Créer un événement</a></li>
+    <li><a href="s-entree.html"><span class="n">02</span>Entrée et choix du participant</a></li>
+    <li><a href="s-accueil.html"><span class="n">03</span>L'événement (toutes les listes)</a></li>
+    <li><a href="s-ma-liste.html"><span class="n">04</span>Ma liste (vue propriétaire)</a></li>
+    <li><a href="s-souhait.html"><span class="n">05</span>Ajouter / modifier un souhait</a></li>
+    <li><a href="s-liste-chloe.html"><span class="n">06</span>La liste de Chloé (vue offreur)</a></li>
+    <li><a href="s-coordination.html"><span class="n">07</span>Coordination d'un souhait</a></li>
+    <li><a href="s-indisponible.html"><span class="n">08</span>Événement introuvable</a></li>
+  </ul>
+</div>
+</body>
+</html>

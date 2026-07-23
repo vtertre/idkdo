@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>06 — Atelier</title><link rel="stylesheet" href="../viewer.css">
+<style>
+.v-head { max-width: 900px; }
+.doc { max-width: 900px; margin: 0 auto; }
+.doc h2 { font-size: 17px; margin: 30px 0 10px; }
+.doc p { max-width: 72ch; color: #3d3a34; }
+.tokens { display: flex; flex-wrap: wrap; gap: 10px; }
+.tok { background: #fff; border: 1px solid #d8d4cc; border-radius: 10px; padding: 10px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+.tok i { width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.12); }
+.doc ul { padding-left: 20px; } .doc li { margin: 6px 0; max-width: 75ch; }
+.screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; padding: 0; list-style: none; }
+.screens a { display: block; background: #fff; border: 1px solid #d8d4cc; border-radius: 10px; padding: 12px 15px; text-decoration: none; font-size: 14px; }
+.screens .n { color: #8a857c; font-size: 12px; display: block; }
+.wip { background: #fff6e0; border: 1px solid #e8d3a8; border-radius: 12px; padding: 14px 18px; margin: 0 0 4px; }
+.wip strong { color: #8a6516; }
+.delta { list-style: none; padding: 0; margin: 0; }
+.delta li { background: #fff; border: 1px solid #d8d4cc; border-radius: 12px; padding: 14px 17px; margin: 0 0 10px; max-width: none; }
+.delta b { display: block; margin-bottom: 4px; }
+.delta .was { color: #8a857c; font-size: 13.5px; }
+</style></head>
+<body>
+<header class="v-head">
+  <nav><a href="../index.html">← Galerie</a> · dérivée de <a href="../01-flanelle/index.html">01 Flanelle</a></nav>
+  <h1>06 — Atelier</h1>
+  <p><strong>Flanelle, affinée.</strong> Même chaleur, mais c'est un plan de travail, pas une brochure.</p>
+</header>
+<div class="doc">
+  <p class="wip"><strong>Direction de travail.</strong> C'est la piste retenue, celle qu'on affine
+  ensemble. Elle part de Flanelle et intègre un premier tour de retours ; les cinq autres
+  directions restent figées comme points de comparaison.</p>
+
+  <h2>Philosophie</h2>
+  <p>Atelier garde tout ce qui faisait Flanelle — papier crème, encre brune, terre cuite et vert
+  sapin, Fraunces sur Nunito Sans, l'œillet de l'étiquette-cadeau — et change ce qui la rendait
+  contemplative. L'événement n'est plus un sommaire qu'on traverse : c'est un établi. On arrive
+  dessus, on voit tout, on agit sans changer d'écran. La douceur reste dans la matière (couleurs,
+  typographie, arrondis) ; la densité, elle, revient dans la structure. Zéro emoji : l'iconographie
+  est un jeu Lucide cohérent, au trait, qui prend la couleur du texte qui l'entoure.</p>
+
+  <h2>Design tokens</h2>
+  <div class="tokens">
+    <span class="tok"><i style="background:#f6eee3"></i>fond crème #F6EEE3</span>
+    <span class="tok"><i style="background:#fffdf8"></i>surface #FFFDF8</span>
+    <span class="tok"><i style="background:#3b2e25"></i>encre #3B2E25</span>
+    <span class="tok"><i style="background:#c05b3c"></i>terre cuite #C05B3C (action)</span>
+    <span class="tok"><i style="background:#4f6853"></i>sapin #4F6853 (pris en charge)</span>
+    <span class="tok"><i style="background:#b98726"></i>doré #B98726 (accent : navigation active, copie du lien)</span>
+  </div>
+  <p>Type : Fraunces (titres) + Nunito Sans (texte). Radius 16 px, ombres très légères.
+  Icônes <strong>Lucide</strong> au trait, 2 px, en 15 / 18 / 22 px, jamais d'emoji.
+  Le sapin et le doré ont été assombris par rapport à Flanelle pour passer le contraste AA
+  sur fond clair.</p>
+
+  <h2>Ce qui change par rapport à Flanelle</h2>
+  <ul class="delta">
+    <li><b>Icônes Lucide, plus aucun emoji.</b>
+      <span class="was">Avant : 🎄 🎁 📝 ✏️ 🗑 🤫 🔗 — dépendants de la police système, inégaux
+      d'une plateforme à l'autre, impossibles à mettre à la couleur du texte. Maintenant : un
+      sprite SVG Lucide, stroke <code>currentColor</code>, qui se décline sans rupture du 15 px
+      d'une ligne d'état au 40 px d'une page d'erreur.</span></li>
+
+    <li><b>L'événement devient le plan de travail.</b>
+      <span class="was">Avant : une page d'accueil qui ne listait que des noms — il fallait entrer
+      dans chaque liste pour voir quoi que ce soit. Maintenant : toutes les listes sont dépliées
+      sur une seule page, chaque souhait avec son état et son bouton d'action en ligne. On réserve,
+      on rejoint un cadeau, on modifie ses propres souhaits sans jamais quitter l'écran. Une barre
+      latérale de participants (desktop) et un rail de pastilles (mobile) permettent de sauter d'une
+      personne à l'autre — inspiration assumée d'Ardoise, mais habillée en Flanelle.</span></li>
+
+    <li><b>La vue offreur passe en lignes denses.</b>
+      <span class="was">Avant : une grosse carte par souhait, 18 px de padding, un bloc d'état
+      séparé par un filet — trois souhaits ne tenaient pas dans un écran. Maintenant : un seul bloc
+      bordé, des lignes séparées par des filets fins, l'état sur la même ligne que le texte sur
+      desktop. Les 4 souhaits de Chloé tiennent sans scroll sur un téléphone de 390 × 800. L'œillet
+      de l'étiquette est conservé, en plus petit, dans la gouttière gauche.</span></li>
+
+    <li><b>Le bouton « Rejoindre » est une vraie action primaire.</b>
+      <span class="was">Avant : « Me créer et entrer » en bouton fantôme, transparent sur le fond
+      crème, avec un contour qui le faisait passer pour un élément désactivé. Maintenant : bouton
+      terre cuite plein, dans une carte blanche, libellé « Rejoindre Noël 2026 ». La hiérarchie est
+      explicite : choisir un prénom existant est le chemin principal, se créer est l'alternative —
+      mais les deux sont franchement cliquables.</span></li>
+  </ul>
+
+  <h2>Deuxième tour de retours</h2>
+  <ul class="delta">
+    <li><b>Plus de sapin : marque d'événement neutre.</b>
+      <span class="was">Le sapin de Noël collait à l'exemple, pas à tous les événements. Dans la barre
+      d'en-tête, la marque devient l'icône <em>cadeau</em> (motif de l'app, valable pour un anniversaire
+      comme pour un mariage). Sur l'écran d'entrée, l'événement est identifié par une pastille-monogramme
+      colorée reprenant son initiale — une identité par événement, générée sans configuration.</span></li>
+
+    <li><b>Pastille d'œillet en début de ligne supprimée.</b>
+      <span class="was">L'œillet de l'étiquette-cadeau (petit cercle creux à gauche de chaque souhait)
+      ressemblait à un bouton radio et laissait croire à une case à cocher. Retiré : le texte du souhait
+      commence désormais au bord de la carte, sans faux contrôle. La chaleur passe par la couleur, la
+      typographie et les cartes — pas par un ornement ambigu.</span></li>
+
+    <li><b>Icône « toutes les listes » redessinée.</b>
+      <span class="was">L'icône du menu « toutes les listes » (traits + points) est passée à une grille 2×2
+      (Lucide <code>layout-grid</code>) — cohérente avec la métaphore du plan de travail.</span></li>
+
+    <li><b>Voir / Gérer / Rejoindre : une règle, pas trois libellés au hasard.</b>
+      <span class="was">« Voir » sous-entendait à tort un état en lecture seule. Or le SPEC est clair :
+      quiconque voit une réservation a les mêmes pouvoirs (ajouter ou retirer n'importe quel contributeur).
+      La seule distinction utile est votre rapport au cadeau : <b>Je m'en occupe</b> (libre) → <b>Rejoindre</b>
+      (déjà pris, vous n'y êtes pas) → <b>Gérer</b> (vous y participez). Le libellé dit ce que vous pouvez
+      faire, jamais un niveau de permission.</span></li>
+
+    <li><b>États robustes aux noms longs et au nombre de contributeurs.</b>
+      <span class="was">« À plusieurs — V B vous et Baptiste » débordait dès qu'un prénom s'allongeait ou
+      qu'un contributeur s'ajoutait. Désormais : un seul libellé, <b>Réservé</b>, quel que soit le nombre
+      de contributeurs — la pile d'avatars qui se chevauchent (plafonnée à « +N ») dit à elle seule s'ils
+      sont un ou plusieurs. Inutile de doubler l'info par un mot. Votre avatar porte un liseré terre cuite :
+      on repère d'un coup d'œil si l'on fait partie du cadeau, sans lire de texte. Les prénoms complets
+      restent sur l'écran de coordination.</span></li>
+
+    <li><b>« Encore libre » → rien du tout.</b>
+      <span class="was">La mention se répétait sur presque chaque ligne, d'abord en toutes lettres puis en
+      pastille « Libre » — toujours du bruit. Supprimée : un souhait libre n'affiche aucun marqueur, juste
+      son bouton « Je m'en occupe ». Comme seuls les cadeaux déjà pris sont marqués (Réservé),
+      ils deviennent l'exception qui ressort d'un coup d'œil.</span></li>
+
+    <li><b>Le repère de statut : le relief, pas un glyphe.</b>
+      <span class="was">Il manquait un repère lisible en début de ligne. Trois pistes ont été maquettées.
+      Aucune n'emploie le cercle à moitié rempli d'Ardoise : un taux de remplissage dit « à moitié fait »,
+      jamais « à deux » — le nombre de contributeurs n'est pas une fraction. Écartées : <b>la tranche</b>
+      (barre verticale scindée en autant de segments que de contributeurs — nette sur desktop, trop discrète
+      sur mobile où les lignes sont hautes) et <b>les visages</b> (les avatars en gouttière tenant lieu de
+      repère — élégant, mais 52 px d'indentation vide sur la majorité des lignes, celles qui sont libres).
+      <b>Retenu : le relief.</b> Aucun glyphe ajouté — on inverse la question. Ce qu'on cherche en balayant
+      la page, c'est ce qui est <em>encore libre</em> : ces lignes gardent donc le fond clair, le texte plein
+      contraste et le bouton terre cuite, tandis qu'un souhait déjà pris recule (fond à peine teinté, texte
+      adouci) derrière un filet sapin sur son bord gauche. Rien à décoder, aucune légende, et aucun risque
+      de confusion avec une case à cocher — c'est précisément ce qui avait fait retirer l'œillet.
+      Corollaire : la coche en pied de ligne a sauté. Le relief disant déjà « c'est pris », elle faisait
+      un signal de trop ; il reste « Réservé » suivi des avatars, qui se lit comme une légende et non
+      comme une pastille. La grande coche subsiste sur l'écran de coordination, où elle est le seul
+      énoncé du statut.</span></li>
+
+    <li><b>Navigation précédente / suivante entre listes supprimée.</b>
+      <span class="was">Elle devenait bancale selon la position dans l'ordre des participants, et faisait
+      doublon : la barre latérale (desktop) et le rail (mobile) permettent déjà de sauter directement sur
+      n'importe quelle liste, plus le fil d'Ariane pour remonter. Retirée sans perte d'orientation.</span></li>
+
+    <li><b>Coordination : les deux variantes de l'offreur.</b>
+      <span class="was">La question « est-ce le même écran si l'on ne participe pas encore ? » : oui, à trois
+      détails près. Pas de tag « — vous » dans la liste des contributeurs, l'action de pied de page devient
+      « Rejoindre ce cadeau » (au lieu de « Je me retire »), et vous n'apparaissez pas parmi les puces
+      « Ajouter quelqu'un » puisque vous vous ajoutez via ce bouton. Les deux variantes sont mockées.</span></li>
+
+    <li><b>Copy allégée.</b>
+      <span class="was">« En famille, on se fait confiance » en faisait trop → remplacé par le factuel
+      « Pas de compte, pas de mot de passe. » La signature « des cadeaux bien coordonnés, des surprises
+      intactes » sous le bouton de la page d'erreur a aussi été retirée.</span></li>
+  </ul>
+
+  <h2>Navigation &amp; orientation</h2>
+  <ul>
+    <li><strong>Quel événement :</strong> nom et compteurs en tête de la barre latérale (desktop) ou
+      de l'en-tête (mobile), plus une racine de fil d'Ariane « Noël 2026 › … » sur chaque écran.</li>
+    <li><strong>Qui je suis :</strong> pastille « VOUS ÊTES / Vincent » en haut à droite, avec chevron ;
+      c'est aussi le bouton de changement de participant.</li>
+    <li><strong>Où je suis :</strong> fil d'Ariane sur desktop, entrée active surlignée dans la barre
+      latérale et dans le rail ; deux onglets en barre basse sur mobile.</li>
+    <li><strong>Quelle liste :</strong> chaque bloc porte l'avatar et le prénom de son propriétaire ;
+      la liste ouverte a son en-tête à grand avatar. On saute d'une liste à l'autre par la barre latérale
+      (desktop) ou le rail (mobile), pas par une pagination précédent / suivant.</li>
+    <li><strong>Ma propre liste :</strong> teintée différemment, avec l'étiquette
+      « Coordination masquée » — l'anti-spoil est visible comme une garantie, pas comme un trou.</li>
+  </ul>
+
+  <h2>Écrans</h2>
+  <ul class="screens">
+    <li><a href="s-creation.html"><span class="n">01</span>Créer un événement</a></li>
+    <li><a href="s-entree.html"><span class="n">02</span>Entrée et choix du participant</a></li>
+    <li><a href="s-accueil.html"><span class="n">03</span>L'événement (plan de travail)</a></li>
+    <li><a href="s-accueil-ind-a.html"><span class="n">03a</span>L'événement — piste écartée A · La tranche</a></li>
+    <li><a href="s-accueil-ind-b.html"><span class="n">03b</span>L'événement — piste écartée B · Les visages</a></li>
+    <li><a href="s-ma-liste.html"><span class="n">04</span>Ma liste (vue propriétaire)</a></li>
+    <li><a href="s-souhait.html"><span class="n">05</span>Ajouter / modifier un souhait</a></li>
+    <li><a href="s-liste-chloe.html"><span class="n">06</span>La liste de Chloé (vue offreur)</a></li>
+    <li><a href="s-coordination.html"><span class="n">07</span>Coordination — vous participez (Gérer)</a></li>
+    <li><a href="s-coordination-hors.html"><span class="n">07b</span>Coordination — vous ne participez pas (Rejoindre)</a></li>
+    <li><a href="s-indisponible.html"><span class="n">08</span>Événement introuvable</a></li>
+  </ul>
+</div>
+</body>
+</html>
