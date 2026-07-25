@@ -52,9 +52,6 @@ Keep detailed local development commands in `docs/DEVELOPING.md`.
 
 2. Keep repo plan docs dated and centralized.
    When creating a plan file in the repository, new plan documents belong in `docs/plans/` and should use `YYYY-MM-DD-slug.md` or `YYYY-MM-DD-slug.html` filenames.
-   Both formats are accepted: Markdown for plans meant to be read as diffs, HTML for plans that carry their own presentation.
-   Neither format changes the content bar — a plan states its baseline, decisions, phased steps, and gates regardless of extension.
-   Only Markdown plans participate in `scripts/verify-docs.mjs` link checking, so an HTML plan must not be the sole home of a rule other docs depend on.
 
 3. Server changes follow the vertical-slice shape in `ARCHITECTURE.md`: route validates and delegates; use-case function owns behavior; queries read the real tables with the viewer as a parameter.
 
