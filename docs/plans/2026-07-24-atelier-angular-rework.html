@@ -1,0 +1,2056 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Implementation plan for rebuilding the idkdo Angular web app around the Atelier design direction.">
+  <title>idkdo — Atelier Angular rework plan</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --canvas: #f6eee3;
+      --surface: #fffdf8;
+      --surface-soft: #fbf5eb;
+      --ink: #3b2e25;
+      --muted: #756453;
+      --line: #dfd0bc;
+      --line-soft: #eee3d4;
+      --terracotta: #b54f33;
+      --terracotta-deep: #923b27;
+      --terracotta-soft: #f5ddd3;
+      --pine: #405c46;
+      --pine-soft: #e3ecdf;
+      --gold: #966d1d;
+      --gold-soft: #f6e9cb;
+      --danger: #97352b;
+      --danger-soft: #f7dfda;
+      --code: #2b2420;
+      --shadow: 0 16px 40px rgba(59, 46, 37, 0.08);
+      --radius-sm: 10px;
+      --radius: 16px;
+      --radius-lg: 24px;
+      --content: 1120px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 8% 0%, rgba(185, 135, 38, 0.12), transparent 30rem),
+        var(--canvas);
+      color: var(--ink);
+      font-family: "Nunito Sans", "Avenir Next", Avenir, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.58;
+    }
+
+    a {
+      color: var(--terracotta-deep);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    a:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    a:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 3px;
+      border-radius: 3px;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      font-family: Fraunces, Georgia, "Times New Roman", serif;
+      letter-spacing: -0.02em;
+      line-height: 1.16;
+      text-wrap: balance;
+    }
+
+    h1 {
+      max-width: 18ch;
+      margin: 0;
+      font-size: clamp(2.45rem, 6vw, 5.4rem);
+      font-weight: 600;
+    }
+
+    h2 {
+      margin: 0 0 0.8rem;
+      font-size: clamp(1.75rem, 3vw, 2.55rem);
+      font-weight: 600;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 600;
+    }
+
+    h4 {
+      margin: 1.2rem 0 0.35rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0.65rem 0;
+    }
+
+    ul,
+    ol {
+      padding-left: 1.35rem;
+    }
+
+    li + li {
+      margin-top: 0.38rem;
+    }
+
+    code {
+      padding: 0.12rem 0.38rem;
+      border: 1px solid var(--line-soft);
+      border-radius: 6px;
+      background: var(--surface-soft);
+      color: var(--code);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.86em;
+      overflow-wrap: anywhere;
+    }
+
+    pre {
+      margin: 1rem 0 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      border: 1px solid #4b423c;
+      border-radius: var(--radius-sm);
+      background: var(--code);
+      color: #fff8ed;
+      font: 0.82rem/1.58 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    pre code {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 253, 248, 0.7);
+    }
+
+    .hero::after {
+      position: absolute;
+      right: max(2rem, calc((100vw - var(--content)) / 2));
+      bottom: -9rem;
+      width: 19rem;
+      height: 19rem;
+      border: 3rem solid rgba(192, 91, 60, 0.12);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      width: min(var(--content), calc(100% - 2rem));
+      margin: 0 auto;
+      padding: clamp(3rem, 8vw, 7.5rem) 0 clamp(2.7rem, 7vw, 6rem);
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-bottom: 1.2rem;
+      color: var(--pine);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .kicker::before {
+      width: 0.65rem;
+      height: 0.65rem;
+      border: 3px solid currentColor;
+      border-radius: 50%;
+      content: "";
+    }
+
+    .hero .lede {
+      max-width: 64ch;
+      margin: 1.25rem 0 0;
+      color: var(--muted);
+      font-size: clamp(1.05rem, 2vw, 1.3rem);
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 1.65rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2rem;
+      padding: 0.35rem 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .pill.accent {
+      border-color: #d6c091;
+      background: var(--gold-soft);
+      color: #6d4c12;
+    }
+
+    .page {
+      width: min(var(--content), calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 2.5rem 0 6rem;
+    }
+
+    .summary-grid,
+    .principle-grid,
+    .decision-grid,
+    .risk-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1rem;
+    }
+
+    .summary-card {
+      grid-column: span 4;
+      padding: 1.25rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 6px 20px rgba(59, 46, 37, 0.04);
+    }
+
+    .summary-card strong {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.16rem;
+    }
+
+    .summary-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .callout {
+      margin: 1.25rem 0;
+      padding: 1rem 1.15rem;
+      border-left: 4px solid var(--pine);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      background: var(--pine-soft);
+      color: #304537;
+    }
+
+    .callout.warning {
+      border-left-color: var(--gold);
+      background: var(--gold-soft);
+      color: #624710;
+    }
+
+    .callout.danger {
+      border-left-color: var(--danger);
+      background: var(--danger-soft);
+      color: #6e2922;
+    }
+
+    .callout strong {
+      font-weight: 800;
+    }
+
+    .toc {
+      margin-top: 2rem;
+      padding: 1.3rem 1.4rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .toc h2 {
+      font-size: 1.35rem;
+    }
+
+    .toc ol {
+      columns: 2;
+      gap: 2.5rem;
+      margin-bottom: 0;
+    }
+
+    .toc li {
+      break-inside: avoid;
+      margin-bottom: 0.35rem;
+    }
+
+    .section {
+      padding-top: 4.6rem;
+      scroll-margin-top: 1rem;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.45fr);
+      gap: 2rem;
+      align-items: start;
+      margin-bottom: 1.4rem;
+    }
+
+    .section-head > p {
+      margin-top: 0.25rem;
+      color: var(--muted);
+      font-size: 1.02rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 0.45rem;
+      color: var(--terracotta-deep);
+      font-size: 0.75rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .card {
+      padding: 1.35rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .principle-card {
+      grid-column: span 4;
+    }
+
+    .principle-card .number {
+      display: inline-grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      margin-bottom: 0.8rem;
+      border-radius: 50%;
+      background: var(--terracotta-soft);
+      color: var(--terracotta-deep);
+      font-weight: 900;
+    }
+
+    .principle-card p,
+    .decision-card p,
+    .risk-card p {
+      color: var(--muted);
+    }
+
+    .decision-card {
+      grid-column: span 6;
+    }
+
+    .decision-card .tag {
+      display: inline-block;
+      margin-bottom: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: var(--pine-soft);
+      color: var(--pine);
+      font-size: 0.7rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .comparison {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      font-size: 0.91rem;
+    }
+
+    .comparison th,
+    .comparison td {
+      padding: 0.85rem 0.9rem;
+      border-bottom: 1px solid var(--line-soft);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .comparison th {
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 0.73rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .comparison tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .comparison td:first-child {
+      width: 20%;
+      font-weight: 800;
+    }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+      gap: 0.7rem;
+      align-items: stretch;
+      margin-top: 1.25rem;
+    }
+
+    .architecture .node {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 8rem;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .architecture .node strong {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.1rem;
+    }
+
+    .architecture .node span {
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .architecture .arrow {
+      align-self: center;
+      color: var(--terracotta);
+      font-size: 1.6rem;
+      font-weight: 900;
+    }
+
+    .phase-list {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .phase {
+      display: grid;
+      grid-template-columns: 7rem minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 5px 18px rgba(59, 46, 37, 0.035);
+    }
+
+    .phase-marker {
+      padding: 1.2rem 0.8rem;
+      background: var(--ink);
+      color: var(--surface);
+      text-align: center;
+    }
+
+    .phase-marker .phase-number {
+      display: block;
+      font-family: Fraunces, Georgia, serif;
+      font-size: 2.2rem;
+      line-height: 1;
+    }
+
+    .phase-marker .phase-kind {
+      display: block;
+      margin-top: 0.45rem;
+      color: #e9daca;
+      font-size: 0.67rem;
+      font-weight: 900;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+    }
+
+    .phase-body {
+      padding: 1.2rem 1.35rem 1.35rem;
+    }
+
+    .phase-body > p {
+      color: var(--muted);
+    }
+
+    .phase-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.4rem;
+      margin-top: 1rem;
+    }
+
+    .phase-columns ul {
+      margin-top: 0.35rem;
+      padding-left: 1.1rem;
+      font-size: 0.91rem;
+    }
+
+    .mini-label {
+      color: var(--pine);
+      font-size: 0.7rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .gate {
+      margin-top: 1rem;
+      padding: 0.8rem 0.9rem;
+      border: 1px solid #cedbc9;
+      border-radius: var(--radius-sm);
+      background: var(--pine-soft);
+      color: #304537;
+      font-size: 0.9rem;
+    }
+
+    .gate strong {
+      font-weight: 900;
+    }
+
+    .route-map {
+      margin-top: 1.2rem;
+    }
+
+    .route-map td:first-child {
+      width: 38%;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .checklist {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem 1.2rem;
+      margin: 1.2rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .checklist li {
+      position: relative;
+      margin: 0;
+      padding: 0.8rem 0.85rem 0.8rem 2.55rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+    }
+
+    .checklist li::before {
+      position: absolute;
+      top: 0.85rem;
+      left: 0.85rem;
+      display: grid;
+      place-items: center;
+      width: 1.1rem;
+      height: 1.1rem;
+      border: 2px solid var(--pine);
+      border-radius: 50%;
+      color: var(--pine);
+      content: "✓";
+      font-size: 0.72rem;
+      font-weight: 900;
+    }
+
+    .risk-card {
+      grid-column: span 6;
+    }
+
+    .risk-card strong {
+      color: var(--danger);
+    }
+
+    .sequence {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 1.2rem;
+    }
+
+    .sequence span {
+      position: relative;
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    .sequence span:not(:last-child)::after {
+      position: absolute;
+      right: -0.55rem;
+      color: var(--terracotta);
+      content: "›";
+      font-size: 1.2rem;
+      line-height: 0.9;
+    }
+
+    .sources {
+      padding: 1.25rem;
+      border: 1px dashed #cdbb9f;
+      border-radius: var(--radius);
+      background: rgba(255, 253, 248, 0.58);
+    }
+
+    .sources ul {
+      margin-bottom: 0;
+    }
+
+    footer {
+      margin-top: 5rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    @media (max-width: 840px) {
+      .summary-card,
+      .principle-card,
+      .decision-card,
+      .risk-card {
+        grid-column: span 12;
+      }
+
+      .section-head {
+        grid-template-columns: 1fr;
+        gap: 0.6rem;
+      }
+
+      .architecture {
+        grid-template-columns: 1fr;
+      }
+
+      .architecture .arrow {
+        transform: rotate(90deg);
+        justify-self: center;
+      }
+
+      .phase {
+        grid-template-columns: 1fr;
+      }
+
+      .phase-marker {
+        display: flex;
+        align-items: baseline;
+        justify-content: flex-start;
+        gap: 0.7rem;
+        padding: 0.85rem 1.2rem;
+        text-align: left;
+      }
+
+      .phase-marker .phase-number {
+        font-size: 1.5rem;
+      }
+
+      .phase-marker .phase-kind {
+        margin: 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        font-size: 15px;
+      }
+
+      .hero-inner,
+      .page {
+        width: min(100% - 1.25rem, var(--content));
+      }
+
+      .hero::after {
+        right: -9rem;
+      }
+
+      .toc ol {
+        columns: 1;
+      }
+
+      .phase-columns,
+      .checklist {
+        grid-template-columns: 1fr;
+      }
+
+      .comparison {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="kicker">Implementation plan · 24 July 2026</div>
+      <h1>Rebuild the Angular web app around Atelier</h1>
+      <p class="lede">
+        A staged rework of the idkdo Progressive Web App: preserve the proven V1 contracts and
+        anti-spoil behavior, replace the presentation layer with Atelier’s warm, dense workbench,
+        and establish a small Angular-native design system that can grow with real product slices.
+      </p>
+      <div class="meta-row" aria-label="Plan status">
+        <span class="pill accent">Status: ready for review</span>
+        <span class="pill">Angular 22</span>
+        <span class="pill">Mobile-first PWA</span>
+        <span class="pill">Atelier direction</span>
+        <span class="pill">V1 scope preserved</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="summary-grid" aria-label="Plan summary">
+      <article class="summary-card">
+        <strong>What is rebuilt</strong>
+        <p>Routes, app shell, page composition, feature state, UI components, styling, and frontend tests.</p>
+      </article>
+      <article class="summary-card">
+        <strong>What is retained</strong>
+        <p>REST contracts, selected-participant identity, shared runtime validation, PWA policy, and anti-spoil server rules.</p>
+      </article>
+      <article class="summary-card">
+        <strong>How it ships</strong>
+        <p>Vertical slices with a working build and regression coverage at the end of every phase.</p>
+      </article>
+    </section>
+
+    <div class="callout">
+      <strong>Recommended interpretation of “from scratch.”</strong>
+      Rebuild the Angular presentation architecture without discarding the working domain and transport
+      contracts. The current app already implements the V1 loop, validates shared Zod contracts, uses
+      standalone components and Signal Forms, and protects sensitive coordination on the server. Those
+      behaviors are worth preserving; the current repository classes, custom error classes, duplicated
+      <code>normalizeError</code> functions, component state shape, and CSS are not architectural constraints
+      and should be replaced where Angular 22 offers a simpler model.
+    </div>
+
+    <nav class="toc" aria-labelledby="contents-title">
+      <h2 id="contents-title">Contents</h2>
+      <ol>
+        <li><a href="#outcome">Target outcome</a></li>
+        <li><a href="#baseline">Current baseline</a></li>
+        <li><a href="#principles">Implementation principles</a></li>
+        <li><a href="#decisions">Decisions to lock</a></li>
+        <li><a href="#architecture">Target frontend architecture</a></li>
+        <li><a href="#routes">Route and screen map</a></li>
+        <li><a href="#phases">Delivery phases</a></li>
+        <li><a href="#design-system">Design-system scope</a></li>
+        <li><a href="#testing">Verification strategy</a></li>
+        <li><a href="#risks">Risks and mitigations</a></li>
+        <li><a href="#done">Definition of done</a></li>
+        <li><a href="#sources">Reference material</a></li>
+      </ol>
+    </nav>
+
+    <section class="section" id="outcome">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">01 · Outcome</p>
+          <h2>What success looks like</h2>
+        </div>
+        <p>
+          The finished app should feel like the Atelier prototype, behave like the V1 specification,
+          and be easier to extend than either the current CSS-heavy UI or a literal copy of the static mockups.
+        </p>
+      </div>
+
+      <ul class="checklist">
+        <li>Atelier’s cream paper, brown ink, terracotta action color, pine reserved state, gold navigation accent, rounded surfaces, and dense wish rows are implemented as reusable tokens and patterns.</li>
+        <li>The event becomes a responsive workbench: participant navigation, all lists, own-list editing, and coordination remain easy to reach without losing event context.</li>
+        <li>Creation, entry, board, own list, participant list, wish editing, coordination, and unavailable states match the retained Atelier screens at mobile and desktop widths.</li>
+        <li>The Wisher never receives or renders purchase-coordination details for their own Wishes; the redesign does not duplicate that rule in the browser.</li>
+        <li>Angular 22 patterns are applied consistently: standalone lazy routes, signals for local/derived state, stable Signal Forms, typed inputs/outputs, <code>inject()</code>, <code>OnPush</code>, and native template control flow.</li>
+        <li>The design system stays proportional to V1: foundations and proven primitives, not a speculative component library or a second application inside the repository.</li>
+        <li>Keyboard, screen-reader, reduced-motion, contrast, touch-target, loading, empty, error, conflict, and offline-shell states receive the same attention as happy-path screenshots.</li>
+        <li>The installable PWA still caches static assets only and never caches visibility-sensitive REST responses.</li>
+      </ul>
+    </section>
+
+    <section class="section" id="baseline">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">02 · Baseline</p>
+          <h2>What exists today</h2>
+        </div>
+        <p>
+          The repo is not a blank slate. The best rework starts by identifying which code is product
+          infrastructure, which code is presentation, and where Atelier requires a new read model.
+        </p>
+      </div>
+
+      <table class="comparison">
+        <thead>
+          <tr>
+            <th>Area</th>
+            <th>Current state</th>
+            <th>Plan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Framework</td>
+            <td>Angular 22.0.x, standalone components, new application builder, Vitest, Signal Forms, service worker.</td>
+            <td>Stay on Angular 22 and update all Angular packages together to the latest compatible 22.0 patch before feature work.</td>
+          </tr>
+          <tr>
+            <td>App structure</td>
+            <td>Feature-first events/wishes folders; components use entity-style repository classes rather than <code>HttpClient</code> directly.</td>
+            <td>Keep feature-first ownership, not the repository pattern. Replace repository classes with route-scoped feature state, validated resources, and explicit use-case actions.</td>
+          </tr>
+          <tr>
+            <td>UI</td>
+            <td>A functional tabbed event page with about 700 lines of component CSS and repeated visual decisions.</td>
+            <td>Replace page/component styling with Atelier tokens, primitives, shell, dense lists, and explicit responsive navigation.</td>
+          </tr>
+          <tr>
+            <td>Contracts</td>
+            <td>Shared Zod response schemas; event entry exposes participants but no Wish counts.</td>
+            <td>Preserve existing contracts, with one recommended event-entry projection extension for the counts shown by Atelier.</td>
+          </tr>
+          <tr>
+            <td>Data loading</td>
+            <td>Resolvers for event entry; explicit RxJS subscriptions and mirrored loading/error signals for list reads.</td>
+            <td>Keep resolvers lightweight for essential route context; use stable Angular 22 <code>httpResource</code> for GET read models and explicit <code>HttpClient</code> actions for mutations.</td>
+          </tr>
+          <tr>
+            <td>Error handling</td>
+            <td>Each repository repeats a <code>normalizeError</code> function and wraps failures in feature-specific custom Error classes.</td>
+            <td>Remove the duplication. Decode transport/API failures once into a small discriminated value; map business codes to user copy in the feature action that understands the operation.</td>
+          </tr>
+          <tr>
+            <td>Identity</td>
+            <td>Event-scoped Participant id in <code>localStorage</code>, request interceptor, route guard, and server membership checks.</td>
+            <td>Keep it. Rebuild only the chooser/switcher experience and preserve the guard as navigation convenience rather than security.</td>
+          </tr>
+          <tr>
+            <td>Regression safety</td>
+            <td>Unit tests, browser workflow, anti-spoil network/DOM assertions, reservation lifecycle, and PWA smoke coverage.</td>
+            <td>Keep behavioral coverage, rewrite selectors around accessible roles and route surfaces, then add an automated accessibility scan. Note that the anti-spoil DOM assertion is keyed on a CSS class this rework renames—it needs a positive control in Phase 0 before it can be trusted through the migration.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warning">
+        <strong>Environment checkpoint.</strong>
+        The repository requires Node 24.15 or newer in the Node 24 line. The implementation should not
+        begin under an older local runtime: align Node and pnpm first, then capture a green baseline with
+        <code>pnpm typecheck</code>, <code>pnpm lint</code>, and <code>pnpm test</code>.
+      </div>
+    </section>
+
+    <section class="section" id="principles">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">03 · Principles</p>
+          <h2>Rules for the rework</h2>
+        </div>
+        <p>
+          These rules prevent a visual redesign from becoming an uncontrolled platform rewrite.
+        </p>
+      </div>
+
+      <div class="principle-grid">
+        <article class="card principle-card">
+          <span class="number">1</span>
+          <h3>Protect behavior first</h3>
+          <p>Server-shaped visibility, identity headers, Zod parsing, URL detection, and reservation conflict recovery remain authoritative.</p>
+        </article>
+        <article class="card principle-card">
+          <span class="number">2</span>
+          <h3>Build the system through slices</h3>
+          <p>Seed only the foundations needed by creation and entry; add components when later screens prove repetition.</p>
+        </article>
+        <article class="card principle-card">
+          <span class="number">3</span>
+          <h3>Prefer native semantics</h3>
+          <p>Use real links, buttons, headings, lists, labels, inputs, and textareas. Add Angular Aria only for a genuinely custom interaction pattern.</p>
+        </article>
+        <article class="card principle-card">
+          <span class="number">4</span>
+          <h3>Keep state close</h3>
+          <p>Signals own local and derived UI state; route-scoped services own shared feature state; no third-party global store is introduced.</p>
+        </article>
+        <article class="card principle-card">
+          <span class="number">5</span>
+          <h3>Routes represent destinations</h3>
+          <p>The board, a participant list, Wish editing, and coordination are deep-linkable destinations. Transient confirmation stays local.</p>
+        </article>
+        <article class="card principle-card">
+          <span class="number">6</span>
+          <h3>Every slice stays reviewable</h3>
+          <p>
+            The rework is <strong>not</strong> released phase by phase: nothing ships until the whole rework is done and approved.
+            Each phase is still a self-contained pull request that compiles and passes unit tests, responsive behavior, and the
+            relevant browser regressions before the next begins. Because no intermediate state is released, the plan needs no
+            feature flag, parallel <code>/v2</code> path, or other old/new coexistence machinery on <code>/events/:eventId</code>.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="decisions">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">04 · Decisions</p>
+          <h2>Choices to lock before broad implementation</h2>
+        </div>
+        <p>
+          These are the points where a static exploration and a production application differ.
+          Lock them in a short frontend design note so implementation and review use the same rules.
+        </p>
+      </div>
+
+      <div class="decision-grid">
+        <article class="card decision-card">
+          <span class="tag">Recommended</span>
+          <h3>Atelier is a visual source, not production markup</h3>
+          <p>
+            Reproduce its hierarchy and behavior with semantic Angular templates. Do not paste iframe pages,
+            duplicated SVG sprites, inline styles, or selector-heavy <code>:has()</code> rules into feature components.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Recommended</span>
+          <h3>Extend the entry projection for counts</h3>
+          <p>
+            Atelier shows per-Participant Wish counts before an identity is selected, so the current viewer-scoped
+            Wishes endpoint cannot supply them. Add a count only to the event-entry read model, preferably as a
+            dedicated entry Participant shape rather than broadening the reusable Participant summary everywhere.
+            Counts reveal no purchase coordination.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Recommended</span>
+          <h3>Self-host the typography</h3>
+          <p>
+            Ship licensed, subset WOFF2 files for Fraunces and Nunito Sans with <code>font-display: swap</code>,
+            explicit fallbacks, and preload only for the critical weights. This keeps the PWA predictable and avoids
+            a runtime stylesheet dependency.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Recommended</span>
+          <h3>Use a typed local Lucide subset</h3>
+          <p>
+            Vendor only the icons used by V1 behind one accessible Icon component/registry and retain the Lucide license.
+            Do not repeat an entire inline sprite per page. Re-evaluate an Angular wrapper later; the current
+            <code>lucide-angular</code> release does not declare Angular 22 peer support.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Recommended</span>
+          <h3>Use CSS custom properties as the token API</h3>
+          <p>
+            Keep foundations in global CSS and components encapsulated. Token names should express roles
+            (<code>--color-action</code>, <code>--surface-reserved</code>) rather than one-off hex names.
+            Component styles consume tokens; feature pages do not invent new palette values.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Recommended</span>
+          <h3>Do not carry the repository pattern forward by default</h3>
+          <p>
+            The web app does not need domain-style repositories around a REST API whose endpoints already express
+            product use cases. Use <code>httpResource</code> for GET resources with Zod <code>parse</code>, and call
+            <code>HttpClient</code> from route-scoped feature stores/actions for POST/PATCH/DELETE. Add a thin API
+            client only when multiple features genuinely reuse the same transport operation; do not create one class
+            per entity as a convention.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Recommended</span>
+          <h3>Replace custom Error wrappers with typed failure values</h3>
+          <p>
+            Remove <code>EventRepositoryError</code>, <code>WishRepositoryError</code>, and the repeated
+            <code>normalizeError</code> implementations. One pure HTTP failure decoder should distinguish
+            API errors, offline/network failure, timeout, invalid response, and unexpected failure. Feature actions
+            switch on the API status/code they understand and choose the French user message locally. Unknown details
+            are logged for diagnostics, never exposed to the UI.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Recommended</span>
+          <h3>Keep interceptors narrow and predictable</h3>
+          <p>
+            Retain the functional Participant-id interceptor because it is truly cross-cutting. Do not put
+            feature error copy, redirects, retries, or API response caching in a global interceptor. Add an
+            observability or timeout interceptor only if the entire API adopts the same policy. Functional interceptors
+            remain configured explicitly with <code>withInterceptors</code>.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Recommended</span>
+          <h3>Use stable Angular 22 primitives deliberately</h3>
+          <p>
+            Signal Forms remain the form standard. Route-scoped services expose resource status and computed view
+            models as signals; mutations remain explicit async actions with their own pending/result state. Avoid
+            effects for state propagation and avoid introducing a third-party store library.
+          </p>
+          <p>
+            Stability is verified, not assumed. In the pinned <code>@angular/common@22.0.2</code>, <code>httpResource</code>
+            is annotated <code>@publicApi 22.0</code>; in <code>@angular/forms@22.0.2</code>, <code>form()</code> and
+            <code>validateStandardSchema()</code> are likewise <code>@publicApi 22.0</code>. The only
+            <code>@experimental</code> symbol in the Signal Forms surface is <code>provideExperimentalWebMcpForms</code>,
+            which this plan does not use. Neither core primitive is developer preview.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Required</span>
+          <h3>Identity is an explicit input to every viewer-scoped read</h3>
+          <p>
+            <code>participantIdInterceptor</code> reads <code>SelectedParticipantContext.selection()</code> inside the
+            interceptor, which is <em>outside</em> any resource's reactive computation. A URL closure that omits the identity
+            signal therefore does not re-run when the viewer changes, and the resource keeps serving the previous viewer's
+            <code>purchaseCoordination</code> filtering. That is a visibility defect adjacent to the one rule this rework
+            promises to protect. It is latent today only because the current flow round-trips through <code>/entry</code> and
+            remounts the page; it goes live in Phase 3, which puts a persistent switcher in a shell that never unmounts.
+          </p>
+          <p>
+            Every <code>httpResource</code> reading a viewer-scoped endpoint must read the identity signal in its URL function
+            and return <code>undefined</code> until identity is known—both to force the refetch on switch and to avoid firing
+            before the guard populates the context, which would fail the uuid-required <code>x-participant-id</code> header
+            validation with a 400.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Required</span>
+          <h3>The board resource is the single source of truth for counts</h3>
+          <p>
+            Shell sidebar counts and board counts must not come from different places. The resolver-snapshot entry projection
+            is read once, non-reactively, so a sidebar fed from it will disagree with the board after any create or delete.
+            Derive all in-shell counts from the Event board resource.
+          </p>
+          <p>
+            The new <code>wishCount</code> is therefore used <strong>only</strong> on the pre-identity entry screen, where no
+            board resource exists. That is the sole justification for the contract change, and it keeps the change smaller than
+            originally scoped. The count query must not be N+1 across Participants.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Required</span>
+          <h3>The board store is provided at the shell route</h3>
+          <p>
+            The Event board store is provided on the <em>shell</em> route, not on its children. Provided per child, every
+            navigation between <code>/</code>, <code>mine</code>, <code>participants/:id</code>, and <code>coordination</code>
+            destroys the store, refetches the Event Wishes response, and discards mutation-patched state. This is locked in
+            Phase 3 where the shell is built, not deferred to Phase 4.
+          </p>
+          <p>
+            Ownership follows the same rule: the board slice lives under one feature. Do not leave
+            <code>event-board-page</code> under <code>features/events/</code> while <code>event-board-store</code> sits under
+            <code>features/wishes/</code>—that bakes a cross-feature import into the target layout.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Required</span>
+          <h3>Preserve entry projection-lag recovery</h3>
+          <p>
+            <code>event-entry-route.ts</code> retries a 404 with 50/100/200/400 ms backoff before redirecting to
+            <code>/unavailable</code>, keyed on <code>EventRepositoryError.status === 404</code>. It exists because
+            create-event → entry-read has real projection lag. This plan deletes that Error class, so the behavior must be
+            restated against <code>ApiFailure { kind: "api", status: 404 }</code> and covered by a test. Dropping it silently
+            makes “create Event → open the share link” intermittently broken.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Required</span>
+          <h3>Amend the accepted architecture docs before Phase 1</h3>
+          <p>
+            <code>ARCHITECTURE.md</code> (“Frontend Layering”) and <code>docs/design-docs/frontend-architecture.md</code>
+            (Status: <strong>Accepted</strong>) both state: “Components do not call <code>HttpClient</code> directly. They use
+            frontend repositories.” Removing the repository pattern reverses standing accepted guidance, which
+            <code>AGENTS.md</code> §11 treats as a stop-and-confirm trigger. The amendment is a Phase 0 gate item, not Phase 7
+            cleanup—otherwise phases 1–6 knowingly ship against an accepted doc with no recorded decision.
+          </p>
+          <p>
+            The Phase 0 design note must satisfy <code>scripts/verify-docs.mjs</code>: <code>Status:</code>,
+            <code>Applies To:</code>, and <code>Verification:</code> metadata, <code>## Decision</code> and
+            <code>## Details</code> sections, and an entry in <code>docs/design-docs/index.md</code>. Otherwise
+            <code>pnpm verify</code> fails in CI.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Required</span>
+          <h3>Deliver one phase per pull request</h3>
+          <p>
+            Repository history is one PR per slice (#17–#21) and <code>AGENTS.md</code> §12 requires every section of the PR
+            template to be filled each time. Eight phases in one pull request is unreviewable. Phase boundaries are PR
+            boundaries. Merging is not releasing—CI runs on pull request and on push to <code>main</code>, and no pipeline
+            deploys on merge—so the rework can land incrementally on <code>main</code> while still being released only once,
+            complete and approved.
+          </p>
+        </article>
+        <article class="card decision-card">
+          <span class="tag">Recommended</span>
+          <h3>State the language and the surviving reactive helper</h3>
+          <p>
+            The UI language is <strong>French</strong>: all product copy, all error messages, and every Atelier mockup.
+            Treat it as a foundation decision alongside typography rather than an aside, because it constrains component
+            APIs that accept text.
+          </p>
+          <p>
+            <code>@signality/core</code> (<code>createInjectable</code>) already exists in <code>core/router/</code> and is
+            retained in the target layout. Principle 4 forbids introducing a third-party <em>global store</em>; this helper is
+            not one, and it survives. Saying so explicitly prevents an implementer from reading Principle 4 as a mandate to
+            remove it.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="architecture">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">05 · Architecture</p>
+          <h2>Target frontend shape</h2>
+        </div>
+        <p>
+          A route shell provides orientation; feature state coordinates resources and mutations;
+          presentational components render server-authorized read models using shared Atelier primitives.
+        </p>
+      </div>
+
+      <div class="architecture" aria-label="Target frontend data flow">
+        <div class="node">
+          <strong>Routes &amp; pages</strong>
+          <span>Lazy destinations, event resolver, identity guard, title metadata, navigation feedback.</span>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="node">
+          <strong>Feature state</strong>
+          <span>Route-scoped resources, computed view models, mutation status, conflict recovery, no domain-policy duplication.</span>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="node">
+          <strong>Data access</strong>
+          <span>Shared Zod contracts, identity interceptor, GET resources, explicit HttpClient actions, one typed failure decoder.</span>
+        </div>
+      </div>
+
+      <div class="architecture" aria-label="Target frontend rendering flow">
+        <div class="node">
+          <strong>Atelier shell</strong>
+          <span>Desktop sidebar, mobile topbar/participant rail/bottom navigation, breadcrumbs, Participant switcher.</span>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="node">
+          <strong>Feature UI</strong>
+          <span>Event list blocks, Wish rows, own-Wish actions, avatar stacks, contributor controls, editor states.</span>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="node">
+          <strong>UI foundations</strong>
+          <span>Tokens, typography, icons, buttons, avatars, fields, surfaces, messages, empty/loading patterns.</span>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 2rem;">Proposed source layout</h3>
+      <pre><code>web/src/app/
+  core/
+    http/                         # keep identity interceptor
+    identity/                     # keep selected Participant context
+    router/                       # resolver/provider helpers
+  shared/
+    ui/
+      avatar/
+      icon/
+      inline-message/
+      field/
+      styles/
+        tokens.css
+        typography.css
+        reset.css
+        utilities.css             # very small, layout-only
+  features/
+    events/
+      data-access/                # resource/action factories and schemas
+      layout/
+        event-shell/
+        participant-navigation/
+      state/
+        event-entry-store/
+        event-shell-store/
+      pages/
+        create-event-page/
+        event-entry-page/
+        event-board-page/
+        event-unavailable-page/
+    wishes/
+      data-access/                # validated resources and HTTP actions
+      state/
+        event-board-store/
+      components/
+        wish-content/
+        wish-list-block/
+        wish-row/
+        reservation-summary/
+        contributor-list/
+      pages/
+        my-wishlist-page/
+        participant-wishlist-page/
+        wish-editor-page/
+        coordination-page/</code></pre>
+
+      <div class="callout">
+        <strong>Boundary rule.</strong>
+        Shared UI knows nothing about Events, Wishes, Reservations, or Participants beyond neutral values such
+        as text, initials, tone, size, and disabled state. Feature components compose the primitives and own
+        product language. Feature state/actions remain the only frontend layer that knows wire URLs, schemas,
+        and API codes; there is no mandatory repository layer between them and Angular’s HTTP APIs.
+      </div>
+
+      <h3 style="margin-top: 2rem;">Recommended HTTP and failure flow</h3>
+      <table class="comparison">
+        <thead>
+          <tr>
+            <th>Concern</th>
+            <th>Recommended owner</th>
+            <th>Rule</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>GET read model</td>
+            <td>Route-scoped feature store using <code>httpResource</code></td>
+            <td>Read both the route params <em>and</em> the selected-Participant signal inside the URL function, returning <code>undefined</code> until identity is known; validate <code>unknown</code> with the shared Zod schema through the resource <code>parse</code> option; expose <code>hasValue</code>, <code>isLoading</code>, <code>error</code>, and <code>reload</code> to the page. Identity is never left implicit in the interceptor.</td>
+          </tr>
+          <tr>
+            <td>Mutation</td>
+            <td>Explicit async action on the feature store, or a local injected action function for a one-screen flow</td>
+            <td>Call <code>HttpClient</code>, parse the successful response, guard duplicate submission, update from the authoritative response, and reload on concurrency conflicts.</td>
+          </tr>
+          <tr>
+            <td>Transport failure</td>
+            <td>One pure decoder under <code>core/http</code></td>
+            <td>Convert <code>HttpErrorResponse</code>, network status 0, timeout, Zod failure, and unknown exceptions into a small discriminated <code>ApiFailure</code> value. Do not throw a new custom class merely to carry status/code.</td>
+          </tr>
+          <tr>
+            <td>User-facing message</td>
+            <td>The feature action/page that knows the attempted operation</td>
+            <td>Map only understood business codes—such as duplicate Participant or reservation conflict—to specific copy. Use one generic retry message for unknown failures.</td>
+          </tr>
+          <tr>
+            <td>Cross-cutting request policy</td>
+            <td>Functional interceptors</td>
+            <td>Add the selected Participant header and, if adopted globally, observability/timeout. Do not translate domain errors, navigate, cache API bodies, or choose UI messages.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <pre><code>type ApiFailure =
+  | { kind: "api"; status: number; code?: string }
+  | { kind: "network" }
+  | { kind: "timeout" }
+  | { kind: "invalid-response" }
+  | { kind: "unexpected" };
+
+// Reads: signal-native, runtime validated, and identity-reactive.
+// The identity signal MUST be read inside the URL function. The interceptor
+// attaches the header outside this computation, so a URL that ignores identity
+// will not refetch when the viewer switches — it keeps serving the previous
+// viewer's coordination filtering. Returning undefined also prevents the
+// request from firing before the guard has populated the context.
+readonly eventWishes = httpResource(
+  () =&gt; {
+    const participantId = this.selectedParticipant.selection();
+    if (!participantId) return undefined;
+    return `/api/events/${this.eventId()}/wishes`;
+  },
+  { parse: (value) =&gt; getEventWishesResponseSchema.parse(value) },
+);
+
+// Mutations: explicit, operation-shaped, and close to their feature
+async reserveWish(wishId: string): Promise&lt;void&gt; {
+  // call HttpClient, parse success, update authoritative state,
+  // decode failure once, then map known codes to feature copy
+}</code></pre>
+
+      <div class="callout warning">
+        <strong>This is not “components call HttpClient everywhere.”</strong>
+        Page components consume a feature store/action API and focus on presentation. The simplification is the
+        removal of entity-style repository wrappers and duplicated error classes—not the removal of a testable
+        frontend boundary around HTTP and state.
+      </div>
+    </section>
+
+    <section class="section" id="routes">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">06 · Navigation</p>
+          <h2>Route and screen map</h2>
+        </div>
+        <p>
+          Atelier’s screens become real destinations while the event shell remains mounted.
+          Route guards improve navigation but never substitute for API permission checks.
+        </p>
+      </div>
+
+      <table class="comparison route-map">
+        <thead>
+          <tr>
+            <th>Route</th>
+            <th>Atelier surface</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>/</td>
+            <td>Create an Event</td>
+            <td>Eager primary landing route; creation result exposes copy/share and entry actions.</td>
+          </tr>
+          <tr>
+            <td>/events/:eventId/entry</td>
+            <td>Choose or create a Participant</td>
+            <td>Lightweight resolver for event + entry Participants; selecting identity continues to the board.</td>
+          </tr>
+          <tr>
+            <td>/events/:eventId</td>
+            <td>All-lists workbench</td>
+            <td>Default child of the lazy event shell; full read model grouped by Participant.</td>
+          </tr>
+          <tr>
+            <td>/events/:eventId/mine</td>
+            <td>My list</td>
+            <td>Dedicated mobile destination and desktop sidebar item; coordination is structurally absent.</td>
+          </tr>
+          <tr>
+            <td>/events/:eventId/participants/:participantId</td>
+            <td>One Participant’s list</td>
+            <td>Computed from the authorized event Wishes resource; foreign/unknown ids use a clear not-found state.</td>
+          </tr>
+          <tr>
+            <td>/events/:eventId/wishes/new</td>
+            <td>Add a Wish</td>
+            <td>Signal Form page. Return destination is preserved in navigation state or a safe query parameter.</td>
+          </tr>
+          <tr>
+            <td>/events/:eventId/wishes/:wishId/edit</td>
+            <td>Edit/delete own Wish</td>
+            <td>Server remains authoritative. Delete confirmation is local and focus is restored on cancel.</td>
+          </tr>
+          <tr>
+            <td>/events/:eventId/wishes/:wishId/coordination</td>
+            <td>Manage or join coordination</td>
+            <td>Same route, different primary action based on whether the viewer contributes. Inaccessible own-Wish state redirects safely.</td>
+          </tr>
+          <tr>
+            <td>/events/:eventId/unavailable</td>
+            <td>Event unavailable</td>
+            <td>Warm error state with a valid way back to Event creation.</td>
+          </tr>
+          <tr>
+            <td>**</td>
+            <td>—</td>
+            <td>Unchanged from today: redirect to <code>/</code>. The shell handles unknown Participant and Wish ids with a not-found state, but an unknown top-level route still resolves to Event creation rather than an error page.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <strong>Guard placement.</strong> The selected-Participant guard is applied once on the event shell route so that
+        <code>mine</code>, <code>participants/:participantId</code>, <code>wishes/*</code>, and <code>coordination</code> all
+        inherit it; children are not re-guarded individually. The guard itself moves from
+        <code>features/events/data-access/</code> to <code>core/identity/</code>, which is its real home now that it protects
+        every Event surface rather than one page.
+      </div>
+
+      <div class="callout">
+        <strong>Endpoint fate.</strong> <code>GET /api/participants/:participantId/wishes</code> becomes unused by the web app:
+        <code>/mine</code> is computed from the Event Wishes resource, where the viewer's own Wishes are already present with
+        <code>kind: "hidden"</code>. Leave the endpoint in place and serving—removing server surface is outside this rework—but
+        record that the frontend no longer calls it, so a later cleanup does not have to rediscover why.
+      </div>
+    </section>
+
+    <section class="section" id="phases">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">07 · Delivery</p>
+          <h2>Phased implementation</h2>
+        </div>
+        <p>
+          The phases are ordered by dependency and risk. Each ends with a demonstrable product surface
+          and verification gate; none is a “CSS-only” batch detached from behavior.
+        </p>
+      </div>
+
+      <div class="phase-list">
+        <article class="phase">
+          <div class="phase-marker">
+            <span class="phase-number">0</span>
+            <span class="phase-kind">Baseline</span>
+          </div>
+          <div class="phase-body">
+            <h3>Stabilize the starting point, amend accepted architecture, and protect the anti-spoil test</h3>
+            <p>
+              Make the rework reproducible and <em>authorized</em> before changing page structure. This phase is a gate, not a
+              formality: it carries the one decision that reverses standing accepted guidance, and the one test repair that must
+              land before any CSS class is renamed.
+            </p>
+            <div class="phase-columns">
+              <div>
+                <span class="mini-label">Authorize the architecture change</span>
+                <ul>
+                  <li>Amend <code>docs/design-docs/frontend-architecture.md</code> (currently Status: Accepted) so it no longer mandates “Components do not call <code>HttpClient</code> directly. They use frontend repositories.” Replace it with the resource/feature-action rule this plan adopts, and record why the repository layer is being removed.</li>
+                  <li>Amend the matching “Frontend Layering” statement in <code>ARCHITECTURE.md</code> so the two documents cannot drift apart.</li>
+                  <li>Keep both compliant with <code>scripts/verify-docs.mjs</code>: <code>Status:</code>/<code>Applies To:</code>/<code>Verification:</code> metadata, <code>## Decision</code> and <code>## Details</code> sections, and a listing in <code>docs/design-docs/index.md</code>.</li>
+                  <li>Get explicit sign-off on the reversal before Phase 1 opens. Under <code>AGENTS.md</code> §11 an unapproved override is a stop-and-report blocker, not an implementation detail.</li>
+                </ul>
+              </div>
+              <div>
+                <span class="mini-label">Protect the invariant</span>
+                <ul>
+                  <li>Repair the anti-spoil regression <em>first</em>. <code>e2e/tests/anti-spoil.spec.ts</code> asserts <code>.purchase-coordination</code> has count <code>0</code> on an own Wish—an assertion that passes vacuously the moment the class is renamed, which this rework explicitly intends to do.</li>
+                  <li>Add a positive control beside it: the same locator must have count ≥ 1 on a non-own reserved Wish. A rename then fails loudly instead of going quietly green.</li>
+                  <li>Land this before any phase touches that class, so the safety net is real for phases 1–7 rather than nominal.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="phase-columns">
+              <div>
+                <span class="mini-label">Lock the decisions in the design note</span>
+                <ul>
+                  <li>Write the short frontend design note covering tokens, icon/font strategy, route map, signal/resource state, HTTP actions, failure values, and the count projection.</li>
+                  <li>State the identity rule once, precisely: every viewer-scoped <code>httpResource</code> reads the selected-Participant signal in its URL function and returns <code>undefined</code> until identity is known. This is the plan's highest-risk detail and the source of several others.</li>
+                  <li>Lock board-store ownership at the shell route, and the board resource as the single source of truth for in-shell counts.</li>
+                  <li>Restate the entry projection-lag retry against <code>ApiFailure</code>, since the Error class carrying it is being deleted.</li>
+                  <li>Record French as the UI language and <code>@signality/core</code> as retained.</li>
+                </ul>
+              </div>
+              <div>
+                <span class="mini-label">Stabilize the baseline</span>
+                <ul>
+                  <li>Confirm the environment checkpoint—<code>engines: &gt;=24.15 &lt;25</code> with pnpm 11.5—which the repository already satisfies, so it costs nothing.</li>
+                  <li>Update Angular framework/build/CLI packages together to the latest compatible 22.0 patch (<code>22.0.8</code> at time of writing; <code>22.1.0-rc.0</code> is on <code>next</code> and is not a target) and run Angular migrations.</li>
+                  <li>Record the verified API stability in the note: <code>httpResource</code>, <code>form()</code>, and <code>validateStandardSchema()</code> are all <code>@publicApi 22.0</code> in the pinned packages. Neither core primitive is developer preview.</li>
+                  <li>Capture baseline bundle sizes, unit results, core E2E results, and mobile/desktop screenshots.</li>
+                  <li>Mark the current repository classes and custom error wrappers as migration targets; preserve tests for their behavior, not their class APIs.</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <span class="mini-label">Do not do yet</span>
+              <ul>
+                <li>Do not delete the existing UI or tests.</li>
+                <li>Do not add a component explorer, state library, utility CSS framework, or monorepo package without a proven V1 need.</li>
+                <li>Do not change REST endpoints outside the small count decision.</li>
+                <li>Do not rename repositories to “clients” while retaining the same duplicated error and subscription boilerplate.</li>
+                <li>Do not rename or restyle <code>.purchase-coordination</code> until the positive control above is merged.</li>
+              </ul>
+            </div>
+            <div class="gate">
+              <strong>Gate:</strong> all five hold—(1) <code>frontend-architecture.md</code> and <code>ARCHITECTURE.md</code> are
+              amended, signed off, and <code>pnpm verify</code> passes; (2) the anti-spoil positive control is merged and fails
+              when the class is renamed, proven by trying it; (3) the design note states the identity rule, store ownership, count
+              source, and 404 retry as locked decisions; (4) the Angular patch bump is applied with baseline verification green;
+              (5) baseline artifacts are captured for later comparison.
+            </div>
+          </div>
+        </article>
+
+        <article class="phase">
+          <div class="phase-marker">
+            <span class="phase-number">1</span>
+            <span class="phase-kind">Foundation</span>
+          </div>
+          <div class="phase-body">
+            <h3>Seed the Atelier design system through the creation flow</h3>
+            <p>Build only the foundations and primitives needed by the first real screen.</p>
+            <div class="phase-columns">
+              <div>
+                <span class="mini-label">Foundations</span>
+                <ul>
+                  <li>Semantic color, typography, spacing, radius, shadow, focus, motion, layer, and content-width tokens.</li>
+                  <li>Self-hosted Fraunces/Nunito Sans with fallbacks and swap behavior.</li>
+                  <li>
+                    Extend <code>web/ngsw-config.json</code> to cache the fonts <em>in this phase</em>, with the font work.
+                    The current asset groups match only <code>/favicon.ico</code>, <code>/index.html</code>,
+                    <code>/manifest.webmanifest</code>, <code>/*.css</code>, <code>/*.js</code>, and <code>/icons/**</code>.
+                    Angular emits CSS-referenced fonts as hashed files under <code>/media/</code>, which none of those patterns
+                    match—so without this, the Phase 1 gate below passes while the Phase 7 offline shell silently renders in
+                    fallback fonts.
+                  </li>
+                  <li>Typed local Icon component and the minimum Lucide subset.</li>
+                  <li>Global reset and body defaults; no feature-specific selectors in global CSS.</li>
+                </ul>
+              </div>
+              <div>
+                <span class="mini-label">First primitives</span>
+                <ul>
+                  <li>Native button/link treatment via an attribute directive or shared class contract.</li>
+                  <li>Field container that projects a native control, label, hint, and error.</li>
+                  <li>Card/surface pattern and inline message.</li>
+                  <li>Creation page with loading, validation, API error, post-create share, copy feedback, and continuation.</li>
+                  <li>Creation action calls <code>HttpClient</code> through a local injected action/store, validates the response, and uses the shared failure decoder—no Event repository wrapper.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="gate"><strong>Gate:</strong> creation works at 320, 390, 768, and 1280 CSS pixels; keyboard and screen-reader labels are correct; no external font request is made; and the built service worker actually lists the font files—verified in the generated <code>ngsw.json</code>, not inferred from the config.</div>
+          </div>
+        </article>
+
+        <article class="phase">
+          <div class="phase-marker">
+            <span class="phase-number">2</span>
+            <span class="phase-kind">Entry</span>
+          </div>
+          <div class="phase-body">
+            <h3>Rebuild Event entry and the safe count read model</h3>
+            <p>Implement the Event badge, identity list, join form, and identity switching without changing the lightweight identity model.</p>
+            <div class="phase-columns">
+              <div>
+                <span class="mini-label">Contract slice</span>
+                <ul>
+                  <li>If Atelier counts remain approved, add per-Participant <code>wishCount</code> to the event-entry projection in shared schemas and the server query.</li>
+                  <li>Prove that the projection contains no Reservation or Contributor data.</li>
+                  <li>Keep Participant creation response minimal; newly created Participant displays a count of zero locally or through a refreshed projection.</li>
+                  <li>
+                    Update <code>docs/SPEC-implementation.md</code> §7 <em>in this slice</em>, not in Phase 7. §7 defines the entry
+                    read model as “includes the Event's Participants for identity selection”; adding per-Participant counts changes
+                    that contract, and <code>AGENTS.md</code> rule 1 requires <code>SPEC.md</code> and
+                    <code>SPEC-implementation.md</code> to stay aligned. The doc edit belongs in the same pull request as the schema
+                    and server change.
+                  </li>
+                  <li>Keep the count query free of N+1 access across Participants; assert it in the server test, not by inspection.</li>
+                  <li>Scope reminder: this count feeds the pre-identity entry screen only. In-shell counts come from the board resource.</li>
+                </ul>
+              </div>
+              <div>
+                <span class="mini-label">Web slice</span>
+                <ul>
+                  <li>Avatar/monogram primitive with deterministic, contrast-tested color assignment.</li>
+                  <li>Participant choice uses links or buttons with clear names and touch targets.</li>
+                  <li>Keep event-scoped persistence, stale-id handling, duplicate-name conflict copy, and direct continuation.</li>
+                  <li>Use the stable Signal Form submission lifecycle consistently.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="gate"><strong>Gate:</strong> create → share → choose/create Participant → board navigation works, including reload and stale stored identity scenarios.</div>
+          </div>
+        </article>
+
+        <article class="phase">
+          <div class="phase-marker">
+            <span class="phase-number">3</span>
+            <span class="phase-kind">Shell</span>
+          </div>
+          <div class="phase-body">
+            <h3>Introduce the responsive Event shell and lazy child routes</h3>
+            <p>Build orientation once so every Event screen inherits the same navigation and responsive behavior.</p>
+            <div class="phase-columns">
+              <div>
+                <span class="mini-label">Desktop</span>
+                <ul>
+                  <li>Sticky sidebar with Event identity, all-lists link, my-list link, Participant links, and counts derived from the board resource—never from the resolver snapshot, which is read once and does not react to mutations.</li>
+                  <li>Topbar breadcrumbs and selected-Participant switcher. The switcher is the reason the identity rule matters: this shell never unmounts, so a resource that ignores the identity signal will keep showing the previous viewer's data.</li>
+                  <li>Route outlet owns page content; shell owns navigation only.</li>
+                </ul>
+              </div>
+              <div>
+                <span class="mini-label">Mobile</span>
+                <ul>
+                  <li>Sticky topbar, horizontally scrollable Participant rail, and safe-area-aware bottom navigation.</li>
+                  <li>Programmatic focus only when navigation semantics require it; do not steal focus on ordinary route changes.</li>
+                  <li>Active route state uses text/shape in addition to color.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="phase-columns">
+              <div>
+                <span class="mini-label">Wiring locked here</span>
+                <ul>
+                  <li>Provide the Event board store on the <em>shell</em> route. Provided per child instead, every navigation between shell destinations destroys it, refetches, and throws away mutation-patched state.</li>
+                  <li>Apply the selected-Participant guard once on the shell route so all children inherit it; do not re-guard each child. Move the guard to <code>core/identity/</code>.</li>
+                  <li>Keep the board slice under a single feature owner so the page and its store do not straddle <code>features/events/</code> and <code>features/wishes/</code>.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="gate"><strong>Gate:</strong> every shell destination is deep-linkable, refresh-safe, has a useful document title, and produces no horizontal page scroll; switching the selected Participant refetches viewer-scoped data and updates the board, proven by a test rather than by navigating manually; and navigating between shell children does not refetch the board resource.</div>
+          </div>
+        </article>
+
+        <article class="phase">
+          <div class="phase-marker">
+            <span class="phase-number">4</span>
+            <span class="phase-kind">Board</span>
+          </div>
+          <div class="phase-body">
+            <h3>Build the all-lists workbench and dense Wish rows</h3>
+            <p>This is Atelier’s defining slice and the point where the new component boundaries prove themselves.</p>
+            <div class="phase-columns">
+              <div>
+                <span class="mini-label">State &amp; data</span>
+                <ul>
+                  <li>Consume the Event board store provided by the shell in Phase 3; do not re-provide it here. Its resource loads the viewer-shaped Event Wishes response with identity in the URL function, and exposes loading/error/reload.</li>
+                  <li>Compute Participant groups, own-list state, counts, viewer contribution, action labels, and avatar stacks outside templates. These counts are the same ones the shell sidebar renders—one source, two surfaces.</li>
+                  <li>Keep full Wishes in memory for the Event route only; no service-worker or persistent API cache.</li>
+                  <li>Delete the replaced Event/Wish repository read methods here, once resource tests cover parsing, cancellation, reload, and errors—per the deletion rule below.</li>
+                </ul>
+              </div>
+              <div>
+                <span class="mini-label">Presentation</span>
+                <ul>
+                  <li>Wish list block, dense Wish row, safe Wish content, avatar stack, reserved relief, empty group, and retry state.</li>
+                  <li>Free Wishes lead with “I’ll handle it”; reserved Wishes show “Join” or “Manage” based on viewer contribution.</li>
+                  <li>Own list explicitly says coordination is hidden and renders no coordination component or placeholder data.</li>
+                  <li>Avoid CSS relational selectors for security or state; bind an explicit semantic class/view-model state.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="gate"><strong>Gate:</strong> all Participants and Wishes render correctly at mobile/desktop sizes; the raw response and DOM still pass anti-spoil assertions.</div>
+          </div>
+        </article>
+
+        <article class="phase">
+          <div class="phase-marker">
+            <span class="phase-number">5</span>
+            <span class="phase-kind">Wishlist</span>
+          </div>
+          <div class="phase-body">
+            <h3>Deliver own-list management and Wish editing</h3>
+            <p>Move create/edit/delete flows into the Atelier page structure while preserving authoritative mutation results.</p>
+            <div class="phase-columns">
+              <div>
+                <span class="mini-label">Product behavior</span>
+                <ul>
+                  <li>Dedicated own-list destination with add, edit, and delete affordances.</li>
+                  <li>One reusable Wish editor page for create and edit modes, using shared Zod validation through Signal Forms.</li>
+                  <li>Interactive URLs and line breaks continue to use the existing safe content segmentation logic.</li>
+                  <li>Deletion confirmation is explicit, reversible before submission, and announces failure without losing context.</li>
+                </ul>
+              </div>
+              <div>
+                <span class="mini-label">State synchronization</span>
+                <ul>
+                  <li>Patch local state only from authoritative API responses.</li>
+                  <li>After delete, remove the Wish from all loaded groups. Visible counts then follow automatically, because the shell sidebar and the board both derive from the one board resource—if a count has to be updated in a second place, the single-source rule has been broken somewhere.</li>
+                  <li>On unexpected conflict/not-found, show a clear message and reload the server read model.</li>
+                  <li>Prevent duplicate submission through form/mutation state, not click timing.</li>
+                  <li>Map API codes in the create/update/delete actions; do not recreate per-feature custom Error classes.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="gate"><strong>Gate:</strong> create, edit, delete, cancel, validation, server error, and URL rendering tests pass from both the own-list route and subsequent board refresh.</div>
+          </div>
+        </article>
+
+        <article class="phase">
+          <div class="phase-marker">
+            <span class="phase-number">6</span>
+            <span class="phase-kind">Coordination</span>
+          </div>
+          <div class="phase-body">
+            <h3>Deliver Reservation and Contributor coordination</h3>
+            <p>Implement both Atelier variants on one screen: joining when outside, managing when already contributing.</p>
+            <div class="phase-columns">
+              <div>
+                <span class="mini-label">Components</span>
+                <ul>
+                  <li>Reservation status, Contributor rows, add-person chips/list, remove icon buttons, primary join action, and leave action.</li>
+                  <li>Use full accessible names for icon-only remove controls and visible busy state without layout shift.</li>
+                  <li>Exclude the Wisher and existing Contributors from add options; show the reason in product language.</li>
+                </ul>
+              </div>
+              <div>
+                <span class="mini-label">Concurrency &amp; permissions</span>
+                <ul>
+                  <li>Keep 404/409 recovery and reload behavior from the existing implementation.</li>
+                  <li>Removing the final Contributor returns the Wish to the free state across the board.</li>
+                  <li>Direct navigation as the Wisher must reveal no coordination data and return safely to an allowed surface.</li>
+                  <li>Do not represent different permissions with “View” versus “Manage”; action labels reflect viewer participation only.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="gate"><strong>Gate:</strong> reserve → join → add → remove → last Contributor leaves passes in unit, integration, and browser tests with two or more browser contexts.</div>
+          </div>
+        </article>
+
+        <article class="phase">
+          <div class="phase-marker">
+            <span class="phase-number">7</span>
+            <span class="phase-kind">Hardening</span>
+          </div>
+          <div class="phase-body">
+            <h3>Complete accessibility, responsive, PWA, and visual hardening</h3>
+            <p>Finish the states that static mockups do not fully specify and turn the redesign into a release candidate.</p>
+            <div class="phase-columns">
+              <div>
+                <span class="mini-label">Quality passes</span>
+                <ul>
+                  <li>Keyboard-only pass, screen-reader smoke pass, contrast verification, 200% text zoom, reduced motion, and touch targets.</li>
+                  <li>
+                    Add <code>@axe-core/playwright</code>—the single new test dependency this rework introduces—and scan a small
+                    deterministic set of routes: creation, entry, board, own list, and coordination. This is a gating check, not a
+                    report. Budget it as real setup work in this phase rather than assuming it is free.
+                  </li>
+                  <li>
+                    No automated visual regression. Atelier fidelity is confirmed by human review against the mockups; screenshot
+                    baselines are explicitly out of scope for the reasons recorded in the verification section.
+                  </li>
+                  <li>Long Event/Participant names, initials with accents, zero/one/many Contributors, many Participants, multiline Wishes, and long URLs.</li>
+                  <li>Loading skeletons or reserved space, empty states, offline shell, API-down errors, copy failure/success, and unavailable Event.</li>
+                  <li>Mobile widths from 320px, tablet, desktop, landscape, safe-area insets, and no accidental nested horizontal scrolling outside the rail.</li>
+                </ul>
+              </div>
+              <div>
+                <span class="mini-label">Release work</span>
+                <ul>
+                  <li>Update PWA icons/manifest theme colors to Atelier and retain the static-only cache policy check. Font caching was already handled in Phase 1, with the font work.</li>
+                  <li>Review bundle and per-component style budgets, then <em>verify</em> no legacy CSS, components, or tests remain. Under the deletion rule each artifact was removed by the phase that replaced it, so anything still here is a miss to investigate rather than a batch to clear.</li>
+                  <li>Confirm the architecture documents amended in Phase 0 still describe what was actually built, and update development documentation. The accepted-doc reversal itself is not deferred to this phase—it gated Phase 1.</li>
+                  <li>Run full PR-ready verification and complete every PR template section.</li>
+                  <li>Release decision point: this is where the completed rework is reviewed and approved for its single release.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="gate"><strong>Gate:</strong> full release suite is green and the old presentation layer has no remaining route, import, or CSS dependency.</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="design-system">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">08 · Design system</p>
+          <h2>Minimum viable system</h2>
+        </div>
+        <p>
+          A useful V1 design system is a governed vocabulary, not a large catalogue.
+          It should make the Atelier rules hard to accidentally violate.
+        </p>
+      </div>
+
+      <table class="comparison">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Include now</th>
+            <th>Acceptance rule</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Foundations</td>
+            <td>Semantic colors, type scale, font families/weights, spacing scale, radius, shadow, focus ring, motion durations, breakpoints, layers, content widths.</td>
+            <td>No raw palette hex, ad-hoc shadow, or unapproved font size in feature CSS except documented one-off data visualization needs.</td>
+          </tr>
+          <tr>
+            <td>Primitives</td>
+            <td>Icon, avatar, button/link treatment, icon button, field container, inline message, card/surface, visually hidden utility.</td>
+            <td>Primitives preserve native semantics and expose neutral inputs only.</td>
+          </tr>
+          <tr>
+            <td>Patterns</td>
+            <td>App wordmark, share block, Event badge, Participant navigation, avatar stack, empty/loading/error states.</td>
+            <td>Promote a pattern only after at least two real surfaces need the same behavior or structure.</td>
+          </tr>
+          <tr>
+            <td>Feature UI</td>
+            <td>Wish list block, Wish row, Reservation summary, Contributor list, Wish editor.</td>
+            <td>May understand product types and copy; must not call the API directly or enforce server-owned visibility.</td>
+          </tr>
+          <tr>
+            <td>Documentation</td>
+            <td>A single in-repo HTML/CSS showcase route or development page only if it materially speeds review; otherwise component specs are the executable examples.</td>
+            <td>Do not make a separately deployed Storybook-like surface a prerequisite for V1 delivery.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warning">
+        <strong>Token naming example.</strong>
+        Keep source palette values private to the foundations layer and expose semantic aliases such as
+        <code>--color-text</code>, <code>--color-text-muted</code>, <code>--color-action</code>,
+        <code>--color-reserved</code>, <code>--surface-canvas</code>, <code>--surface-card</code>,
+        <code>--surface-own-list</code>, and <code>--focus-ring</code>. This permits later contrast
+        adjustments without editing feature components.
+      </div>
+    </section>
+
+    <section class="section" id="testing">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">09 · Verification</p>
+          <h2>Test by responsibility</h2>
+        </div>
+        <p>
+          The rework should increase confidence, not merely update snapshots. Behavioral tests stay close
+          to features; browser tests prove user journeys and anti-spoil boundaries; an automated accessibility
+          scan proves the states that mockups do not specify.
+        </p>
+        <p>
+          <strong>Atelier fidelity is verified by human review, not by screenshot baselines.</strong> Automated visual
+          regression is deliberately out of scope: baselines would compare local macOS rendering against CI Linux with
+          newly self-hosted fonts, and phases 1–7 intentionally change every pixel, so the baselines would be regenerated
+          continuously and assert nothing. The one new tool this rework adopts is <code>@axe-core/playwright</code>,
+          which rides the existing Playwright setup and is deterministic.
+        </p>
+      </div>
+
+      <table class="comparison">
+        <thead>
+          <tr>
+            <th>Level</th>
+            <th>Primary coverage</th>
+            <th>Examples</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Pure/unit</td>
+            <td>Computed view models, avatar initials/colors, action labels, grouping, eligible Contributors, Wish content segmentation, icon registry.</td>
+            <td>Free vs reserved vs contributing; long names; hidden coordination branch never generates a coordination view model.</td>
+          </tr>
+          <tr>
+            <td>Component</td>
+            <td>Accessible rendering and interaction of forms, Wish rows, contributor controls, errors, disabled/busy states, and event shell navigation.</td>
+            <td>Prefer queries by role/label/text over CSS implementation selectors; use Angular component harnesses only when a complex reusable control earns one.</td>
+          </tr>
+          <tr>
+            <td>Router</td>
+            <td>Deep links, entry redirects, unavailable Event, selected identity, unknown Participant/Wish ids, back navigation, document titles.</td>
+            <td>Use <code>RouterTestingHarness</code> for route behavior rather than shallow route-config assertions alone.</td>
+          </tr>
+          <tr>
+            <td>API integration</td>
+            <td>Any added entry count projection plus unchanged permission/visibility enforcement.</td>
+            <td>Counts match Wishes; response contains no Reservation/Contributor fields; existing anti-spoil matrix remains green.</td>
+          </tr>
+          <tr>
+            <td>End-to-end</td>
+            <td>Creation, join, own-list mutations, reserve/join/manage/leave, reload, multiple browser contexts, PWA shell.</td>
+            <td>Update shared Playwright helpers once per new semantic surface; keep network-body anti-spoil assertions.</td>
+          </tr>
+          <tr>
+            <td>Accessibility</td>
+            <td>Contrast, focus, zoom, reduced motion, and automated <code>@axe-core/playwright</code> scans.</td>
+            <td>Small deterministic scan set: creation, entry, board, mine, participant list, coordination, and unavailable states. Responsive and Atelier-fidelity checks at the reference widths stay a manual review pass—there is no screenshot baseline suite.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-top: 2rem;">Verification cadence</h3>
+      <div class="sequence" aria-label="Verification cadence">
+        <span>Targeted unit/component tests while coding</span>
+        <span>Web typecheck + lint + test per slice</span>
+        <span>Relevant E2E journey per product phase</span>
+        <span>Full workspace + build + E2E per phase pull request</span>
+        <span>Full release gate once, before the single release</span>
+      </div>
+      <p>
+        Each phase is one pull request and runs the PR-ready gate below. Because nothing is released until the whole rework is
+        approved, the final release gate is run once at the end of Phase 7 against the complete result—not implicitly satisfied
+        by seven green phase PRs.
+      </p>
+
+      <pre><code># Default slice gate
+pnpm typecheck
+pnpm lint
+pnpm test
+
+# Documentation/diff gate when this plan or architecture docs change
+pnpm verify
+
+# PR-ready release gate
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+pnpm test:e2e</code></pre>
+    </section>
+
+    <section class="section" id="risks">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">10 · Risks</p>
+          <h2>Known failure modes</h2>
+        </div>
+        <p>
+          Each risk has a concrete containment strategy and a point in the plan where it is tested.
+        </p>
+      </div>
+
+      <div class="risk-grid">
+        <article class="card risk-card">
+          <h3><strong>Risk:</strong> a visual rewrite leaks coordination</h3>
+          <p><strong>Mitigation:</strong> render the discriminated server read model directly, never infer hidden state from ownership after receiving coordination, and retain network-response anti-spoil tests throughout the migration.</p>
+          <p>
+            <strong>Second-order risk:</strong> the anti-spoil test stops protecting anything. Its DOM assertion is keyed on a CSS
+            class this rework renames, so it would go green vacuously. Phase 0 adds a positive control before any rename. The
+            <code>textContent</code> polls beside it stay meaningful either way.
+          </p>
+        </article>
+        <article class="card risk-card">
+          <h3><strong>Risk:</strong> counts expand scope</h3>
+          <p><strong>Mitigation:</strong> isolate counts to the entry projection, prove they contain no coordination, and drop the labels if the small shared/server slice is not accepted.</p>
+        </article>
+        <article class="card risk-card">
+          <h3><strong>Risk:</strong> the design system becomes a parallel project</h3>
+          <p><strong>Mitigation:</strong> add primitives only when consumed by an active product slice, keep shared UI domain-neutral, and require usage before promotion.</p>
+        </article>
+        <article class="card risk-card">
+          <h3><strong>Risk:</strong> static mockups hide dynamic edge cases</h3>
+          <p><strong>Mitigation:</strong> define long-name, many-Participant, many-Contributor, multiline URL, loading, empty, error, and conflict fixtures before declaring each screen complete.</p>
+        </article>
+        <article class="card risk-card">
+          <h3><strong>Risk:</strong> responsive duplication drifts</h3>
+          <p><strong>Mitigation:</strong> use one semantic component tree where practical, CSS layout changes for presentation, and route-aware navigation components that share the same source data.</p>
+        </article>
+        <article class="card risk-card">
+          <h3><strong>Risk:</strong> new reactive APIs obscure mutations</h3>
+          <p><strong>Mitigation:</strong> reserve <code>httpResource</code> for GETs, keep mutation actions explicit in route-scoped feature state, patch only authoritative responses, and reload on concurrency conflicts.</p>
+          <p>
+            <strong>The sharpest form of this risk:</strong> <code>httpResource</code> makes viewer identity an <em>invisible</em>
+            input to a viewer-scoped read model, because the interceptor supplies the header outside the reactive computation.
+            Stale coordination filtering after an identity switch, contested ownership of the board store, and divergent count
+            sources are all variants of that one problem. Phase 0 writes the rule down once, precisely, before any resource is built.
+          </p>
+        </article>
+        <article class="card risk-card">
+          <h3><strong>Risk:</strong> removing repositories spreads HTTP details</h3>
+          <p><strong>Mitigation:</strong> confine URLs, schemas, and API codes to feature state/action files; pages consume signals and named actions. The plan removes an unnecessary entity abstraction, not the frontend boundary.</p>
+        </article>
+        <article class="card risk-card">
+          <h3><strong>Risk:</strong> global error handling hides feature context</h3>
+          <p><strong>Mitigation:</strong> decode transport shape once but select user copy next to the attempted action. Keep interceptors free of business-code translation, retries with side effects, and navigation.</p>
+        </article>
+        <article class="card risk-card">
+          <h3><strong>Risk:</strong> external assets weaken the PWA</h3>
+          <p><strong>Mitigation:</strong> self-host fonts and icons, verify offline shell rendering, and keep REST data out of the service-worker cache.</p>
+        </article>
+        <article class="card risk-card">
+          <h3><strong>Risk:</strong> big-bang replacement stalls</h3>
+          <p>
+            <strong>Mitigation:</strong> one deletion rule, applied everywhere—<em>delete each legacy artifact in the phase whose
+            replacement passes its gate, once tests cover the behavior rather than the old class API</em>. An artifact whose
+            replacement is not finished survives until the phase that finishes it. Phase 7 then only <em>verifies</em> that
+            nothing legacy remains; it is not a bulk deletion phase.
+          </p>
+          <p>
+            This supersedes the earlier “delete legacy code only in the final hardening phase,” which contradicted Phase 4's
+            instruction to remove replaced repository read methods. Deferred deletion was a consequence of shipping intermediate
+            states; since the rework is released only once, complete and approved, carrying four phases of dead code buys nothing
+            and makes every later phase harder to read.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="done">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">11 · Completion</p>
+          <h2>Definition of done</h2>
+        </div>
+        <p>
+          The rework is complete only when visual fidelity, product behavior, maintainability, and release safety all hold together.
+        </p>
+      </div>
+
+      <ol>
+        <li>Every required V1 surface is implemented in the Atelier language, including non-happy states and mobile/desktop navigation.</li>
+        <li>The creation-to-coordination family workflow passes without accounts or manual setup.</li>
+        <li>Own-Wish purchase coordination is absent from API payload details and DOM output for the Wisher.</li>
+        <li>The design-system foundations and primitives are documented by code, tests, and clear ownership; feature CSS consumes semantic tokens.</li>
+        <li>All routed screens are deep-linkable, refresh-safe, keyboard usable, and have clear document titles and error recovery.</li>
+        <li>Signal Forms, resources, signals, DI, and templates follow current Angular 22 guidance; no unnecessary state or UI framework was added.</li>
+        <li>The old repository classes, feature-specific transport Error classes, and repeated <code>normalizeError</code> functions are removed; HTTP behavior is covered through resources, actions, and one failure decoder.</li>
+        <li>Static assets work offline where the PWA supports it—including the self-hosted fonts, verified in the generated <code>ngsw.json</code>—and sensitive REST responses remain outside service-worker caches.</li>
+        <li>Legacy presentation code and CSS have been removed by the phase that replaced them, and Phase 7 confirms nothing remains.</li>
+        <li>Switching the selected Participant refetches every viewer-scoped resource, proven by test; no resource leaves identity implicit in the interceptor.</li>
+        <li>Shell counts and board counts derive from one resource and cannot disagree after a mutation.</li>
+        <li>The entry projection-lag 404 retry survives the removal of <code>EventRepositoryError</code> and is covered by a test.</li>
+        <li>The anti-spoil DOM assertion has a positive control, so a class rename fails it rather than silently satisfying it.</li>
+        <li><code>docs/design-docs/frontend-architecture.md</code> and <code>ARCHITECTURE.md</code> were amended and signed off in Phase 0, before the code contradicted them; development docs and shared contract documentation reflect the built design.</li>
+        <li>The <code>@axe-core/playwright</code> scan set passes as a gate. Atelier fidelity was confirmed by human review; no screenshot baseline suite was introduced.</li>
+        <li><code>pnpm typecheck</code>, <code>pnpm lint</code>, <code>pnpm test</code>, <code>pnpm build</code>, <code>pnpm test:e2e</code>, and <code>pnpm verify</code> pass in the required Node environment.</li>
+      </ol>
+    </section>
+
+    <section class="section" id="sources">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">12 · Sources</p>
+          <h2>Reference material</h2>
+        </div>
+        <p>
+          Implementation should continue to treat the repository’s product specifications as the product contract and official Angular documentation as the framework reference. Existing frontend implementation patterns are evidence, not constraints.
+        </p>
+      </div>
+
+      <div class="sources">
+        <h3>Repository sources of truth</h3>
+        <ul>
+          <li><code>docs/GOAL.md</code> and <code>docs/PRODUCT.md</code> — product purpose and principles.</li>
+          <li><code>docs/SPEC-implementation.md</code> — V1 behavior, UI surfaces, anti-spoil rule, PWA constraints, and release criteria.</li>
+          <li><code>ARCHITECTURE.md</code> and <code>docs/design-docs/frontend-architecture.md</code> — package boundaries and frontend layering.</li>
+          <li><code>docs/design-explorations/2026-07-20-ui-propositions/06-atelier/</code> — retained design direction, screen states, and visual rationale.</li>
+        </ul>
+
+        <h3>Official Angular references</h3>
+        <ul>
+          <li><a href="https://angular.dev/style-guide">Angular style guide</a></li>
+          <li><a href="https://angular.dev/guide/forms/signals/overview">Signal Forms overview</a></li>
+          <li><a href="https://angular.dev/guide/http/http-resource">Reactive data fetching with httpResource</a></li>
+          <li><a href="https://angular.dev/api/common/http/HttpResourceOptions">httpResource parsing and runtime validation options</a></li>
+          <li><a href="https://angular.dev/guide/http/making-requests">HttpClient requests and failure handling</a></li>
+          <li><a href="https://angular.dev/guide/http/interceptors">Functional interceptor guidance</a></li>
+          <li><a href="https://angular.dev/best-practices/performance/lazy-loaded-routes">Lazy-loaded route guidance</a></li>
+          <li><a href="https://angular.dev/guide/routing/data-resolvers">Route resolver guidance</a></li>
+          <li><a href="https://angular.dev/best-practices/a11y">Angular accessibility guidance</a></li>
+          <li><a href="https://angular.dev/guide/aria/overview">Angular Aria overview</a></li>
+          <li><a href="https://angular.dev/guide/testing">Angular and Vitest testing guide</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <footer>
+      Prepared for idkdo’s V1 Angular web rework. This plan intentionally keeps server-owned
+      visibility and permission rules unchanged while replacing the frontend experience.
+    </footer>
+  </main>
+</body>
+</html>

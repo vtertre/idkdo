@@ -51,7 +51,7 @@ Keep detailed local development commands in `docs/DEVELOPING.md`.
    Prefer targeted updates. Keep `docs/SPEC.md` and `docs/SPEC-implementation.md` aligned.
 
 2. Keep repo plan docs dated and centralized.
-   When creating a plan file in the repository, new plan documents belong in `docs/plans/` and should use `YYYY-MM-DD-slug.md` filenames.
+   When creating a plan file in the repository, new plan documents belong in `docs/plans/` and should use `YYYY-MM-DD-slug.md` or `YYYY-MM-DD-slug.html` filenames.
 
 3. Server changes follow the vertical-slice shape in `ARCHITECTURE.md`: route validates and delegates; use-case function owns behavior; queries read the real tables with the viewer as a parameter.
 
