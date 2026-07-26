@@ -8,6 +8,7 @@ const failures = [];
 const requiredFiles = [
   "AGENTS.md",
   "ARCHITECTURE.md",
+  "DESIGN.md",
   "README.md",
   ".github/PULL_REQUEST_TEMPLATE.md",
   ".github/workflows/ci.yml",
