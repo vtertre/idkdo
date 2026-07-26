@@ -18,6 +18,7 @@ Before making changes, read in this order:
 4. `docs/DEVELOPING.md`
 5. `docs/DATABASE.md` when working with local PostgreSQL, Drizzle, or database commands
 6. `ARCHITECTURE.md` when scaffolding, coding, or changing technical structure
+7. `DESIGN.md` and `docs/design-docs/frontend-architecture.md` when working in `web/`
 
 `docs/SPEC.md` is long-horizon product context.
 
@@ -27,6 +28,7 @@ Before making changes, read in this order:
 
 - `docs/`: product, implementation, and design docs
 - `ARCHITECTURE.md`: top-level technical map and entry point to detailed design docs
+- `DESIGN.md`: visual language, interaction, accessibility, and design system doctrine for `web/`
 - `e2e/`: Playwright browser regression suite and PWA smoke release gate
 - `server/`: Fastify REST API and backend application
 - `web/`: Angular Progressive Web App

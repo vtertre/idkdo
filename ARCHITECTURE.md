@@ -84,14 +84,22 @@ server/src/
 
 The Web UI is an Angular PWA organized feature-first.
 
-Frontend components should use frontend repositories or feature services for API
-access. Components should not call `HttpClient` directly and should not enforce
-domain invariants. Visibility-sensitive behavior must come from server-filtered
-read models.
+Pages consume route-scoped feature state, which owns the resources, mutation
+actions, and computed view models for its slice. Feature state uses Angular's
+HTTP primitives directly: `httpResource` for GET read models with Zod parsing,
+`HttpClient` for mutations. There is no frontend repository layer. Components do
+not enforce domain invariants, and visibility-sensitive behavior must come from
+server-filtered read models.
+
+Viewer-scoped reads take the selected Participant as an explicit reactive input,
+never implicitly through the interceptor.
 
 The service worker caches static application assets only. It must not cache REST
 API responses containing Event, Participant, Wish, Reservation, Contributor, or
-Purchase Coordination data.
+Purchase Coordination data. It does cache the self-hosted fonts.
+
+Frontend rules are numbered in `docs/design-docs/frontend-architecture.md`.
+Visual, interaction, and accessibility doctrine lives in `DESIGN.md`.
 
 ## Cross-Cutting Invariants
 
