@@ -96,12 +96,12 @@ broken.
 
 **RW-7 — Repair the anti-spoil assertions before renaming anything.** FE-22
 requires a positive control on every negative visibility assertion. Four sites
-are currently keyed on `.purchase-coordination` with a bare count-0 assertion,
-and this rework renames that class:
+are keyed on `.purchase-coordination`, and this rework renames that class:
 
 - `e2e/tests/anti-spoil.spec.ts:41`
 - `e2e/tests/core-workflow.spec.ts:66`
 - `web/src/app/features/wishes/components/event-wishes-panel/event-wishes-panel.spec.ts:105`
+  *(already paired before Phase 0)*
 - the second assertion in the same spec at line 358
 
 All four go vacuously green on the rename. Add the positive control to each in
@@ -169,24 +169,35 @@ all of the following hold:
    `pnpm verify` passes. *(Done 2026-07-26 — the repository-pattern reversal is
    recorded in the frontend architecture doc.)*
 2. RW-7 is merged, and the positive control has been proven to fail on a rename
-   rather than assumed to.
+   rather than assumed to. *(Implemented locally 2026-07-28; merge and PR
+   evidence remain pending.)*
 3. This note states the identity rule, store ownership, count source, and 404
    retry as locked decisions. *(Done — RW-1, RW-4, RW-6, and FE-4.)*
 4. RW-11's patch bump is applied with baseline verification green.
+   *(Implemented locally 2026-07-28; merge remains pending.)*
 5. Baseline artifacts are captured for later comparison.
+   *(Metrics recorded locally 2026-07-28; PR screenshot attachments remain
+   pending.)*
 
-**RW-14 — Phase 0 also owes four executable checks.** The rules most likely to be
-violated silently get teeth rather than review attention:
+**RW-14 — Four executable checks, each owned by the phase whose code it
+guards.** The rules most likely to be violated silently get teeth rather than
+review attention. Phase 0 owns this ledger; no phase closes with its own row
+red.
 
-| Check | Enforces |
-| --- | --- |
-| Switching identity refetches every viewer-scoped resource | FE-4 |
-| Navigating between shell children does not refetch the board | FE-7 |
-| Positive control beside each visibility assertion (RW-7) | FE-22 |
-| Font files present in the generated `ngsw.json` (RW-8) | FE-20 |
+| Check | Enforces | Lands in |
+| --- | --- | --- |
+| Positive control beside each visibility assertion (RW-7) | FE-22 | Phase 0 |
+| Font files present in the generated `ngsw.json` (RW-8) | FE-20 | Phase 1 |
+| Switching identity refetches every viewer-scoped resource | FE-4 | Phase 3 |
+| Navigating between shell children does not refetch the board | FE-7 | Phase 3 |
 
-The last extends `web/scripts/verify-pwa-cache-policy.mjs`, which already parses
-the built `ngsw.json`.
+The last two require the shell and board store that Phase 3 builds. A check
+whose subject does not exist can only be written as a skipped test, and a
+skipped test asserts nothing — so each check lands with its code, and Phase 0's
+obligation is that this ledger exists and is honored.
+
+The `ngsw.json` row extends `web/scripts/verify-pwa-cache-policy.mjs`, which
+already parses the built `ngsw.json`.
 
 ## Out Of Scope
 
@@ -201,3 +212,23 @@ Do not, during this rework:
 - remove server surface (RW-2).
 
 `@axe-core/playwright` is the single new test dependency this rework introduces.
+
+## Baseline Record
+
+Captured after the coordinated Angular 22.0.8 update on 2026-07-28.
+
+- Angular versions: `@angular/common`, `compiler`, `core`, `forms`,
+  `platform-browser`, `router`, `service-worker`, `build`, `cli`, and
+  `compiler-cli` are all installed at 22.0.8. `ng update` reported that the
+  workspace was already in order, with no migrations available.
+- Production web build: initial total 701.32 kB raw / 148.81 kB estimated
+  transfer; `main` 700.87 kB raw / 148.35 kB estimated transfer; `styles`
+  458 bytes raw / 458 bytes estimated transfer. The 700 kB initial warning
+  fired by 1.32 kB; the build passed.
+- Workspace tests: `@idkdo/shared` 31 files / 100 tests;
+  `@idkdo/server` 27 files / 131 tests; `@idkdo/web` 19 files / 116 tests;
+  `@idkdo/db` typecheck-backed test script passed.
+- End-to-end: `anti-spoil.spec.ts` passed on desktop;
+  `core-workflow.spec.ts` passed on desktop and mobile;
+  `reservation-lifecycle.spec.ts` passed on desktop; `pwa-smoke.spec.ts`
+  passed against the production PWA build. Playwright reported 5 passed.
