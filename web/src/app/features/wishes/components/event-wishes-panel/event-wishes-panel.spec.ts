@@ -350,7 +350,7 @@ describe("EventWishesPanel own reserved Wishes", () => {
       ...aliceWish,
       purchaseCoordination: { kind: "hidden" },
     };
-    getEventWishes.mockReturnValue(of({ wishes: [ownReservedWish] }));
+    getEventWishes.mockReturnValue(of({ wishes: [ownReservedWish, bobWish] }));
 
     const { element } = await createPanel();
     const aliceGroup = groupFor(element, alice.id);
@@ -361,6 +361,10 @@ describe("EventWishesPanel own reserved Wishes", () => {
     ).toBeNull();
     expect(aliceGroup.textContent).not.toContain("Participer");
     expect(aliceGroup.textContent).not.toContain("Réserver");
+    // Positive control (FE-22): same locator, viewer who may see coordination.
+    expect(
+      groupFor(element, bob.id).querySelector(".purchase-coordination"),
+    ).not.toBeNull();
   });
 });
 

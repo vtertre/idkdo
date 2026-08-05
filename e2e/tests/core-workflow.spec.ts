@@ -50,6 +50,13 @@ test("creates an event, manages wishes, reserves, and survives reload", async ({
   await expect(wishItemInGroup(bob.page, "Alice", editedWish).getByRole("button", { name: "Réserver" })).toBeVisible();
   await expect(bob.page.locator(".wish-group", { hasText: "Bob" }).getByText("vous")).toBeVisible();
 
+  const bobOwnListTab = bob.page.getByRole("tab", { name: "Ma liste" });
+  if (await bobOwnListTab.isVisible()) {
+    await bobOwnListTab.click();
+  }
+  const bobWish = "Écharpe grise";
+  await addWish(bob.page, bobWish);
+
   await reserveWish(bob.page, "Alice", editedWish);
   await expect(wishItemInGroup(bob.page, "Alice", editedWish).getByText("Bob")).toBeVisible();
 
@@ -64,6 +71,12 @@ test("creates an event, manages wishes, reserves, and survives reload", async ({
   await openAllLists(alice.page);
   const aliceOwnWish = wishItemInGroup(alice.page, "Alice", editedWish);
   await expect(aliceOwnWish.locator(".purchase-coordination")).toHaveCount(0);
+  // Positive control (FE-22).
+  const aliceViewOfBobWish = wishItemInGroup(alice.page, "Bob", bobWish);
+  await expect(aliceViewOfBobWish).toBeVisible();
+  await expect(
+    aliceViewOfBobWish.locator(".purchase-coordination"),
+  ).toHaveCount(1);
   await expect
     .poll(() => aliceOwnWish.textContent())
     .not.toContain("Bob");

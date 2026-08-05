@@ -33,12 +33,26 @@ test("keeps purchase coordination hidden from the wisher in DOM, network, and wr
   await expect(carolWish.getByText("Bob")).toBeVisible();
   await expect(carolWish.getByText("Carol")).toBeVisible();
 
+  const bobOwnListTab = bob.page.getByRole("tab", { name: "Ma liste" });
+  if (await bobOwnListTab.isVisible()) {
+    await bobOwnListTab.click();
+  }
+  const bobWish = `Écharpe ${Date.now()}`;
+  await addWish(bob.page, bobWish);
+
   await alice.page.reload();
   await expect(alice.page.getByRole("heading", { name: "Ma liste" })).toBeVisible();
   await openAllLists(alice.page);
   const aliceWish = wishItemInGroup(alice.page, "Alice", wishContent);
   await expect(aliceWish).toBeVisible();
   await expect(aliceWish.locator(".purchase-coordination")).toHaveCount(0);
+  // Positive control (FE-22): the same locator must be present on a Wish Alice
+  // does not own, so renaming the class fails this test instead of satisfying it.
+  const aliceViewOfBobWish = wishItemInGroup(alice.page, "Bob", bobWish);
+  await expect(aliceViewOfBobWish).toBeVisible();
+  await expect(
+    aliceViewOfBobWish.locator(".purchase-coordination"),
+  ).toHaveCount(1);
   await expect
     .poll(() => aliceWish.textContent())
     .not.toContain("Bob");
